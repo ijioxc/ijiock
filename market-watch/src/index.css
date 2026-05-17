@@ -2,7 +2,7 @@
 
 :root {
   --bg: #DED0C1;
-  --surface: #EAE2D8;
+  --surface: #E9E1D7;
   --surface-2: #D8CCBF;
   --surface-3: #CFC2B4;
   --border: rgba(0,0,0,.10);
@@ -11,22 +11,27 @@
   --text-2: #5F5F5F;
   --text-3: #9A8E82;
   --up: #26A69A;
-  --up-soft: rgba(38,166,154,.12);
+  --up-soft: rgba(38,166,154,.15);
   --dn: #EF5350;
-  --dn-soft: rgba(239,83,80,.10);
+  --dn-soft: rgba(239,83,80,.12);
   --warn: #f59e0b;
   --warn-soft: rgba(245,158,11,.10);
   --accent: #6366f1;
-  --accent-soft: rgba(99,102,241,.12);
-  --r: 12px;
-  --r-sm: 8px;
-  --sh: 0 1px 3px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.05);
-  --sh-md: 0 4px 16px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+  --accent-soft: rgba(99,102,241,.14);
+  --bb-upper: #f97316;
+  --bb-mid: #6366f1;
+  --bb-lower: #06b6d4;
+  --r: 16px;
+  --r-sm: 12px;
+  --r-xs: 8px;
+  --sh: 0 1px 4px rgba(0,0,0,.10), 0 0 0 1px rgba(0,0,0,.05);
+  --sh-md: 0 4px 20px rgba(0,0,0,.13), 0 1px 5px rgba(0,0,0,.08);
+  --sh-lg: 0 16px 48px rgba(0,0,0,.18), 0 4px 12px rgba(0,0,0,.10);
 }
 
 html, body {
   height: 100%;
-  font-family: 'Inter', 'Noto Sans TC', -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
   font-size: 13px;
@@ -35,10 +40,24 @@ html, body {
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
 
 .mono { font-family: 'SF Mono', ui-monospace, 'Fira Code', monospace; }
 .up { color: var(--up); }
 .dn { color: var(--dn); }
 .up-bg { background: var(--up-soft); }
 .dn-bg { background: var(--dn-soft); }
+
+/* ── FLASH ANIMATIONS ── */
+@keyframes flash-up {
+  0%   { background: var(--up-soft); border-radius: 4px; }
+  100% { background: transparent; }
+}
+@keyframes flash-dn {
+  0%   { background: var(--dn-soft); border-radius: 4px; }
+  100% { background: transparent; }
+}
+.flash-up { animation: flash-up .65s ease-out forwards; }
+.flash-dn { animation: flash-dn .65s ease-out forwards; }

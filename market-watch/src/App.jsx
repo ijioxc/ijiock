@@ -1,12 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import NavBar from './components/NavBar'
 import WatchList from './components/WatchList'
 import ChartPanel from './components/ChartPanel'
 import AdvisorChat from './components/AdvisorChat'
 import AlertPanel from './components/AlertPanel'
+import PortfolioPanel from './components/PortfolioPanel'
+import NewsPanel from './components/NewsPanel'
+import MarketTicker from './components/MarketTicker'
+import KeyboardHelp from './components/KeyboardHelp'
+import SectorPanel from './components/SectorPanel'
+import ToastSystem from './components/ToastSystem'
+import CommandPalette from './components/CommandPalette'
+import EventCalendar from './components/EventCalendar'
+import ScreenerPanel from './components/ScreenerPanel'
 import { useQuotes } from './hooks/useQuotes'
 import { useWatchlistStore } from './store/watchlistStore'
 import './App.css'
+
+const TABS = ['advisor', 'portfolio', 'alert', 'news', 'sector', 'calendar', 'screener']
 
 function QuotesRunner() {
   useQuotes()
@@ -17,10 +28,25 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(false)
   const [rightTab, setRightTab] = useState('advisor')
   const triggeredAlerts = useWatchlistStore(s => s.triggeredAlerts)
+  const forceRefresh = useWatchlistStore(s => s.forceRefresh)
+
+  // Number keys 1-4 switch right tabs
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+      const n = parseInt(e.key)
+      if (n >= 1 && n <= 7) setRightTab(TABS[n - 1])
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   return (
     <div className={`app ${darkMode ? 'dark' : ''}`}>
       <QuotesRunner />
+      <KeyboardHelp onToggleDark={() => setDarkMode(v => !v)} />
+      <ToastSystem />
+      <CommandPalette />
       {triggeredAlerts.length > 0 && (
         <div className="alert-banner">
           {triggeredAlerts[0].type === 'target' ? '📈' : '📉'}&nbsp;
@@ -30,17 +56,29 @@ export default function App() {
         </div>
       )}
       <NavBar darkMode={darkMode} onToggleDark={() => setDarkMode(v => !v)} />
+      <MarketTicker />
       <div className="main-layout">
         <WatchList />
         <div className="center-col">
-          <ChartPanel />
+          <ChartPanel darkMode={darkMode} />
         </div>
         <div className="right-col">
           <div className="right-tabs">
-            <button className={`r-tab ${rightTab === 'advisor' ? 'active' : ''}`} onClick={() => setRightTab('advisor')}>AI 顧問</button>
-            <button className={`r-tab ${rightTab === 'alert' ? 'active' : ''}`} onClick={() => setRightTab('alert')}>盯盤警示</button>
+            <button className={`r-tab ${rightTab === 'advisor' ? 'active' : ''}`} onClick={() => setRightTab('advisor')}>AI</button>
+            <button className={`r-tab ${rightTab === 'portfolio' ? 'active' : ''}`} onClick={() => setRightTab('portfolio')}>持倉</button>
+            <button className={`r-tab ${rightTab === 'alert' ? 'active' : ''}`} onClick={() => setRightTab('alert')}>警示</button>
+            <button className={`r-tab ${rightTab === 'news' ? 'active' : ''}`} onClick={() => setRightTab('news')}>新聞</button>
+            <button className={`r-tab ${rightTab === 'sector' ? 'active' : ''}`} onClick={() => setRightTab('sector')}>板塊</button>
+            <button className={`r-tab ${rightTab === 'calendar' ? 'active' : ''}`} onClick={() => setRightTab('calendar')}>日曆</button>
+            <button className={`r-tab ${rightTab === 'screener' ? 'active' : ''}`} onClick={() => setRightTab('screener')}>選股</button>
           </div>
-          {rightTab === 'advisor' ? <AdvisorChat /> : <AlertPanel />}
+          {rightTab === 'advisor' && <AdvisorChat />}
+          {rightTab === 'portfolio' && <PortfolioPanel />}
+          {rightTab === 'alert' && <AlertPanel />}
+          {rightTab === 'news' && <NewsPanel />}
+          {rightTab === 'sector' && <SectorPanel />}
+          {rightTab === 'calendar' && <EventCalendar />}
+          {rightTab === 'screener' && <ScreenerPanel />}
         </div>
       </div>
     </div>
