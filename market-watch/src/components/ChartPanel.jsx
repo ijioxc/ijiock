@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { createChart, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts'
+import { createChart, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts'
 import { fetchOHLC } from '../api/market'
 import { useWatchlistStore } from '../store/watchlistStore'
 import { useTechIndicators } from '../hooks/useTechIndicators'
@@ -577,7 +577,9 @@ export default function ChartPanel({ darkMode = false }) {
           }
         }
 
-        seriesRef.current?.setMarkers(allMarkers.sort((a, b) => a.time - b.time))
+        if (seriesRef.current && allMarkers.length > 0) {
+          createSeriesMarkers(seriesRef.current, allMarkers.sort((a, b) => a.time - b.time))
+        }
       })
       .catch(e => { if (!cancelled) setFetchError(e.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
