@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { askAdvisor } from '../api/claude'
+import { askGemini } from '../api/gemini'
 import { useWatchlistStore } from '../store/watchlistStore'
 import { fetchOHLC } from '../api/market'
 import { useTechIndicators } from '../hooks/useTechIndicators'
@@ -18,6 +19,9 @@ export default function AdvisorChat() {
   const symbols = useWatchlistStore(s => s.symbols)
   const quotes = useWatchlistStore(s => s.quotes)
   const apiKey = useWatchlistStore(s => s.apiKey)
+  const geminiKey = useWatchlistStore(s => s.geminiKey)
+  const aiProvider = useWatchlistStore(s => s.aiProvider)
+  const activeKey = aiProvider === 'gemini' ? geminiKey : apiKey
   const info = symbols.find(s => s.symbol === selected)
   const msgsEndRef = useRef(null)
 
@@ -52,14 +56,16 @@ export default function AdvisorChat() {
       const { candles: freshCandles, tech: freshTech } = await buildContext()
       const quote = quotes[selected] ?? {}
       const useTech = freshTech ?? tech ?? { trend: '-', kdSignal: '-', macdSignal: '-', maStatus: '-' }
-      const reply = await askAdvisor({
-        apiKey,
-        name: info?.name ?? selected,
-        symbol: selected,
-        quote,
-        techSignal: useTech,
-        recentCandles: freshCandles,
-      })
+      let reply
+      if (aiProvider === 'gemini') {
+        const candleText = freshCandles.slice(-5).map(c =>
+          `日期:${new Date(c.time * 1000).toLocaleDateString('zh-TW')} O:${c.open?.toFixed(2)} H:${c.high?.toFixed(2)} L:${c.low?.toFixed(2)} C:${c.close?.toFixed(2)}`
+        ).join('\n')
+        const prompt = `標的：${info?.name ?? selected}（${selected}）\n現價 ${quote.price?.toFixed(2) ?? '-'}，今日 ${quote.changePct >= 0 ? '+' : ''}${quote.changePct?.toFixed(2) ?? '-'}%\n趨勢：${useTech.trend}，KD：${useTech.kdSignal}，MACD：${useTech.macdSignal}\n近5日K線：\n${candleText}\n\n請給出簡短分析（100字內）與操作建議（買進/持有/觀望/賣出）。`
+        reply = await askGemini({ apiKey: geminiKey, messages: [{ role: 'user', text: prompt }] })
+      } else {
+        reply = await askAdvisor({ apiKey, name: info?.name ?? selected, symbol: selected, quote, techSignal: useTech, recentCandles: freshCandles })
+      }
       setMessages(m => [...m, { role: 'user', text: `全面分析 ${info?.name ?? selected}` }, { role: 'ai', text: reply }])
     } catch (e) {
       setError(e.message)
@@ -70,52 +76,46 @@ export default function AdvisorChat() {
 
   async function sendCustom(customText) {
     const userMsg = (customText ?? input).trim()
-    if (!userMsg || !apiKey) return
+    if (!userMsg || !activeKey) return
     setLoading(true)
     setError('')
     setMessages(m => [...m, { role: 'user', text: userMsg }])
     if (!customText) setInput('')
     try {
-      const { candles, tech } = await buildContext().catch(() => ({ candles: [], tech: null }))
+      const { tech: freshTech } = await buildContext().catch(() => ({ candles: [], tech: null }))
       const quote = quotes[selected] ?? {}
-      const technicalContext = tech ? `
-技術指標摘要：
-- 趨勢：${tech.trend}
-- KD 指標：${tech.kdSignal}（K=${tech.lastK}, D=${tech.lastD}）
-- MACD：${tech.macdSignal}（DIF=${tech.lastMacd}, DEA=${tech.lastSignal}）
-- 均線狀態：${tech.maStatus}（MA5=${tech.ma5}, MA20=${tech.ma20}${tech.ma60 ? `, MA60=${tech.ma60}` : ''}）
-- RSI(14)：${tech.lastRsi ?? '-'}（${tech.rsiSignal}）
-- StochRSI：K=${tech.stochRsiK ?? '-'} D=${tech.stochRsiD ?? '-'}（${tech.stochRsiSignal}）
-- Williams %R：${tech.williamsR ?? '-'}（${tech.wrSignal}）
-- PSAR：${tech.psarSignal}
-- ATR 波動率：${tech.volatility}（ATR=${tech.atr ?? '-'}, ${tech.atrPct ?? '-'}%）
-- BB 帶寬：${tech.bbSqueezeSignal}（${tech.bbWidth ?? '-'}%）
-- MFI：${tech.lastMfi ?? '-'}（${tech.mfiSignal}）
-- OBV 趨勢：${tech.obvTrend ?? '─'}
-- K 線形態：${tech.candlePattern?.name ?? '無特殊形態'}
-- 綜合評分：見上述各指標
-` : ''
+      const t = freshTech ?? tech
+      const technicalContext = t ? `技術指標摘要：趨勢:${t.trend}，KD:${t.kdSignal}(K=${t.lastK},D=${t.lastD})，MACD:${t.macdSignal}，RSI:${t.lastRsi ?? '-'}(${t.rsiSignal})，均線:${t.maStatus}(MA5=${t.ma5},MA20=${t.ma20})` : ''
       const contextLine = selected
-        ? `【當前標的：${info?.name ?? selected}（${selected}）\n現價 ${quote.price?.toFixed(2) ?? '-'}，今日 ${quote.changePct >= 0 ? '+' : ''}${quote.changePct?.toFixed(2) ?? '-'}%\n成交量 ${quote.volume?.toLocaleString() ?? '-'}\n${technicalContext}】\n\n`
+        ? `【${info?.name ?? selected}(${selected}) 現價${quote.price?.toFixed(2) ?? '-'} 今日${quote.changePct >= 0 ? '+' : ''}${quote.changePct?.toFixed(2) ?? '-'}% ${technicalContext}】\n\n`
         : ''
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 800,
-          system: '你是一位專業的台灣股市與全球金融市場投資顧問，擅長技術分析（均線、KD、MACD、RSI、布林通道、Ichimoku、PSAR 等）與基本面分析。\n回覆使用繁體中文，語氣專業但親切，回答精簡有重點，善用條列式表達。\n重要：投資有風險，建議加入風險提示。所提供的技術指標數據已涵蓋主要常見指標，請優先參考這些數據分析。',
-          messages: [{ role: 'user', content: contextLine + userMsg }],
-        }),
-      })
-      if (!res.ok) throw new Error(`API 錯誤 ${res.status}`)
-      const data = await res.json()
-      setMessages(m => [...m, { role: 'ai', text: data.content?.[0]?.text ?? '無回應' }])
+      const fullMsg = contextLine + userMsg
+
+      let reply
+      if (aiProvider === 'gemini') {
+        const history = messages.map(m => ({ role: m.role, text: m.text }))
+        reply = await askGemini({ apiKey: geminiKey, messages: [...history, { role: 'user', text: fullMsg }] })
+      } else {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 800,
+            system: '你是一位專業的台灣股市與全球金融市場投資顧問，擅長技術分析。回覆使用繁體中文，語氣專業但親切，回答精簡有重點，善用條列式。投資有風險，建議加入風險提示。',
+            messages: [{ role: 'user', content: fullMsg }],
+          }),
+        })
+        if (!res.ok) throw new Error(`API 錯誤 ${res.status}`)
+        const data = await res.json()
+        reply = data.content?.[0]?.text ?? '無回應'
+      }
+      setMessages(m => [...m, { role: 'ai', text: reply }])
     } catch (e) {
       setError(e.message)
     } finally {
@@ -127,11 +127,13 @@ export default function AdvisorChat() {
     <div className="advisor-panel">
       <div className="adv-header">
         <span className="adv-title">AI 投資顧問</span>
-        <span className="adv-model mono">claude-sonnet-4-6</span>
+        <span className="adv-model mono">{aiProvider === 'gemini' ? 'gemini-2.0-flash 🆓' : 'claude-sonnet-4-6'}</span>
       </div>
 
-      {!apiKey && (
-        <div className="adv-notice">請點右上角設定 Claude API Key 後使用顧問功能</div>
+      {!activeKey && (
+        <div className="adv-notice">
+          請點右上角設定 AI API Key（建議使用免費的 Gemini）
+        </div>
       )}
 
       <div className="adv-messages">
@@ -163,13 +165,13 @@ export default function AdvisorChat() {
             key={p.label}
             className="quick-chip"
             onClick={() => sendCustom(p.text)}
-            disabled={loading || !apiKey}
+            disabled={loading || !activeKey}
           >{p.label}</button>
         ))}
       </div>
 
       <div className="adv-actions">
-        <button className="analyze-btn" onClick={ask} disabled={loading || !apiKey}>
+        <button className="analyze-btn" onClick={ask} disabled={loading || !activeKey}>
           📊 全面分析當前標的
         </button>
       </div>
@@ -180,9 +182,9 @@ export default function AdvisorChat() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendCustom()}
-          disabled={loading || !apiKey}
+          disabled={loading || !activeKey}
         />
-        <button onClick={() => sendCustom()} disabled={loading || !apiKey || !input.trim()}>送出</button>
+        <button onClick={() => sendCustom()} disabled={loading || !activeKey || !input.trim()}>送出</button>
       </div>
     </div>
   )

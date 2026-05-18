@@ -101,6 +101,13 @@
   box-shadow: 0 0 0 3px var(--accent-soft); background: var(--surface);
 }
 .key-panel input::placeholder { color: var(--text-3); }
+.key-provider-tabs { display: flex; gap: 6px; margin-bottom: 2px; }
+.key-tab {
+  flex: 1; padding: 7px; border: 1.5px solid var(--border-md); border-radius: var(--r-xs);
+  background: transparent; color: var(--text-2); font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all .15s; font-family: inherit;
+}
+.key-tab.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 .key-actions { display: flex; gap: 8px; }
 .key-actions button {
   flex: 1; padding: 8px; border: none; border-radius: var(--r-xs); background: var(--accent); color: #fff;

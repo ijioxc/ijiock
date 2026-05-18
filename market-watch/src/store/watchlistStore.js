@@ -26,6 +26,8 @@ export const useWatchlistStore = create(
       alerts: {},         // { symbol: { target: null, stop: null } }
       triggeredAlerts: [],
       apiKey: '',
+      geminiKey: '',
+      aiProvider: 'gemini',
       forceRefresh: 0,
       pinnedSymbols: [],  // symbols pinned to top of watchlist
       symbolTags: {},     // { symbol: 'red'|'yellow'|'green'|null }
@@ -33,6 +35,8 @@ export const useWatchlistStore = create(
 
       setSelected: (symbol) => set({ selected: symbol }),
       setApiKey: (key) => set({ apiKey: key }),
+      setGeminiKey: (key) => set({ geminiKey: key }),
+      setAiProvider: (p) => set({ aiProvider: p }),
       doRefresh: () => set(s => ({ forceRefresh: s.forceRefresh + 1 })),
       togglePin: (symbol) => set(s => ({
         pinnedSymbols: s.pinnedSymbols.includes(symbol)
@@ -77,6 +81,6 @@ export const useWatchlistStore = create(
 
       clearTriggered: () => set({ triggeredAlerts: [] }),
     }),
-    { name: 'market-watch-store', partialize: s => ({ symbols: s.symbols, alerts: s.alerts, apiKey: s.apiKey, pinnedSymbols: s.pinnedSymbols, symbolTags: s.symbolTags, symbolNotes: s.symbolNotes }) }
+    { name: 'market-watch-store', partialize: s => ({ symbols: s.symbols, alerts: s.alerts, apiKey: s.apiKey, geminiKey: s.geminiKey, aiProvider: s.aiProvider, pinnedSymbols: s.pinnedSymbols, symbolTags: s.symbolTags, symbolNotes: s.symbolNotes }) }
   )
 )

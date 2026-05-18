@@ -69,8 +69,14 @@ function SessionClock() {
 export default function NavBar({ darkMode, onToggleDark }) {
   const apiKey = useWatchlistStore(s => s.apiKey)
   const setApiKey = useWatchlistStore(s => s.setApiKey)
+  const geminiKey = useWatchlistStore(s => s.geminiKey)
+  const setGeminiKey = useWatchlistStore(s => s.setGeminiKey)
+  const aiProvider = useWatchlistStore(s => s.aiProvider)
+  const setAiProvider = useWatchlistStore(s => s.setAiProvider)
   const [showKey, setShowKey] = useState(false)
-  const [draft, setDraft] = useState(apiKey)
+  const [draftClaude, setDraftClaude] = useState(apiKey)
+  const [draftGemini, setDraftGemini] = useState(geminiKey)
+  const [tab, setTab] = useState(aiProvider)
   const triggeredAlerts = useWatchlistStore(s => s.triggeredAlerts)
   const clearTriggered = useWatchlistStore(s => s.clearTriggered)
 
@@ -127,16 +133,56 @@ export default function NavBar({ darkMode, onToggleDark }) {
       {showKey && (
         <div className="key-modal" onClick={() => setShowKey(false)}>
           <div className="key-panel" onClick={e => e.stopPropagation()}>
-            <h3>設定 Claude API Key</h3>
+            <h3>AI 投資顧問設定</h3>
             <p className="key-hint">Key 僅存於本機 localStorage，不會上傳</p>
-            <input
-              type="password"
-              placeholder="sk-ant-..."
-              value={draft}
-              onChange={e => setDraft(e.target.value)}
-            />
+
+            <div className="key-provider-tabs">
+              <button
+                className={`key-tab ${tab === 'gemini' ? 'active' : ''}`}
+                onClick={() => setTab('gemini')}
+              >🆓 Gemini（免費）</button>
+              <button
+                className={`key-tab ${tab === 'claude' ? 'active' : ''}`}
+                onClick={() => setTab('claude')}
+              >Claude</button>
+            </div>
+
+            {tab === 'gemini' ? (
+              <>
+                <p className="key-hint" style={{ color: 'var(--dn)', fontWeight: 700 }}>
+                  Gemini 2.0 Flash 免費，每天 1500 次請求
+                </p>
+                <p className="key-hint">
+                  至 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>aistudio.google.com/apikey</a> 取得免費 API Key
+                </p>
+                <input
+                  type="password"
+                  placeholder="AIza..."
+                  value={draftGemini}
+                  onChange={e => setDraftGemini(e.target.value)}
+                />
+              </>
+            ) : (
+              <>
+                <p className="key-hint">
+                  至 <a href="https://console.anthropic.com/" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>console.anthropic.com</a> 取得 API Key
+                </p>
+                <input
+                  type="password"
+                  placeholder="sk-ant-..."
+                  value={draftClaude}
+                  onChange={e => setDraftClaude(e.target.value)}
+                />
+              </>
+            )}
+
             <div className="key-actions">
-              <button onClick={() => { setApiKey(draft); setShowKey(false) }}>儲存</button>
+              <button onClick={() => {
+                if (tab === 'gemini') setGeminiKey(draftGemini)
+                else setApiKey(draftClaude)
+                setAiProvider(tab)
+                setShowKey(false)
+              }}>儲存並使用</button>
               <button className="ghost" onClick={() => setShowKey(false)}>取消</button>
             </div>
           </div>
