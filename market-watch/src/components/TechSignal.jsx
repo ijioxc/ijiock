@@ -292,30 +292,49 @@ function WilliamsRCard({ value, sig }) {
   )
 }
 
-function BbSqueezeCard({ bbWidth, sig }) {
+const BB_PATTERN_META = {
+  bull:    { icon: '▲', cls: 'bull', color: 'var(--up)' },
+  bear:    { icon: '▼', cls: 'bear', color: 'var(--dn)' },
+  squeeze: { icon: '⊙', cls: 'neutral', color: 'var(--warn)' },
+  neutral: { icon: '═', cls: 'neutral', color: 'var(--accent)' },
+}
+
+function BbSqueezeCard({ bbWidth, sig, pattern }) {
   if (!bbWidth) return null
   const v = parseFloat(bbWidth) || 0
-  const pct = Math.min(v / 20, 1) * 100
-  const isSqueeze = v < 8
-  const isBull = /突破上軌/.test(sig)
-  const isBear = /跌破下軌/.test(sig)
-  const cls = isBull ? 'bull' : isBear ? 'bear' : isSqueeze ? 'neutral' : 'neutral'
-  const color = isBull ? 'var(--up)' : isBear ? 'var(--dn)' : isSqueeze ? 'var(--warn)' : 'var(--accent)'
+  const widthPct = Math.min(v / 25, 1) * 100
+  const meta = BB_PATTERN_META[pattern] ?? BB_PATTERN_META.neutral
+  // Position indicator: where in the band is price? encoded in sig
+  const isBreakout = /突破上軌|跌破下軌/.test(sig)
+  const isRiding   = /騎乘/.test(sig)
+  const isSqueeze  = /收縮|等待/.test(sig)
   return (
-    <div className={`sig-card ${cls}`}>
+    <div className={`sig-card ${meta.cls}`}>
       <div className="sig-top">
-        <div className={`sig-geo ${cls}`} style={{ fontSize: 13 }}>{isSqueeze ? '⊙' : isBull ? '▲' : isBear ? '▼' : '═'}</div>
+        <div className={`sig-geo ${meta.cls}`} style={{ fontSize: 13, fontWeight: 900 }}>{meta.icon}</div>
         <div className="sig-body">
-          <div className="tech-label">BB 帶寬 Squeeze</div>
-          <div className={`tech-sig ${isBull ? 'up' : isBear ? 'dn' : ''}`} style={{ color: isSqueeze ? 'var(--warn)' : undefined }}>{sig}</div>
+          <div className="tech-label">布林通道 BB</div>
+          <div className={`tech-sig`} style={{ color: meta.color, fontWeight: 800 }}>{sig}</div>
         </div>
       </div>
       <div className="sig-bars">
         <div className="bar-row">
-          <span className="bar-lbl">寬度</span>
-          <ProgressBar value={pct} color={color} />
-          <span className="bar-val mono" style={{ color }}>{bbWidth}%</span>
+          <span className="bar-lbl">帶寬</span>
+          <div className="prog-track" style={{ position: 'relative' }}>
+            <div className="prog-fill" style={{ width: `${widthPct}%`, background: meta.color }} />
+            {/* Reference markers */}
+            <div style={{ position: 'absolute', top: 0, left: '16%', width: 1, height: '100%', background: 'var(--warn)', opacity: .6 }} title="收縮線(4%)" />
+            <div style={{ position: 'absolute', top: 0, left: '32%', width: 1, height: '100%', background: 'var(--text-3)', opacity: .5 }} title="窄帶線(8%)" />
+          </div>
+          <span className="bar-val mono" style={{ color: meta.color }}>{v.toFixed(1)}%</span>
         </div>
+        {(isBreakout || isRiding || isSqueeze) && (
+          <div style={{ fontSize: 9, color: meta.color, fontWeight: 700, paddingLeft: 2, opacity: .85 }}>
+            {isBreakout && '⚡ 突破訊號，注意假突破風險'}
+            {isRiding   && '🏄 趨勢強勁，跟隨但設好停損'}
+            {isSqueeze  && '🔋 能量蓄積，突破方向決定多空'}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -555,7 +574,7 @@ function ElderRayCard({ bull, bear, sig }) {
 
 export default function TechSignal({ tech }) {
   if (!tech) return null
-  const { trend, kdSignal, macdSignal, maStatus, lastK, lastD, lastMacd, lastSignal, ma5, ma20, ma60, ma120, ma240, lastRsi, rsiSignal, candlePattern, atr, atrPct, volatility, lastMfi, mfiSignal, obvTrend, stochRsiK, stochRsiD, stochRsiSignal, williamsR, wrSignal, bbWidth, bbSqueezeSignal, psarBull, psarSignal, rsiDivergence, adx, plusDI, minusDI, adxSignal, roc10, roc21, rocSignal, weeklyRsi, monthlyRsi, weeklyMacd, cci20, cciSignal, cmf20, cmfSignal, bullPower, bearPower, elderSignal } = tech
+  const { trend, kdSignal, macdSignal, maStatus, lastK, lastD, lastMacd, lastSignal, ma5, ma20, ma60, ma120, ma240, lastRsi, rsiSignal, candlePattern, atr, atrPct, volatility, lastMfi, mfiSignal, obvTrend, stochRsiK, stochRsiD, stochRsiSignal, williamsR, wrSignal, bbWidth, bbSqueezeSignal, bbPattern, psarBull, psarSignal, rsiDivergence, adx, plusDI, minusDI, adxSignal, roc10, roc21, rocSignal, weeklyRsi, monthlyRsi, weeklyMacd, cci20, cciSignal, cmf20, cmfSignal, bullPower, bearPower, elderSignal } = tech
   const isBull = trend.includes('上升')
 
   return (
@@ -646,7 +665,7 @@ export default function TechSignal({ tech }) {
         <ObvCard obvTrend={obvTrend} />
         <StochRsiCard k={stochRsiK} d={stochRsiD} sig={stochRsiSignal} />
         <WilliamsRCard value={williamsR} sig={wrSignal} />
-        <BbSqueezeCard bbWidth={bbWidth} sig={bbSqueezeSignal} />
+        <BbSqueezeCard bbWidth={bbWidth} sig={bbSqueezeSignal} pattern={bbPattern} />
         <PsarCard bull={psarBull} sig={psarSignal} />
         <AdxCard adx={adx} plusDI={plusDI} minusDI={minusDI} sig={adxSignal} />
         <RocCard roc10={roc10} roc21={roc21} sig={rocSignal} />

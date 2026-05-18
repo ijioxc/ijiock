@@ -1,6 +1,19 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useWatchlistStore } from '../store/watchlistStore'
 
+function HoverTip({ children, tip }) {
+  const [show, setShow] = useState(false)
+  return (
+    <div style={{ position: 'relative' }}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      {children}
+      {show && <div className="wl-hover-tip">{tip}</div>}
+    </div>
+  )
+}
+
 const CATS = ['ALL', 'TW', 'US', 'IDX', 'FX']
 const CAT_LABELS = { TW: '台股', US: '美股', IDX: '指數', FX: '外匯' }
 
@@ -322,23 +335,33 @@ export default function WatchList() {
         fgScore = Math.max(0, Math.min(100, fgScore))
         const fgLabel = fgScore >= 75 ? '極度貪婪' : fgScore >= 60 ? '貪婪' : fgScore >= 40 ? '中性' : fgScore >= 25 ? '恐懼' : '極度恐懼'
         const fgColor = fgScore >= 60 ? 'var(--dn)' : fgScore <= 40 ? 'var(--up)' : 'var(--warn)'
+        const fgDesc = fgScore >= 75
+          ? '極度貪婪：市場過熱，追高風險高，留意回調'
+          : fgScore >= 60 ? '貪婪：多頭氛圍濃，但需注意過度樂觀'
+          : fgScore >= 40 ? '中性：多空均衡，方向不明朗，觀望為主'
+          : fgScore >= 25 ? '恐懼：市場悲觀，逢低布局機會浮現'
+          : '極度恐懼：恐慌拋售，可能是長線低點'
         return (
           <div className="mkt-breadth">
-            <div className="mkt-breadth-bar">
-              <div className="mkt-breadth-fill up-fill" style={{ width: `${pct}%` }} />
-            </div>
-            <div className="mkt-breadth-labels">
-              <span className="up">▲ {gainers}</span>
-              <span style={{ color: 'var(--text-3)', fontSize: 9 }}>市場情緒</span>
-              <span className="dn">▼ {losers}</span>
-            </div>
-            <div className="fg-row">
-              <div className="fg-track">
-                <div className="fg-fill" style={{ width: `${fgScore}%`, background: fgColor }} />
+            <HoverTip tip={`自選清單市場寬度\n上漲 ${gainers} 檔 / 下跌 ${losers} 檔\n上漲比例 ${pct}%\n\n比例 > 60% 偏多格局\n比例 < 40% 偏空格局`}>
+              <div className="mkt-breadth-bar">
+                <div className="mkt-breadth-fill up-fill" style={{ width: `${pct}%` }} />
               </div>
-              <span className="fg-label" style={{ color: fgColor }}>{fgLabel}</span>
-              <span className="fg-score mono" style={{ color: fgColor }}>{fgScore.toFixed(0)}</span>
-            </div>
+              <div className="mkt-breadth-labels">
+                <span className="up">▲ {gainers}</span>
+                <span style={{ color: 'var(--text-3)', fontSize: 9 }}>市場情緒</span>
+                <span className="dn">▼ {losers}</span>
+              </div>
+            </HoverTip>
+            <HoverTip tip={`貪婪恐懼指數：${fgScore.toFixed(0)} / 100\n\n${fgDesc}\n\n計算方式：\n• 上漲比例（60%權重）\n• 平均漲跌幅（40%權重）\n\n0-25 極度恐懼 25-40 恐懼\n40-60 中性 60-75 貪婪\n75-100 極度貪婪`}>
+              <div className="fg-row">
+                <div className="fg-track">
+                  <div className="fg-fill" style={{ width: `${fgScore}%`, background: fgColor }} />
+                </div>
+                <span className="fg-label" style={{ color: fgColor }}>{fgLabel}</span>
+                <span className="fg-score mono" style={{ color: fgColor }}>{fgScore.toFixed(0)}</span>
+              </div>
+            </HoverTip>
           </div>
         )
       })()}

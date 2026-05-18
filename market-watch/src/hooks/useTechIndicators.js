@@ -516,22 +516,55 @@ export function useTechIndicators(candles) {
       else elderSignal = '混沌（觀望）'
     }
 
-    // Bollinger Band Width (squeeze detection)
-    let bbWidth = null, bbSqueezeSignal = '─'
-    if (closes.length >= 20) {
-      const recentBB = (() => {
-        const slice = closes.slice(-20)
-        const mean = slice.reduce((a, b) => a + b, 0) / 20
-        const std = Math.sqrt(slice.reduce((a, b) => a + (b - mean) ** 2, 0) / 20)
-        return { upper: mean + 2 * std, lower: mean - 2 * std, mid: mean, std }
-      })()
-      bbWidth = ((recentBB.upper - recentBB.lower) / recentBB.mid) * 100
-      const lastClose = closes[closes.length - 1]
-      if (bbWidth < 4) bbSqueezeSignal = '極度收縮（等待突破）'
-      else if (bbWidth < 8) bbSqueezeSignal = '帶寬收窄（蓄勢中）'
-      else if (lastClose > recentBB.upper) bbSqueezeSignal = '突破上軌（超強勢）'
-      else if (lastClose < recentBB.lower) bbSqueezeSignal = '跌破下軌（超弱勢）'
-      else bbSqueezeSignal = '帶寬正常'
+    // Bollinger Band — detailed pattern recognition
+    let bbWidth = null, bbSqueezeSignal = '─', bbPattern = 'neutral'
+    if (closes.length >= 25) {
+      // Build last 10 bars of BB data
+      const bbHist = []
+      for (let i = closes.length - 10; i < closes.length; i++) {
+        const sl = closes.slice(Math.max(0, i - 19), i + 1)
+        if (sl.length < 20) continue
+        const m = sl.reduce((a, b) => a + b, 0) / 20
+        const sd = Math.sqrt(sl.reduce((a, b) => a + (b - m) ** 2, 0) / 20)
+        bbHist.push({ close: closes[i], upper: m + 2 * sd, lower: m - 2 * sd, mid: m, width: (4 * sd / m) * 100 })
+      }
+      if (bbHist.length >= 5) {
+        const last = bbHist[bbHist.length - 1]
+        const prev = bbHist.slice(-5)
+        bbWidth = last.width.toFixed(1)
+        const nearUpper = prev.filter(b => b.close >= b.upper * 0.995).length
+        const nearLower = prev.filter(b => b.close <= b.lower * 1.005).length
+        const wasSqueezing = bbHist[0].width < 8 && bbHist[Math.floor(bbHist.length / 2)].width < 8
+        const nowExpanded = last.width > (bbHist[bbHist.length - 3]?.width ?? last.width) * 1.15
+        const pctPos = last.upper > last.lower
+          ? (last.close - last.lower) / (last.upper - last.lower)
+          : 0.5
+
+        if (last.close > last.upper) {
+          bbSqueezeSignal = '突破上軌 ▶ 強勢多頭'; bbPattern = 'bull'
+        } else if (last.close < last.lower) {
+          bbSqueezeSignal = '跌破下軌 ▶ 強勢空頭'; bbPattern = 'bear'
+        } else if (nearUpper >= 3) {
+          bbSqueezeSignal = '上軌騎乘（持續多頭）'; bbPattern = 'bull'
+        } else if (nearLower >= 3) {
+          bbSqueezeSignal = '下軌騎乘（持續空頭）'; bbPattern = 'bear'
+        } else if (wasSqueezing && nowExpanded) {
+          bbSqueezeSignal = pctPos > 0.5 ? '收縮突破 ▶ 向上（做多訊號）' : '收縮突破 ▶ 向下（做空訊號）'
+          bbPattern = pctPos > 0.5 ? 'bull' : 'bear'
+        } else if (last.width < 4) {
+          bbSqueezeSignal = '極度收縮（等待突破方向）'; bbPattern = 'squeeze'
+        } else if (last.width < 8) {
+          bbSqueezeSignal = '帶寬收窄（蓄勢待發）'; bbPattern = 'squeeze'
+        } else if (pctPos > 0.85) {
+          bbSqueezeSignal = '接近上軌（謹慎追多）'; bbPattern = 'bull'
+        } else if (pctPos < 0.15) {
+          bbSqueezeSignal = '接近下軌（留意反彈）'; bbPattern = 'bear'
+        } else if (pctPos > 0.5) {
+          bbSqueezeSignal = '均線上方（偏多區間）'; bbPattern = 'bull'
+        } else {
+          bbSqueezeSignal = '均線下方（偏空區間）'; bbPattern = 'bear'
+        }
+      }
     }
 
     return {
@@ -562,8 +595,9 @@ export function useTechIndicators(candles) {
       stochRsiSignal,
       williamsR: williamsR?.toFixed(1) ?? null,
       wrSignal,
-      bbWidth: bbWidth?.toFixed(1) ?? null,
+      bbWidth: bbWidth ?? null,
       bbSqueezeSignal,
+      bbPattern,
       psarBull,
       psarSignal,
       lastSar: lastSar?.toFixed(2) ?? null,
