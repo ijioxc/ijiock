@@ -92,13 +92,33 @@ export default function WatchList() {
     })
   }, [quotes])
 
-  // Keyboard navigation: J/K navigate, / to focus search
+  // Build sorted/filtered list first so keyboard nav follows the same order
   const flatSymbols = cat === 'ALL' ? symbols : symbols.filter(s => s.category === cat)
+  const q = search.toLowerCase()
+  let filtered = flatSymbols.filter(s =>
+    !q || s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
+  )
+  if (sortBy === 'gainPct') {
+    filtered = [...filtered].sort((a, b) => (quotes[b.symbol]?.changePct ?? -999) - (quotes[a.symbol]?.changePct ?? -999))
+  } else if (sortBy === 'lossPct') {
+    filtered = [...filtered].sort((a, b) => (quotes[a.symbol]?.changePct ?? 999) - (quotes[b.symbol]?.changePct ?? 999))
+  } else {
+    filtered = [...filtered].sort((a, b) => {
+      const pa = pinnedSymbols.includes(a.symbol) ? 0 : 1
+      const pb = pinnedSymbols.includes(b.symbol) ? 0 : 1
+      return pa - pb
+    })
+  }
+
+  // Keyboard navigation uses the sorted filtered list so J/K matches what's on screen
+  const filteredRef = useRef(filtered)
+  filteredRef.current = filtered
   const navigate = useCallback((dir) => {
-    const idx = flatSymbols.findIndex(s => s.symbol === selected)
-    const next = flatSymbols[idx + dir]
+    const list = filteredRef.current
+    const idx = list.findIndex(s => s.symbol === selected)
+    const next = list[idx + dir]
     if (next) setSelected(next.symbol)
-  }, [flatSymbols, selected, setSelected])
+  }, [selected, setSelected])
 
   useEffect(() => {
     const handler = (e) => {
@@ -118,23 +138,6 @@ export default function WatchList() {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [navigate])
-
-  const q = search.toLowerCase()
-  let filtered = flatSymbols.filter(s =>
-    !q || s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
-  )
-  if (sortBy === 'gainPct') {
-    filtered = [...filtered].sort((a, b) => (quotes[b.symbol]?.changePct ?? -999) - (quotes[a.symbol]?.changePct ?? -999))
-  } else if (sortBy === 'lossPct') {
-    filtered = [...filtered].sort((a, b) => (quotes[a.symbol]?.changePct ?? 999) - (quotes[b.symbol]?.changePct ?? 999))
-  } else {
-    // pinned items float to top when no sort is applied
-    filtered = [...filtered].sort((a, b) => {
-      const pa = pinnedSymbols.includes(a.symbol) ? 0 : 1
-      const pb = pinnedSymbols.includes(b.symbol) ? 0 : 1
-      return pa - pb
-    })
-  }
   const groups = cat === 'ALL' && !q && sortBy === 'default'
     ? Object.entries(filtered.reduce((acc, s) => {
         const g = s.category
