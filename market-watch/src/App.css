@@ -238,7 +238,7 @@
 .center-col { flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; min-width: 0; }
 
 /* ── CHART PANEL ── */
-.chart-panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.chart-panel { flex-shrink: 0; display: flex; flex-direction: column; }
 .chart-header {
   display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 8px;
   border-bottom: 1px solid var(--border); flex-shrink: 0;
@@ -253,7 +253,7 @@
   background: transparent; color: var(--text-2); cursor: pointer; transition: all .12s;
 }
 .range-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--sh); }
-.chart-container { flex: 1; position: relative; min-height: 260px; }
+.chart-container { flex: 1; position: relative; overflow: hidden; }
 .chart-container.draw-mode { cursor: crosshair; }
 .bb-toggle.draw-active { background: rgba(245,158,11,.15); border-color: rgba(245,158,11,.6); color: rgba(245,158,11,.9); box-shadow: 0 0 8px rgba(245,158,11,.2); }
 .chart-overlay {
@@ -1317,7 +1317,7 @@
 .rsi-sub-svg { display: block; width: 100%; }
 
 /* ── CHART AREA WRAP (main chart + vol profile side by side) ── */
-.chart-area-wrap { display: flex; flex: 1; min-height: 0; }
+.chart-area-wrap { display: flex; height: clamp(260px, 38vh, 480px); flex-shrink: 0; }
 .chart-area-wrap .chart-container { flex: 1; min-width: 0; }
 
 /* ── VOLUME PROFILE ── */
