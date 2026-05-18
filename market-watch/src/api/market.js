@@ -1,10 +1,37 @@
 // Symbol type detection & mapping
 // Yahoo Finance format → Stooq / TWSE
 
-const STOOQ_BASE = '/api/stooq'
-const TWSE_BASE = '/api/twse'
-const TWSE_HIST = '/api/twse-hist'
-const MKTDATA_BASE = '/api/mktdata'
+// In production (GitHub Pages), use CORS proxy since there's no server-side proxy
+const IS_PROD = import.meta.env.PROD
+const CORS_PROXY = 'https://corsproxy.io/?'
+
+function px(url) {
+  return IS_PROD ? CORS_PROXY + encodeURIComponent(url) : url
+}
+
+const STOOQ_DIRECT = 'https://stooq.com'
+const TWSE_DIRECT  = 'https://openapi.twse.com.tw'
+const TWSE_HIST_DIRECT = 'https://www.twse.com.tw'
+const MKTDATA_DIRECT = 'https://api.marketdata.app'
+
+// Dev mode paths (Vite proxy)
+const STOOQ_DEV  = '/api/stooq'
+const TWSE_DEV   = '/api/twse'
+const TWSE_HIST_DEV = '/api/twse-hist'
+const MKTDATA_DEV = '/api/mktdata'
+
+function stooqUrl(path) {
+  return IS_PROD ? px(`${STOOQ_DIRECT}${path}`) : `${STOOQ_DEV}${path}`
+}
+function twseUrl(path) {
+  return IS_PROD ? px(`${TWSE_DIRECT}${path}`) : `${TWSE_DEV}${path}`
+}
+function twseHistUrl(path) {
+  return IS_PROD ? px(`${TWSE_HIST_DIRECT}${path}`) : `${TWSE_HIST_DEV}${path}`
+}
+function mktdataUrl(path) {
+  return IS_PROD ? px(`${MKTDATA_DIRECT}${path}`) : `${MKTDATA_DEV}${path}`
+}
 
 // Map Yahoo Finance index symbols → Stooq
 const INDEX_MAP = {
@@ -13,6 +40,8 @@ const INDEX_MAP = {
   '^DJI':  '^dji',
   '^N225': '^nk225',
   '^HSI':  '^hsi',
+  '^VIX':  '^vix',
+  '^TNX':  '^tnx',
 }
 
 // Map Yahoo Finance FX → Stooq
@@ -21,6 +50,9 @@ const FX_MAP = {
   'USDTWD=X': 'usdtwd',
   'USDJPY=X': 'usdjpy',
   'EURUSD=X': 'eurusd',
+  'GC=F':     'gc.f',
+  'CL=F':     'cl.f',
+  'DX-Y.NYB': 'dx.f',
 }
 
 function detectType(symbol) {
@@ -33,17 +65,16 @@ function detectType(symbol) {
 function toStooqSym(symbol) {
   if (INDEX_MAP[symbol]) return INDEX_MAP[symbol]
   if (FX_MAP[symbol]) return FX_MAP[symbol]
-  // US stock: AAPL → aapl.us
   return symbol.toLowerCase() + '.us'
 }
 
-// ── TWSE cache (shared across all TW quote calls) ──
+// ── TWSE cache ──
 let twseCache = { data: null, ts: 0 }
-const TWSE_TTL = 3 * 60 * 1000  // 3 min
+const TWSE_TTL = 3 * 60 * 1000
 
 async function fetchTwseAll() {
   if (twseCache.data && Date.now() - twseCache.ts < TWSE_TTL) return twseCache.data
-  const r = await fetch(`${TWSE_BASE}/v1/exchangeReport/STOCK_DAY_ALL`)
+  const r = await fetch(twseUrl('/v1/exchangeReport/STOCK_DAY_ALL'))
   if (!r.ok) throw new Error(`TWSE error ${r.status}`)
   const data = await r.json()
   twseCache = { data, ts: Date.now() }
@@ -52,8 +83,8 @@ async function fetchTwseAll() {
 
 // ── Stooq quote ──
 async function fetchStooqQuote(stooqSym) {
-  const url = `${STOOQ_BASE}/q/l/?s=${encodeURIComponent(stooqSym)}&f=sd2t2ohlcv&h&e=csv`
-  const r = await fetch(url)
+  const path = `/q/l/?s=${encodeURIComponent(stooqSym)}&f=sd2t2ohlcv&h&e=csv`
+  const r = await fetch(stooqUrl(path))
   if (!r.ok) throw new Error(`Stooq error ${r.status}`)
   const csv = await r.text()
   const lines = csv.trim().split('\n')
@@ -63,7 +94,7 @@ async function fetchStooqQuote(stooqSym) {
   return { date, open: +open, high: +high, low: +low, close: +close, volume: +volume || 0 }
 }
 
-// ── Stooq OHLC history ──
+// ── OHLC history cache ──
 const ohlcCache = new Map()
 const OHLC_TTL = 5 * 60 * 1000
 
@@ -83,20 +114,20 @@ export async function fetchOHLC(symbol, range = '3mo') {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const yyyymmdd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}01`
       try {
-        const r = await fetch(`${TWSE_HIST}/rwd/zh/afterTrading/STOCK_DAY?stockNo=${code}&date=${yyyymmdd}&response=json`)
+        const path = `/rwd/zh/afterTrading/STOCK_DAY?stockNo=${code}&date=${yyyymmdd}&response=json`
+        const r = await fetch(twseHistUrl(path))
         if (!r.ok) continue
         const json = await r.json()
         if (json.stat !== 'OK' || !Array.isArray(json.data)) continue
         for (const row of json.data) {
-          // row: ["115/05/04","44,458,732","99,944,198,300","2,200.00","2,285.00","2,195.00","2,275.00","+140.00","129,173",""]
           const time = mingouSlashToUnix(row[0])
           if (!time) continue
           rows.push({
             time,
-            open:  parseTwseNum(row[3]),
-            high:  parseTwseNum(row[4]),
-            low:   parseTwseNum(row[5]),
-            close: parseTwseNum(row[6]),
+            open:   parseTwseNum(row[3]),
+            high:   parseTwseNum(row[4]),
+            low:    parseTwseNum(row[5]),
+            close:  parseTwseNum(row[6]),
             volume: parseTwseNum(row[1]),
           })
         }
@@ -108,12 +139,11 @@ export async function fetchOHLC(symbol, range = '3mo') {
     return data
   }
 
-  // US stocks via marketdata.app (free, no key needed)
   if (type === 'us') {
     const from = rangeToFromDate(range)
     const to = todayStr()
-    const url = `${MKTDATA_BASE}/v1/stocks/candles/D/${encodeURIComponent(symbol)}/?from=${from}&to=${to}`
-    const r = await fetch(url)
+    const path = `/v1/stocks/candles/D/${encodeURIComponent(symbol)}/?from=${from}&to=${to}`
+    const r = await fetch(mktdataUrl(path))
     if (!r.ok) throw new Error(`marketdata.app error ${r.status}`)
     const json = await r.json()
     if (json.s !== 'ok' || !json.t?.length) throw new Error('無美股歷史資料')
@@ -125,10 +155,30 @@ export async function fetchOHLC(symbol, range = '3mo') {
     return data
   }
 
-  throw new Error('此標的暫不支援歷史圖表')
+  // index / fx: use Stooq CSV history
+  const stooqSym = toStooqSym(symbol)
+  const from = rangeToFromDate(range)
+  const to = todayStr()
+  const path = `/q/d/l/?s=${encodeURIComponent(stooqSym)}&d1=${from.replace(/-/g,'')}&d2=${to.replace(/-/g,'')}&i=d`
+  const r = await fetch(stooqUrl(path))
+  if (!r.ok) throw new Error(`Stooq history error ${r.status}`)
+  const csv = await r.text()
+  const lines = csv.trim().split('\n').slice(1)
+  const data = lines.map(line => {
+    const [date, open, high, low, close, volume] = line.split(',')
+    if (!date || !close || close === 'N/D') return null
+    const [y, m, d] = date.split('-').map(Number)
+    return {
+      time: Math.floor(new Date(y, m - 1, d).getTime() / 1000),
+      open: +open, high: +high, low: +low, close: +close, volume: +(volume || 0),
+    }
+  }).filter(Boolean).sort((a, b) => a.time - b.time)
+  if (!data.length) throw new Error('此標的暫無歷史圖表')
+  ohlcCache.set(cacheKey, { data, ts: Date.now() })
+  return data
 }
 
-// ── Main quote fetcher (used by useQuotes) ──
+// ── Main quote fetcher ──
 export async function fetchQuote(symbol) {
   const type = detectType(symbol)
 
@@ -141,35 +191,24 @@ export async function fetchQuote(symbol) {
     const change = parseTwseNum(row.Change)
     const prev = price - change
     return {
-      price,
-      change,
+      price, change,
       changePct: prev ? (change / prev) * 100 : 0,
       open:   parseTwseNum(row.OpeningPrice),
       high:   parseTwseNum(row.HighestPrice),
       low:    parseTwseNum(row.LowestPrice),
-      prev,
-      volume: parseTwseNum(row.TradeVolume),
-      currency: 'TWD',
-      ts: Date.now(),
+      prev, volume: parseTwseNum(row.TradeVolume),
+      currency: 'TWD', ts: Date.now(),
     }
   }
 
-  // Stooq (US stocks, indices, FX)
   const stooqSym = toStooqSym(symbol)
   const q = await fetchStooqQuote(stooqSym)
-
-  // prev = open (Stooq doesn't give previous close in quote endpoint)
   const change = q.close - q.open
   const changePct = q.open ? (change / q.open) * 100 : 0
   return {
-    price: q.close,
-    change,
-    changePct,
-    open:   q.open,
-    high:   q.high,
-    low:    q.low,
-    prev:   q.open,
-    volume: q.volume,
+    price: q.close, change, changePct,
+    open: q.open, high: q.high, low: q.low,
+    prev: q.open, volume: q.volume,
     currency: type === 'fx' ? '' : 'USD',
     ts: Date.now(),
   }
@@ -180,18 +219,7 @@ function parseTwseNum(s) {
   return parseFloat(String(s).replace(/,/g, '')) || 0
 }
 
-function mingouToUnix(dateStr) {
-  // "1150515" → year 115 of Minguo = 2026, month 05, day 15
-  if (!dateStr || dateStr === 'N/D') return null
-  const s = String(dateStr)
-  const y = parseInt(s.slice(0, -4)) + 1911
-  const m = parseInt(s.slice(-4, -2)) - 1
-  const d = parseInt(s.slice(-2))
-  return Math.floor(new Date(y, m, d).getTime() / 1000)
-}
-
 function mingouSlashToUnix(dateStr) {
-  // "115/05/04" → 2026-05-04
   if (!dateStr) return null
   const parts = dateStr.split('/')
   if (parts.length !== 3) return null
