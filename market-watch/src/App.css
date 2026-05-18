@@ -967,6 +967,12 @@
   padding: 10px 14px 8px; border-bottom: 1px solid var(--border); flex-shrink: 0;
 }
 .sc-title { font-size: 12px; font-weight: 800; }
+.sc-mkt-tabs { display: flex; gap: 2px; background: var(--surface-3); border-radius: var(--r-xs); padding: 2px; margin-bottom: 3px; width: fit-content; }
+.sc-mkt-tab {
+  padding: 3px 12px; border: none; border-radius: 6px; font-size: 11px; font-weight: 700;
+  background: transparent; color: var(--text-3); cursor: pointer; transition: all .12s;
+}
+.sc-mkt-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--sh); }
 .sc-update { font-size: 9px; color: var(--text-3); margin-top: 2px; }
 .sc-summary {
   display: flex; align-items: center; font-size: 10px; font-weight: 700;
