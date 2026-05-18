@@ -403,7 +403,7 @@
 .r-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
 /* ── ADVISOR ── */
-.advisor-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.advisor-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .adv-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 6px; flex-shrink: 0; }
 .adv-title { font-size: 12px; font-weight: 800; }
 .adv-model { font-size: 10px; color: var(--text-3); }
