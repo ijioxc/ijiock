@@ -1,0 +1,4387 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NKUST Racing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Firebase Realtime Database -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCaLAdn2l-VZJJGk_uVst03MaNEtCJLn0Q",
+            authDomain: "nkust-racing.firebaseapp.com",
+            databaseURL: "https://nkust-racing-default-rtdb.firebaseio.com/",
+            projectId: "nkust-racing",
+            storageBucket: "nkust-racing.firebasestorage.app",
+            messagingSenderId: "438278825258",
+            appId: "1:438278825258:web:b90e07234f150a3c39aa53"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window._fbDb = db;
+        window._fbRef = ref;
+        window._fbSet = set;
+        window._fbOnValue = onValue;
+
+        // 通知主 script Firebase 已就緒
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+    <style>
+        :root {
+            --primary-orange: #ED6C00;
+            --secondary-yellow: #F6AB00;
+            --accent-blue: #006DAD;
+            
+            --color-chassis: #FF6B6B;
+            --color-engine: #4ECDC4;
+            --color-suspension: #45B7D1;
+            --color-brake: #FFA07A;
+            --color-electrical: #98D8C8;
+            --color-aero: #A8E6CF;
+            --color-other: #95A5A6;
+            
+            --bg: #ffffff;
+            --bg-secondary: #fafafa;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --border: #e0e0e0;
+            --shadow: rgba(0, 0, 0, 0.06);
+            --orange-light: rgba(237, 108, 0, 0.1);
+            --yellow-light: rgba(246, 171, 0, 0.1);
+            --blue-light: rgba(0, 109, 173, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg: #1a1a1a;
+            --bg-secondary: #2a2a2a;
+            --text-primary: #ececec;
+            --text-secondary: #999999;
+            --border: #3a3a3a;
+            --shadow: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary-orange);
+        }
+
+        .header-left h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: var(--text-primary);
+        }
+
+        .header-right {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .header-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .header-pill:hover {
+            background: var(--orange-light);
+            border-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .header-pill-value {
+            color: var(--primary-orange);
+            font-weight: 700;
+        }
+
+        .header-pill.search-active {
+            border-color: var(--primary-orange);
+            background: var(--orange-light);
+        }
+
+        .search-input-pill {
+            width: 0;
+            max-width: 0;
+            opacity: 0;
+            padding: 0;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            outline: none;
+            pointer-events: none;
+        }
+
+        .search-active .search-input-pill {
+            width: 140px;
+            max-width: 140px;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .top-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: var(--orange-light);
+            border-color: var(--primary-orange);
+        }
+
+        .search-box {
+            flex: 1;
+            max-width: 300px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 14px 8px 34px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-orange);
+        }
+
+        .search-box::before {
+            content: '🔍';
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 13px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+        }
+        .filter-buttons::-webkit-scrollbar { display: none; }
+
+        .filter-btn {
+            padding: 6px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .filter-btn:hover {
+            background: var(--yellow-light);
+            border-color: var(--secondary-yellow);
+        }
+
+        .filter-btn.active {
+            background: var(--primary-orange);
+            border-color: var(--primary-orange);
+            color: white;
+        }
+
+        /* Show-more button in category sections */
+        .show-more-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 10px;
+            margin-top: 12px;
+            background: var(--bg-secondary);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .show-more-btn:hover {
+            background: var(--orange-light);
+            border-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .category-section {
+            margin-bottom: 40px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .category-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+        }
+
+        .add-category-btn {
+            background: transparent;
+            border: none;
+            color: var(--primary-orange);
+            font-size: 24px;
+            font-weight: 300;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+        .add-category-btn:hover {
+            transform: scale(1.15);
+            color: var(--secondary-yellow);
+        }
+
+        .category-count {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-left: auto;
+            font-weight: 600;
+        }
+
+        .resources-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 1400px) {
+            .resources-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .resources-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            header {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .header-right {
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .header-stat {
+                font-size: 12px;
+            }
+            .header-left h1 {
+                font-size: 20px;
+            }
+            .container {
+                padding: 12px;
+            }
+            .category-title {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .resources-grid {
+                grid-template-columns: 1fr;
+            }
+            .header-right {
+                gap: 6px;
+            }
+            .search-input-header.active {
+                width: 140px;
+            }
+            /* Header pill: icon-only on mobile */
+            .pill-label {
+                display: none;
+            }
+            .header-pill {
+                padding: 6px 10px;
+                gap: 3px;
+            }
+            /* Gantt chart inner content: min-width so container scrolls */
+            .timeline-scale,
+            .timeline-tracks {
+                min-width: 560px;
+            }
+            /* 7-col worklog cards: horizontal scroll */
+            .worklog-columns {
+                grid-template-columns: repeat(7, minmax(150px, 150px));
+            }
+        }
+
+        /* Person Card - Horizontal compact layout */
+        .person-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 11px 13px;
+            transition: all 0.22s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .person-card:hover {
+            box-shadow: 0 4px 14px var(--shadow);
+            border-color: var(--primary-orange);
+            transform: translateY(-2px);
+        }
+
+        .person-card-content {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 11px;
+        }
+
+        .person-avatar-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .person-avatar-large {
+            width: 46px;
+            height: 46px;
+            background: var(--orange-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            overflow: hidden;
+        }
+
+        .person-avatar-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .person-position-badge {
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-align: center;
+            max-width: 48px;
+            line-height: 1.2;
+        }
+
+        .person-info {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-top: 2px;
+        }
+
+        .person-name {
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.3;
+            letter-spacing: 1.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .person-card:hover .person-name {
+            color: var(--primary-orange);
+        }
+
+        .person-work-types {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+        }
+
+        .work-type-tag {
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .person-card-hint {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .person-card-actions {
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .person-card:hover .person-card-actions {
+            opacity: 1;
+        }
+
+        /* Plan Card - Wide Rectangle with Image */
+        .plan-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: move;
+            position: relative;
+        }
+
+        .plan-card:hover {
+            box-shadow: 0 6px 24px var(--shadow);
+            transform: translateY(-4px);
+            border-color: var(--primary-orange);
+        }
+
+        .plan-card.dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+        }
+
+        .plan-card-image {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 48px;
+            overflow: hidden;
+        }
+
+        .plan-card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top;
+        }
+
+        /* og:image from URL — show completely at natural ratio */
+        .plan-og-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: var(--bg-secondary);
+        }
+
+        .plan-card-content {
+            padding: 16px;
+        }
+
+        .plan-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .plan-card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .plan-card-tag {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+
+        .plan-card-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .plan-card-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .plan-card-actions {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+
+        .plan-card:hover .plan-card-actions {
+            opacity: 1;
+        }
+
+        .plan-card-actions .icon-btn {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            color: white;
+        }
+
+        .plan-card-actions .icon-btn:hover {
+            background: var(--primary-orange);
+        }
+
+        /* Plan Detail Modal */
+        .plan-detail-modal {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 0;
+            max-width: 960px;
+        }
+
+        .plan-detail-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+            background: var(--bg-secondary);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .plan-detail-content {
+            padding: 30px;
+        }
+
+        .plan-detail-header {
+            margin-bottom: 20px;
+        }
+
+        .plan-detail-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .plan-detail-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .plan-detail-body {
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            margin-bottom: 20px;
+        }
+
+        .plan-detail-actions {
+            display: flex;
+            gap: 12px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            justify-content: flex-end;
+        }
+
+        /* Person Detail Modal - Horizontal Layout */
+        .person-detail-modal {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 30px;
+        }
+
+        .person-detail-content {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .person-detail-avatar-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .person-detail-position {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--primary-orange);
+            background: rgba(255,107,0,0.12);
+            padding: 3px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        /* 工作日誌 7欄卡片 */
+        .worklog-columns {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(110px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        .worklog-col { min-width: 0; }
+        .worklog-col-header {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            padding-bottom: 6px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .worklog-col-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--primary-orange);
+            border-radius: 8px;
+            padding: 8px 7px;
+            margin-bottom: 7px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: border-color 0.18s, box-shadow 0.18s;
+        }
+        .worklog-col-card:hover { border-color: var(--primary-orange); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .wc-pct {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--primary-orange);
+            min-width: 34px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .wc-mid {
+            flex: 1;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.35;
+            overflow: hidden;
+            max-height: 4.1em;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            min-width: 0;
+        }
+        .wc-dates {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-align: right;
+            line-height: 1.9;
+            flex-shrink: 0;
+        }
+        .worklog-col-empty {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 12px 0;
+        }
+        /* Part column card: vertical layout */
+        .part-col-card {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        .part-col-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .part-col-price {
+            font-size: 10px;
+            color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-top: 2px;
+        }
+
+        /* 人員分頁展開式圖卡 */
+        .person-full-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 12px;
+        }
+        .person-full-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            position: relative;
+        }
+        .person-full-card-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .person-full-card:hover .person-full-card-actions { opacity: 1; }
+        .person-full-card-content {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+        .person-full-avatar-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .person-full-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+            overflow: hidden;
+        }
+        .person-full-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .person-full-info { flex: 1; min-width: 0; }
+        .person-full-name {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        .person-full-contact {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 3px;
+        }
+        .person-full-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .person-detail-avatar {
+            width: 120px;
+            height: 120px;
+            background: #2a2a2a;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            overflow: hidden;
+        }
+
+        .person-detail-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .person-detail-info {
+            flex: 1;
+        }
+
+        .person-detail-name {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            line-height: 1.2;
+        }
+
+        .person-detail-contact {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 6px 0;
+        }
+
+        .person-detail-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .person-detail-tag {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .person-detail-extra {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .person-detail-field {
+            margin-bottom: 12px;
+        }
+
+        .person-detail-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .person-detail-value {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .person-detail-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        .person-modal-top-actions {
+            display: none;
+        }
+        .person-modal-bottom-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .person-modal-bottom-actions .icon-btn {
+            width: auto;
+            padding: 4px 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .resource-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .resource-card:hover {
+            box-shadow: 0 4px 16px var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .resource-card.pinned {
+            border-left: 3px solid var(--secondary-yellow);
+            background: var(--yellow-light);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            gap: 8px;
+        }
+
+        .resource-name {
+            font-size: 15px;
+            font-weight: 700;
+            flex: 1;
+            line-height: 1.3;
+            color: var(--text-primary);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+            opacity: 0;
+            transition: opacity 0.18s;
+        }
+
+        .resource-card:hover .card-actions { opacity: 1; }
+
+        .icon-btn {
+            width: 24px;
+            height: 24px;
+            background: var(--bg-secondary);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            color: var(--text-primary);
+        }
+
+        .icon-btn:hover {
+            background: var(--orange-light);
+            color: var(--primary-orange);
+        }
+
+        .priority-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .priority-high {
+            background: var(--orange-light);
+            color: var(--primary-orange);
+        }
+
+        .priority-medium {
+            background: var(--yellow-light);
+            color: #c48a00;
+        }
+
+        .priority-low {
+            background: var(--blue-light);
+            color: var(--accent-blue);
+        }
+
+        .resource-description {
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            flex: 1;
+        }
+
+        .resource-url {
+            color: var(--accent-blue);
+            font-size: 12px;
+            text-decoration: none;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+            margin-top: auto;
+        }
+
+        .resource-url:hover {
+            text-decoration: underline;
+        }
+
+        .resource-preview-wrap {
+            width: 100%;
+            margin: 0 0 12px 0;
+            overflow: hidden;
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            flex-shrink: 0;
+        }
+
+        .resource-preview-img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .resource-card:hover .resource-preview-img {
+            transform: scale(1.03);
+        }
+
+        /* Work Type Pills - multi-select, responsive */
+        .work-type-pills {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+            gap: 6px;
+        }
+
+        .work-type-pill {
+            padding: 7px 8px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: var(--bg);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.18s ease;
+            user-select: none;
+        }
+
+        .work-type-pill:hover {
+            border-color: var(--primary-orange);
+            color: var(--primary-orange);
+            background: var(--orange-light);
+        }
+
+        .work-type-pill.active {
+            background: var(--primary-orange);
+            border-color: var(--primary-orange);
+            color: white;
+        }
+
+        /* Pill Selector - single select */
+        .pill-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+            gap: 6px;
+        }
+
+        .pill-option {
+            padding: 7px 8px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: var(--bg);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.18s ease;
+            user-select: none;
+        }
+
+        .pill-option:hover {
+            border-color: var(--primary-orange);
+            color: var(--primary-orange);
+            background: var(--orange-light);
+        }
+
+        .pill-option.active {
+            background: var(--primary-orange);
+            border-color: var(--primary-orange);
+            color: white;
+        }
+
+        /* Overview split layout */
+        .overview-split-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+            gap: 24px;
+            margin-bottom: 32px;
+            align-items: start;
+        }
+
+        .overview-split-row .category-section {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 1000px) {
+            .overview-split-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Form two-column grid */
+        .form-two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0 16px;
+        }
+
+        @media (max-width: 600px) {
+            .form-two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Timeline */
+        .timeline-container {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .timeline-controls {
+            display: flex;
+            gap: 0;
+            margin-bottom: 12px;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .timeline-range-btn {
+            padding: 4px 10px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .timeline-range-btn:hover {
+            color: var(--text-primary);
+            background: transparent;
+            border-color: transparent;
+        }
+
+        .timeline-range-btn.active {
+            color: var(--primary-orange);
+            border-bottom-color: var(--primary-orange);
+            font-weight: 600;
+            background: transparent;
+        }
+
+        .timeline-scale {
+            position: relative;
+            height: 40px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .timeline-tick {
+            position: absolute;
+            bottom: 0;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        .timeline-tick-line {
+            width: 1px;
+            height: 8px;
+            background: var(--border);
+            margin: 0 auto 4px;
+        }
+
+        .timeline-tick-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .timeline-today {
+            position: absolute;
+            top: 0;
+            bottom: -250px;
+            width: 2px;
+            background: var(--primary-orange);
+            border-left: 2px dashed var(--primary-orange);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .timeline-today-label {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary-orange);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .timeline-tracks {
+            position: relative;
+            min-height: 200px;
+        }
+
+        .timeline-track {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 8px;
+            min-height: 60px;
+            position: relative;
+        }
+
+        .track-label {
+            width: 80px;
+            flex-shrink: 0;
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--text-primary);
+            padding-top: 8px;
+        }
+
+        .track-timeline {
+            flex: 1;
+            position: relative;
+            min-height: 60px;
+        }
+
+        .timeline-item {
+            position: absolute;
+            height: 50px;
+            border-radius: 6px;
+            padding: 8px 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 2px 8px var(--shadow);
+            overflow: visible;
+        }
+
+        .timeline-item:hover {
+            z-index: 20;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px var(--shadow);
+        }
+
+        .timeline-item-title {
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: visible;
+            color: white;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        .timeline-item-progress {
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.9);
+            margin-top: 2px;
+        }
+
+        .worklog-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary-orange);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .worklog-card:hover {
+            box-shadow: 0 4px 16px var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .worklog-card.completed {
+            border-left-color: var(--accent-blue);
+        }
+
+        .worklog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .worklog-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .worklog-progress {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--primary-orange);
+        }
+
+        .worklog-card.completed .worklog-progress {
+            color: var(--accent-blue);
+        }
+
+        .worklog-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .worklog-description {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .worklog-meta {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .view-toggle-btn {
+            padding: 6px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .view-toggle-btn:hover {
+            background: var(--orange-light);
+            border-color: var(--primary-orange);
+        }
+
+        .view-toggle-btn.active {
+            background: var(--primary-orange);
+            border-color: var(--primary-orange);
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 40px 20px;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 960px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        #worklogDetailModal.person-modal .modal-content {
+            max-width: 460px;
+            padding: 20px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--primary-orange);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-secondary);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--text-primary);
+        }
+
+        .close-btn:hover {
+            background: var(--orange-light);
+        }
+
+        /* Worklog Detail Card */
+        .worklog-detail-card {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .worklog-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 20px;
+        }
+
+        .worklog-detail-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .worklog-detail-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
+        .worklog-detail-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .worklog-detail-field {
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .worklog-detail-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .worklog-detail-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .worklog-detail-notes {
+            background: var(--bg-secondary);
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+
+        .worklog-detail-notes-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .worklog-detail-notes-content {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-orange);
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-help {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .upload-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .upload-option-btn {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .upload-option-btn:hover {
+            background: var(--orange-light);
+            border-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .date-input-wrapper {
+            position: relative;
+        }
+
+        .date-weekday {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11px;
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: var(--text-primary);
+            color: var(--bg);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 2000;
+            display: none;
+        }
+
+        .notification.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .avatar-upload {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 12px;
+            background: var(--orange-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-size: 40px;
+        }
+
+        .avatar-preview svg {
+            width: 60px;
+            height: 60px;
+            fill: var(--primary-orange);
+        }
+
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .upload-btn {
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .upload-btn:hover {
+            background: var(--orange-light);
+            border-color: var(--primary-orange);
+        }
+
+        .emoji-picker {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        .emoji-option {
+            font-size: 24px;
+            padding: 8px;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .emoji-option:hover {
+            background: var(--bg-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="notification" id="notification"></div>
+
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1>NKUST Racing</h1>
+            </div>
+            <div class="header-right">
+                <!-- 人數 -->
+                <div class="header-pill">
+                    👥<span class="pill-label"> 人員 </span><span class="header-pill-value" id="peopleCount">0</span>
+                </div>
+                <!-- 最近更新 -->
+                <div class="header-pill">
+                    🗓️<span class="pill-label"> 更新 </span><span class="header-pill-value" id="lastLogDate">-</span>
+                </div>
+                <!-- 搜尋 -->
+                <button class="header-pill" id="searchToggle" onclick="toggleSearch()">
+                    🔍 <input type="text" id="searchInput" class="search-input-pill" placeholder="搜尋..." oninput="handleSearch(event)">
+                </button>
+                <!-- 夜間模式 -->
+                <button class="header-pill" onclick="toggleTheme()" id="themeBtn">
+                    🌙<span class="pill-label"> 夜間</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="filter-buttons">
+            <button class="filter-btn active" onclick="filterByCategory('all', this)">總覽</button>
+            <button class="filter-btn" onclick="filterByCategory('人員管理', this)">人員</button>
+            <button class="filter-btn" onclick="filterByCategory('工作日誌', this)">日誌</button>
+            <button class="filter-btn" onclick="filterByCategory('計畫', this)">計畫</button>
+            <button class="filter-btn" onclick="filterByCategory('賽事資訊', this)">賽事</button>
+            <button class="filter-btn" onclick="filterByCategory('工程工具', this)">工具</button>
+            <button class="filter-btn" onclick="filterByCategory('零件供應商', this)">零件商</button>
+            <button class="filter-btn" onclick="filterByCategory('學習資源', this)">資源</button>
+        </div>
+
+        <div id="resourcesContainer"></div>
+    </div>
+
+    <!-- Worklog Detail Modal -->
+    <div class="modal" id="worklogDetailModal" onclick="if(event.target===this)closeWorklogDetail()">
+        <div class="modal-content">
+            <div class="modal-header" style="justify-content:flex-end">
+                <button class="close-btn" onclick="closeWorklogDetail()">×</button>
+            </div>
+            <div id="worklogDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="editModal" onclick="if(event.target===this)closeModal()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">新增資源</h2>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            <form id="resourceForm" onsubmit="saveResource(event)">
+                <!-- Person Form -->
+                <div id="personFormFields" class="hidden">
+                    <div class="avatar-upload">
+                        <div class="avatar-preview" id="avatarPreview">👤</div>
+                        <div class="emoji-picker" id="emojiPicker" style="display:none;"></div>
+                        <button type="button" class="upload-btn" onclick="toggleEmojiPicker()">選擇Emoji</button>
+                        <input type="file" id="avatarInput" accept="image/*" style="display: none;" onchange="previewAvatar(event)">
+                        <button type="button" class="upload-btn" onclick="document.getElementById('avatarInput').click()" style="margin-left: 8px;">上傳照片</button>
+                    </div>
+                    
+                    <div class="form-two-col">
+                        <div class="form-group">
+                            <label>姓名 *</label>
+                            <input type="text" id="formPersonName">
+                        </div>
+                        <div class="form-group">
+                            <label>入隊日期</label>
+                            <div class="date-input-wrapper">
+                                <input type="date" id="formJoinDate" onclick="this.showPicker&&this.showPicker()" onchange="updateWeekday('formJoinDate','joinWeekday')">
+                                <span class="date-weekday" id="joinWeekday"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>職位</label>
+                        <div class="pill-selector" id="formPosition-pills">
+                            <div class="pill-option" data-value="隊長" onclick="togglePillOption(this,'formPosition-pills','formPosition')">隊長</div>
+                            <div class="pill-option" data-value="副隊長" onclick="togglePillOption(this,'formPosition-pills','formPosition')">副隊長</div>
+                            <div class="pill-option" data-value="組長" onclick="togglePillOption(this,'formPosition-pills','formPosition')">組長</div>
+                            <div class="pill-option" data-value="成員" onclick="togglePillOption(this,'formPosition-pills','formPosition')">成員</div>
+                            <div class="pill-option" data-value="教授" onclick="togglePillOption(this,'formPosition-pills','formPosition')">教授</div>
+                            <div class="pill-option" data-value="助教" onclick="togglePillOption(this,'formPosition-pills','formPosition')">助教</div>
+                            <div class="pill-option" data-value="顧問" onclick="togglePillOption(this,'formPosition-pills','formPosition')">顧問</div>
+                        </div>
+                        <input type="hidden" id="formPosition" value="">
+                    </div>
+
+                    <div class="form-group">
+                        <label>工作類別（可多選）</label>
+                        <div class="work-type-pills" id="workTypePills">
+                            <div class="work-type-pill" data-value="車體" onclick="toggleWorkTypePill(this)">車體</div>
+                            <div class="work-type-pill" data-value="引擎" onclick="toggleWorkTypePill(this)">引擎</div>
+                            <div class="work-type-pill" data-value="懸吊" onclick="toggleWorkTypePill(this)">懸吊</div>
+                            <div class="work-type-pill" data-value="煞車" onclick="toggleWorkTypePill(this)">煞車</div>
+                            <div class="work-type-pill" data-value="電裝" onclick="toggleWorkTypePill(this)">電裝</div>
+                            <div class="work-type-pill" data-value="空力" onclick="toggleWorkTypePill(this)">空力</div>
+                            <div class="work-type-pill" data-value="教授" onclick="toggleWorkTypePill(this)">教授</div>
+                        </div>
+                        <div style="display:none">
+                            <input type="checkbox" class="work-type-checkbox" value="車體">
+                            <input type="checkbox" class="work-type-checkbox" value="引擎">
+                            <input type="checkbox" class="work-type-checkbox" value="懸吊">
+                            <input type="checkbox" class="work-type-checkbox" value="煞車">
+                            <input type="checkbox" class="work-type-checkbox" value="電裝">
+                            <input type="checkbox" class="work-type-checkbox" value="空力">
+                            <input type="checkbox" class="work-type-checkbox" value="教授">
+                        </div>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>科系</label>
+                        <div class="pill-selector" id="formDepartment-pills">
+                            <div class="pill-option" data-value="機械工程系" onclick="selectDepartment(this)">機械</div>
+                            <div class="pill-option" data-value="車輛工程系" onclick="selectDepartment(this)">車輛</div>
+                            <div class="pill-option" data-value="模具工程系" onclick="selectDepartment(this)">模具</div>
+                            <div class="pill-option" data-value="電機工程系" onclick="selectDepartment(this)">電機</div>
+                            <div class="pill-option" data-value="環境安全系" onclick="selectDepartment(this)">環安</div>
+                            <div class="pill-option" data-value="造船系" onclick="selectDepartment(this)">造船</div>
+                            <div class="pill-option" data-value="其他" onclick="selectDepartment(this)">其他</div>
+                        </div>
+                        <input type="hidden" id="formDepartment" value="">
+                        <input type="text" id="formDepartmentOther" placeholder="請輸入科系名稱" style="display:none;margin-top:8px;">
+                    </div>
+
+                    <div class="form-group">
+                        <label>年級</label>
+                        <div class="pill-selector" id="formGrade-pills">
+                            <div class="pill-option" data-value="大一" onclick="togglePillOption(this,'formGrade-pills','formGrade')">大一</div>
+                            <div class="pill-option" data-value="大二" onclick="togglePillOption(this,'formGrade-pills','formGrade')">大二</div>
+                            <div class="pill-option" data-value="大三" onclick="togglePillOption(this,'formGrade-pills','formGrade')">大三</div>
+                            <div class="pill-option" data-value="大四" onclick="togglePillOption(this,'formGrade-pills','formGrade')">大四</div>
+                            <div class="pill-option" data-value="教職" onclick="togglePillOption(this,'formGrade-pills','formGrade')">教職</div>
+                        </div>
+                        <input type="hidden" id="formGrade" value="">
+                    </div>
+
+                    <div class="form-two-col">
+                        <div class="form-group">
+                            <label>Gmail</label>
+                            <input type="email" id="formEmail" placeholder="example@gmail.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="formPhone" placeholder="0912345678">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>興趣技能</label>
+                        <textarea id="formSkills" rows="3" placeholder="例如：車輛動力學、CFD模擬、3D建模..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>其他資訊</label>
+                        <textarea id="formOtherInfo" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <!-- Worklog Form - Simplified -->
+                <div id="worklogFormFields" class="hidden">
+                    <div class="form-group">
+                        <label>工作類別 *</label>
+                        <div class="pill-selector" id="formWorkType-pills">
+                            <div class="pill-option" data-value="車體" onclick="togglePillOption(this,'formWorkType-pills','formWorkType')">車體</div>
+                            <div class="pill-option" data-value="引擎" onclick="togglePillOption(this,'formWorkType-pills','formWorkType')">引擎</div>
+                            <div class="pill-option" data-value="懸吊" onclick="togglePillOption(this,'formWorkType-pills','formWorkType')">懸吊</div>
+                            <div class="pill-option" data-value="煞車" onclick="togglePillOption(this,'formWorkType-pills','formWorkType')">煞車</div>
+                            <div class="pill-option" data-value="電裝" onclick="togglePillOption(this,'formWorkType-pills','formWorkType')">電裝</div>
+                            <div class="pill-option" data-value="空力" onclick="togglePillOption(this,'formWorkType-pills','formWorkType')">空力</div>
+                            <div class="pill-option" data-value="其他" onclick="togglePillOption(this,'formWorkType-pills','formWorkType')">其他</div>
+                        </div>
+                        <input type="hidden" id="formWorkType" value="">
+                    </div>
+
+                    <div class="form-two-col">
+                        <div class="form-group">
+                            <label>標題 *</label>
+                            <input type="text" id="formWorklogTitle" placeholder="例如：引擎採購">
+                        </div>
+                        <div class="form-group">
+                            <label>完成度 (%)</label>
+                            <input type="number" id="formProgress" min="0" max="100" value="0">
+                        </div>
+                    </div>
+
+                    <div class="form-two-col">
+                        <div class="form-group">
+                            <label>開始日期 *</label>
+                            <div class="date-input-wrapper">
+                                <input type="date" id="formStartDate" onclick="this.showPicker&&this.showPicker()" onchange="updateWeekday('formStartDate','startWeekday')">
+                                <span class="date-weekday" id="startWeekday"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>預計完成日期</label>
+                            <div class="date-input-wrapper">
+                                <input type="date" id="formEndDate" onclick="this.showPicker&&this.showPicker()" onchange="updateWeekday('formEndDate','endWeekday')">
+                                <span class="date-weekday" id="endWeekday"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>備註/想法/規劃</label>
+                        <textarea id="formWorklogNotes" rows="5" placeholder="記錄工作內容、時間規劃想法、完成度高低的原因、給未來自己的指引..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Plan Form -->
+                <div id="planFormFields" class="hidden">
+                    <div class="form-group">
+                        <label>內容重點 *</label>
+                        <input type="text" id="formPlanTitle" placeholder="例如：車架設計討論">
+                    </div>
+
+                    <div class="form-group">
+                        <label>資源上傳</label>
+                        <div class="upload-buttons">
+                            <button type="button" class="upload-option-btn" onclick="document.getElementById('formPlanImage').click()">
+                                📷 圖片上傳
+                            </button>
+                            <button type="button" class="upload-option-btn" onclick="togglePlanUrlInput()">
+                                🔗 網頁上傳
+                            </button>
+                        </div>
+                        
+                        <input type="file" id="formPlanImage" accept="image/*" style="display: none;" onchange="previewPlanImage(event)">
+                        
+                        <div id="planUrlInput" style="display: none; margin-top: 10px;">
+                            <input type="url" id="formPlanUrl" placeholder="https://example.com" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-primary);">
+                        </div>
+                        
+                        <div id="planImagePreview" style="margin-top: 10px; display: none;">
+                            <img id="planImagePreviewImg" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px;">
+                        </div>
+                        <div class="form-help">支援圖片 (JPG/PNG) 或網頁連結。未來可透過 AI 轉換手寫筆記。</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>完整內容</label>
+                        <textarea id="formPlanContent" rows="8" placeholder="詳細討論內容、想法、決議事項..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>標籤</label>
+                        <div class="pill-selector" id="formPlanTag-pills">
+                            <div class="pill-option active" data-value="討論中" onclick="togglePillOption(this,'formPlanTag-pills','formPlanTag')">📝 討論中</div>
+                            <div class="pill-option" data-value="進行中" onclick="togglePillOption(this,'formPlanTag-pills','formPlanTag')">🚀 進行中</div>
+                            <div class="pill-option" data-value="已完成" onclick="togglePillOption(this,'formPlanTag-pills','formPlanTag')">✅ 已完成</div>
+                            <div class="pill-option" data-value="擱置" onclick="togglePillOption(this,'formPlanTag-pills','formPlanTag')">⏸️ 擱置</div>
+                        </div>
+                        <input type="hidden" id="formPlanTag" value="討論中">
+                    </div>
+                </div>
+
+                <!-- Event Form (賽事資訊) -->
+                <div id="eventFormFields" class="hidden">
+                    <div class="form-group">
+                        <label>賽事名稱 *</label>
+                        <input type="text" id="formEventTitle" placeholder="例如：2026 FSAE 靜態審查">
+                    </div>
+
+                    <div class="form-group">
+                        <label>圖片 / 連結</label>
+                        <div class="upload-buttons">
+                            <button type="button" class="upload-option-btn" onclick="document.getElementById('formEventImage').click()">📷 圖片上傳</button>
+                            <button type="button" class="upload-option-btn" onclick="toggleEventUrlInput()">🔗 網頁連結</button>
+                        </div>
+                        <input type="file" id="formEventImage" accept="image/*" style="display:none;" onchange="previewEventImage(event)">
+                        <div id="eventUrlInput" style="display:none;margin-top:10px;">
+                            <input type="url" id="formEventUrl" placeholder="https://example.com" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text-primary);">
+                        </div>
+                        <div id="eventImagePreview" style="margin-top:10px;display:none;">
+                            <img id="eventImagePreviewImg" style="width:100%;max-height:240px;object-fit:cover;border-radius:8px;">
+                        </div>
+                    </div>
+
+                    <div class="form-two-col">
+                        <div class="form-group">
+                            <label>賽事日期</label>
+                            <div class="date-input-wrapper">
+                                <input type="date" id="formEventDate" onclick="this.showPicker&&this.showPicker()" onchange="updateWeekday('formEventDate','eventWeekday')">
+                                <span class="date-weekday" id="eventWeekday"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>地點</label>
+                            <input type="text" id="formEventLocation" placeholder="例如：台南、屏東">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea id="formEventDesc" rows="4" placeholder="賽事說明、注意事項..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>重要程度</label>
+                        <div class="pill-selector" id="formEventPriority-pills">
+                            <div class="pill-option" data-value="high" onclick="togglePillOption(this,'formEventPriority-pills','formEventPriority')">🔴 重要</div>
+                            <div class="pill-option active" data-value="medium" onclick="togglePillOption(this,'formEventPriority-pills','formEventPriority')">🟡 中等</div>
+                            <div class="pill-option" data-value="low" onclick="togglePillOption(this,'formEventPriority-pills','formEventPriority')">🟢 參考</div>
+                        </div>
+                        <input type="hidden" id="formEventPriority" value="medium">
+                    </div>
+
+                    <div class="form-group">
+                        <label>狀態</label>
+                        <div class="pill-selector" id="formEventTag-pills">
+                            <div class="pill-option active" data-value="即將到來" onclick="togglePillOption(this,'formEventTag-pills','formEventTag')">📅 即將到來</div>
+                            <div class="pill-option" data-value="進行中" onclick="togglePillOption(this,'formEventTag-pills','formEventTag')">🚀 進行中</div>
+                            <div class="pill-option" data-value="已結束" onclick="togglePillOption(this,'formEventTag-pills','formEventTag')">✅ 已結束</div>
+                        </div>
+                        <input type="hidden" id="formEventTag" value="即將到來">
+                    </div>
+                </div>
+
+                <!-- category tracker (hidden) -->
+                <div id="resourceFormFields" style="display:none;">
+                    <select id="formCategory" onchange="toggleFormFields()">
+                        <option value="人員管理">人員管理</option>
+                        <option value="工作日誌">工作日誌</option>
+                        <option value="計畫">計畫</option>
+                        <option value="賽事資訊">賽事資訊</option>
+                        <option value="工程工具">工程工具</option>
+                        <option value="零件供應商">零件供應商</option>
+                        <option value="學習資源">學習資源</option>
+                    </select>
+                    <input type="hidden" id="formName">
+                    <input type="hidden" id="formUrl">
+                    <input type="hidden" id="formPriority" value="medium">
+                    <input type="hidden" id="formDescription">
+                    <input type="hidden" id="formDetailedContent">
+                </div>
+
+                <!-- 工程工具 Form -->
+                <div id="toolFormFields" class="hidden">
+                    <div class="form-group">
+                        <label>工具名稱 *</label>
+                        <input type="text" id="formToolName" placeholder="例如：SolidWorks、MATLAB">
+                    </div>
+                    <div class="form-group">
+                        <label>網址</label>
+                        <input type="url" id="formToolUrl" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label>工具類型</label>
+                        <div class="pill-selector" id="formToolType-pills">
+                            <div class="pill-option" data-value="CAD設計" onclick="togglePillOption(this,'formToolType-pills','formToolType')">CAD設計</div>
+                            <div class="pill-option" data-value="模擬分析" onclick="togglePillOption(this,'formToolType-pills','formToolType')">模擬分析</div>
+                            <div class="pill-option" data-value="製造加工" onclick="togglePillOption(this,'formToolType-pills','formToolType')">製造加工</div>
+                            <div class="pill-option" data-value="文件協作" onclick="togglePillOption(this,'formToolType-pills','formToolType')">文件協作</div>
+                            <div class="pill-option" data-value="量測檢測" onclick="togglePillOption(this,'formToolType-pills','formToolType')">量測檢測</div>
+                            <div class="pill-option" data-value="其他" onclick="togglePillOption(this,'formToolType-pills','formToolType')">其他</div>
+                        </div>
+                        <input type="hidden" id="formToolType" value="">
+                    </div>
+                    <div class="form-group">
+                        <label>重要程度</label>
+                        <div class="pill-selector" id="formToolPriority-pills">
+                            <div class="pill-option" data-value="high" onclick="togglePillOption(this,'formToolPriority-pills','formToolPriority')">🔴 重要</div>
+                            <div class="pill-option active" data-value="medium" onclick="togglePillOption(this,'formToolPriority-pills','formToolPriority')">🟡 中等</div>
+                            <div class="pill-option" data-value="low" onclick="togglePillOption(this,'formToolPriority-pills','formToolPriority')">🟢 參考</div>
+                        </div>
+                        <input type="hidden" id="formToolPriority" value="medium">
+                    </div>
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea id="formToolDesc" rows="3" placeholder="功能說明、使用情境..."></textarea>
+                    </div>
+                </div>
+
+                <!-- 零件供應商 Form -->
+                <div id="partFormFields" class="hidden">
+                    <div class="form-group">
+                        <label>廠商名稱 *</label>
+                        <input type="text" id="formPartName" placeholder="例如：建佑精機、東新五金">
+                    </div>
+                    <div class="form-group">
+                        <label>零件分類（可多選）</label>
+                        <div class="work-type-pills" id="partCategory-pills">
+                            <div class="work-type-pill" data-value="車體" onclick="this.classList.toggle('active')">車體</div>
+                            <div class="work-type-pill" data-value="引擎" onclick="this.classList.toggle('active')">引擎</div>
+                            <div class="work-type-pill" data-value="懸吊" onclick="this.classList.toggle('active')">懸吊</div>
+                            <div class="work-type-pill" data-value="煞車" onclick="this.classList.toggle('active')">煞車</div>
+                            <div class="work-type-pill" data-value="電裝" onclick="this.classList.toggle('active')">電裝</div>
+                            <div class="work-type-pill" data-value="空力" onclick="this.classList.toggle('active')">空力</div>
+                            <div class="work-type-pill" data-value="其他" onclick="this.classList.toggle('active')">其他</div>
+                        </div>
+                    </div>
+                    <div class="form-two-col">
+                        <div class="form-group">
+                            <label>網址 / 聯絡</label>
+                            <input type="text" id="formPartUrl" placeholder="網址或電話">
+                        </div>
+                        <div class="form-group">
+                            <label>價格參考</label>
+                            <input type="text" id="formPartPrice" placeholder="例如：NT$500/件">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>重要程度</label>
+                        <div class="pill-selector" id="formPartPriority-pills">
+                            <div class="pill-option" data-value="high" onclick="togglePillOption(this,'formPartPriority-pills','formPartPriority')">🔴 重要</div>
+                            <div class="pill-option active" data-value="medium" onclick="togglePillOption(this,'formPartPriority-pills','formPartPriority')">🟡 中等</div>
+                            <div class="pill-option" data-value="low" onclick="togglePillOption(this,'formPartPriority-pills','formPartPriority')">🟢 參考</div>
+                        </div>
+                        <input type="hidden" id="formPartPriority" value="medium">
+                    </div>
+                    <div class="form-group">
+                        <label>採購備註</label>
+                        <textarea id="formPartDesc" rows="3" placeholder="規格、交期、聯絡人..."></textarea>
+                    </div>
+                </div>
+
+                <!-- 學習資源 Form -->
+                <div id="learningFormFields" class="hidden">
+                    <div class="form-group">
+                        <label>標題 *</label>
+                        <input type="text" id="formLearnName" placeholder="例如：車輛動力學教材">
+                    </div>
+                    <div class="form-group">
+                        <label>網址</label>
+                        <input type="url" id="formLearnUrl" placeholder="https://...">
+                    </div>
+                    <div class="form-two-col">
+                        <div class="form-group">
+                            <label>資源類型</label>
+                            <div class="pill-selector" id="formLearnType-pills">
+                                <div class="pill-option" data-value="書籍" onclick="togglePillOption(this,'formLearnType-pills','formLearnType')">書籍</div>
+                                <div class="pill-option" data-value="論文" onclick="togglePillOption(this,'formLearnType-pills','formLearnType')">論文</div>
+                                <div class="pill-option" data-value="影片" onclick="togglePillOption(this,'formLearnType-pills','formLearnType')">影片</div>
+                                <div class="pill-option" data-value="課程" onclick="togglePillOption(this,'formLearnType-pills','formLearnType')">課程</div>
+                                <div class="pill-option" data-value="手冊" onclick="togglePillOption(this,'formLearnType-pills','formLearnType')">手冊</div>
+                                <div class="pill-option" data-value="其他" onclick="togglePillOption(this,'formLearnType-pills','formLearnType')">其他</div>
+                            </div>
+                            <input type="hidden" id="formLearnType" value="">
+                        </div>
+                        <div class="form-group">
+                            <label>相關領域（可多選）</label>
+                            <div class="work-type-pills" id="learnField-pills">
+                                <div class="work-type-pill" data-value="車體" onclick="this.classList.toggle('active')">車體</div>
+                                <div class="work-type-pill" data-value="引擎" onclick="this.classList.toggle('active')">引擎</div>
+                                <div class="work-type-pill" data-value="懸吊" onclick="this.classList.toggle('active')">懸吊</div>
+                                <div class="work-type-pill" data-value="煞車" onclick="this.classList.toggle('active')">煞車</div>
+                                <div class="work-type-pill" data-value="電裝" onclick="this.classList.toggle('active')">電裝</div>
+                                <div class="work-type-pill" data-value="空力" onclick="this.classList.toggle('active')">空力</div>
+                                <div class="work-type-pill" data-value="通用" onclick="this.classList.toggle('active')">通用</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>重要程度</label>
+                        <div class="pill-selector" id="formLearnPriority-pills">
+                            <div class="pill-option" data-value="high" onclick="togglePillOption(this,'formLearnPriority-pills','formLearnPriority')">🔴 重要</div>
+                            <div class="pill-option active" data-value="medium" onclick="togglePillOption(this,'formLearnPriority-pills','formLearnPriority')">🟡 中等</div>
+                            <div class="pill-option" data-value="low" onclick="togglePillOption(this,'formLearnPriority-pills','formLearnPriority')">🟢 參考</div>
+                        </div>
+                        <input type="hidden" id="formLearnPriority" value="medium">
+                    </div>
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea id="formLearnDesc" rows="3" placeholder="內容摘要、適合程度..."></textarea>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="submit" class="btn" style="flex: 1; background: var(--primary-orange); color: white; border-color: var(--primary-orange);">儲存</button>
+                    <button type="button" class="btn" onclick="closeModal()" style="flex: 1;">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="calendarModal" onclick="if(event.target===this)closeCalendar()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">行事曆</h2>
+                <button class="close-btn" onclick="closeCalendar()">×</button>
+            </div>
+            <div id="calendarContent"></div>
+        </div>
+    </div>
+
+
+
+    <script>
+        let resources = [];
+        const ogImageCache = {}; // url -> og:image URL cache
+        let events = [];
+        let currentEditId = null;
+        let currentFilter = 'all';
+        let currentAvatarData = null;
+        let currentPlanImageData = null;
+        let currentEventImageData = null;
+        let worklogViewMode = 'timeline';
+        let timelineRange = 'auto';
+        let draggedPlanId = null;
+
+        const categoryConfig = {
+            '人員管理': { order: 1 },
+            '工作日誌': { order: 2 },
+            '計畫': { order: 3 },
+            '賽事資訊': { order: 4 },
+            '工程工具': { order: 5 },
+            '零件供應商': { order: 6 },
+            '學習資源': { order: 7 }
+        };
+
+        const categories = Object.keys(categoryConfig).sort((a, b) => 
+            categoryConfig[a].order - categoryConfig[b].order
+        );
+
+        const workTypeColors = {
+            '車體': '#FF6B6B',
+            '引擎': '#4ECDC4',
+            '懸吊': '#45B7D1',
+            '煞車': '#FFA07A',
+            '電裝': '#98D8C8',
+            '空力': '#A8E6CF',
+            '其他': '#95A5A6'
+        };
+
+        const emojis = ['👤', '😀', '😎', '🤓', '🧑‍🔧', '🏎️', '⚙️', '🔧', '🏁', '🎯', '💪', '🚀', '⭐', '🔥', '💡', '🎨'];
+
+        function init() {
+            // 預設夜間模式
+            const savedTheme = localStorage.getItem('theme');
+            document.body.setAttribute('data-theme', savedTheme !== null ? savedTheme : 'dark');
+            updateThemeBtn();
+
+            setupSearch();
+            setupEmojiPicker();
+
+            function startFirebase() {
+                window._fbOnValue(window._fbRef(window._fbDb, 'resources'), (snapshot) => {
+                    const data = snapshot.val();
+                    if (data && Array.isArray(data) && data.length > 0) {
+                        resources = data;
+                    } else if (data && typeof data === 'object' && !Array.isArray(data)) {
+                        resources = Object.values(data).filter(Boolean);
+                    } else {
+                        loadData();
+                    }
+                    const before = resources.length;
+                    loadSampleData();
+                    if (resources.length !== before) {
+                        window._fbSet(window._fbRef(window._fbDb, 'resources'), resources);
+                    }
+                    renderResources();
+                    updateHeaderStats();
+                });
+                showNotification('🔥 即時同步已連線');
+            }
+
+            if (window._fbDb) {
+                startFirebase();
+            } else {
+                window.addEventListener('firebase-ready', startFirebase, { once: true });
+                loadData();
+                loadSampleData();
+                renderResources();
+                updateHeaderStats();
+            }
+        }
+
+        function setupEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            emojis.forEach(emoji => {
+                const option = document.createElement('div');
+                option.className = 'emoji-option';
+                option.textContent = emoji;
+                option.onclick = () => selectEmoji(emoji);
+                picker.appendChild(option);
+            });
+        }
+
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            picker.style.display = picker.style.display === 'none' ? 'grid' : 'none';
+        }
+
+        function toggleWorkTypePill(el) {
+            el.classList.toggle('active');
+            const val = el.dataset.value;
+            const cb = document.querySelector(`.work-type-checkbox[value="${val}"]`);
+            if (cb) cb.checked = el.classList.contains('active');
+        }
+
+        function resetWorkTypePills() {
+            document.querySelectorAll('.work-type-pill').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.work-type-checkbox').forEach(cb => cb.checked = false);
+        }
+
+        function selectEmoji(emoji) {
+            currentAvatarData = emoji;
+            document.getElementById('avatarPreview').textContent = emoji;
+            toggleEmojiPicker();
+        }
+
+        function getActivePills(groupId) {
+            return Array.from(document.querySelectorAll(`#${groupId} .pill-option.active, #${groupId} .work-type-pill.active`))
+                .map(p => p.dataset.value).join(',');
+        }
+
+        function setActivePills(groupId, csv) {
+            const vals = (csv || '').split(',').map(v => v.trim()).filter(Boolean);
+            document.querySelectorAll(`#${groupId} .pill-option, #${groupId} .work-type-pill`).forEach(p => {
+                p.classList.toggle('active', vals.includes(p.dataset.value));
+            });
+        }
+
+        function resetMultiPills(groupId) {
+            document.querySelectorAll(`#${groupId} .pill-option, #${groupId} .work-type-pill`).forEach(p => p.classList.remove('active'));
+        }
+
+        function togglePillOption(el, groupId, hiddenId) {
+            document.getElementById(groupId).querySelectorAll('.pill-option').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+            if (hiddenId) document.getElementById(hiddenId).value = el.dataset.value;
+        }
+
+        function setPillOption(groupId, hiddenId, value) {
+            const group = document.getElementById(groupId);
+            if (!group) return;
+            group.querySelectorAll('.pill-option').forEach(p => p.classList.toggle('active', p.dataset.value === value));
+            if (hiddenId) document.getElementById(hiddenId).value = value || '';
+        }
+
+        function resetPillSelector(groupId, hiddenId) {
+            const group = document.getElementById(groupId);
+            if (!group) return;
+            group.querySelectorAll('.pill-option').forEach(p => p.classList.remove('active'));
+            if (hiddenId) document.getElementById(hiddenId).value = '';
+        }
+
+        function selectDepartment(el) {
+            document.getElementById('formDepartment-pills').querySelectorAll('.pill-option').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+            const val = el.dataset.value;
+            document.getElementById('formDepartment').value = val;
+            const other = document.getElementById('formDepartmentOther');
+            if (val === '其他') {
+                other.style.display = 'block';
+                other.focus();
+            } else {
+                other.style.display = 'none';
+                other.value = '';
+            }
+        }
+
+        function toggleDepartmentInput() { /* replaced by selectDepartment */ }
+
+        function togglePlanUrlInput() {
+            const urlInput = document.getElementById('planUrlInput');
+            const isVisible = urlInput.style.display !== 'none';
+            
+            if (isVisible) {
+                urlInput.style.display = 'none';
+                document.getElementById('formPlanUrl').value = '';
+            } else {
+                urlInput.style.display = 'block';
+                document.getElementById('formPlanUrl').focus();
+            }
+        }
+
+        function updateWeekday(dateInputId, weekdaySpanId) {
+            const dateInput = document.getElementById(dateInputId);
+            const weekdaySpan = document.getElementById(weekdaySpanId);
+            
+            if (dateInput.value) {
+                const date = new Date(dateInput.value);
+                const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+                weekdaySpan.textContent = `週${weekdays[date.getDay()]}`;
+            } else {
+                weekdaySpan.textContent = '';
+            }
+        }
+
+        function loadSampleData() {
+            const today = new Date();
+            const existingIds = new Set(resources.map(r => r.id));
+
+            const samples = [
+                // ── 人員管理 ──────────────────────────────────────────
+                {
+                    id: 'person1', category: '人員管理', isPerson: true,
+                    name: '張天翰', position: '隊長',
+                    workTypes: '車體,空力,引擎',
+                    phone: '0906551785', email: 'jjioxc@gmail.com',
+                    department: '機械工程系', grade: '大四', joinDate: '2023-09-01',
+                    skills: 'SolidWorks、FEA 分析、賽車底盤設計',
+                    otherInfo: '負責整體進度協調與對外聯繫',
+                    avatar: '👤', priority: 'medium',
+                    createdAt: new Date(today.getTime() - 60*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'person2', category: '人員管理', isPerson: true,
+                    name: '林韋生', position: '指導教授',
+                    workTypes: '引擎',
+                    email: 'lin@nkust.edu.tw',
+                    department: '機械工程系', grade: '',
+                    skills: '內燃機動力學、車輛工程',
+                    avatar: '💡', priority: 'medium',
+                    createdAt: new Date(today.getTime() - 90*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'person3', category: '人員管理', isPerson: true,
+                    name: '張子佑', position: '車架組長',
+                    workTypes: '車體,懸吊',
+                    email: 'zhang@nkust.edu.tw', phone: '0912345678',
+                    department: '機械工程系', grade: '大三', joinDate: '2024-02-15',
+                    skills: 'TIG 焊接、鋁合金加工',
+                    avatar: '😎', priority: 'medium',
+                    createdAt: new Date(today.getTime() - 50*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'person4', category: '人員管理', isPerson: true,
+                    name: '楊政頡', position: '煞車系統負責人',
+                    workTypes: '煞車,懸吊',
+                    email: 'yang@nkust.edu.tw', phone: '0922334455',
+                    department: '車輛工程系', grade: '大三', joinDate: '2024-03-01',
+                    skills: 'Brembo 系統調校、液壓計算',
+                    avatar: '🔥', priority: 'medium',
+                    createdAt: new Date(today.getTime() - 45*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'person5', category: '人員管理', isPerson: true,
+                    name: '陳柏宇', position: '電裝負責人',
+                    workTypes: '電裝',
+                    email: 'chen@nkust.edu.tw', phone: '0933445566',
+                    department: '電機工程系', grade: '大二', joinDate: '2024-09-10',
+                    skills: 'Arduino、CAN Bus、ECU 調校',
+                    avatar: '⚡', priority: 'medium',
+                    createdAt: new Date(today.getTime() - 30*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'person6', category: '人員管理', isPerson: true,
+                    name: '吳品潔', position: '空力組員',
+                    workTypes: '空力',
+                    email: 'wu@nkust.edu.tw',
+                    department: '機械工程系', grade: '大二', joinDate: '2025-02-20',
+                    skills: 'CFD 模擬、ANSYS Fluent',
+                    avatar: '🌪️', priority: 'medium',
+                    createdAt: new Date(today.getTime() - 20*24*60*60*1000).toISOString()
+                },
+
+                // ── 工作日誌 ──────────────────────────────────────────
+                {
+                    id: 'log1', category: '工作日誌', isWorklog: true,
+                    workType: '引擎',
+                    name: '引擎採購與安裝',
+                    progress: 60,
+                    startDate: '2026-04-15', endDate: '2026-07-01',
+                    notes: '比較 Honda CBR600RR vs Yamaha R6，最終選定 R6\n已聯絡供應商，等待報價\n預算控制在 15 萬以內',
+                    priority: 'medium',
+                    createdAt: new Date(today.getTime() - 17*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'log2', category: '工作日誌', isWorklog: true,
+                    workType: '車體',
+                    name: '主車架設計與製造',
+                    progress: 75,
+                    startDate: '2026-04-01', endDate: '2026-06-15',
+                    notes: 'SolidWorks 建模完成 80%\n需進行 FEA 應力分析\n預計下週完成分析報告',
+                    priority: 'medium',
+                    createdAt: new Date(today.getTime() - 31*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'log3', category: '工作日誌', isWorklog: true,
+                    workType: '懸吊',
+                    name: '懸吊系統調校',
+                    progress: 45,
+                    startDate: '2026-05-01', endDate: '2026-07-20',
+                    notes: '完成基礎設定\n待實車測試後微調\nOhlins 避震器已到貨',
+                    priority: 'medium',
+                    createdAt: new Date(today.getTime() - 10*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'log4', category: '工作日誌', isWorklog: true,
+                    workType: '煞車',
+                    name: '煞車系統組裝',
+                    progress: 30,
+                    startDate: '2026-05-10', endDate: '2026-06-30',
+                    notes: '前後碟盤已採購完成\n卡鉗安裝待車架完工後進行\n煞車油選用 Castrol DOT5.1',
+                    priority: 'medium',
+                    createdAt: new Date(today.getTime() - 5*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'log5', category: '工作日誌', isWorklog: true,
+                    workType: '電裝',
+                    name: 'ECU 線路配置',
+                    progress: 20,
+                    startDate: '2026-05-15', endDate: '2026-08-01',
+                    notes: '線路圖設計中\n預計使用 MoTeC M150 ECU\n需完成感測器選型',
+                    priority: 'medium',
+                    createdAt: new Date(today.getTime() - 3*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'log6', category: '工作日誌', isWorklog: true,
+                    workType: '空力',
+                    name: '前定風翼設計',
+                    progress: 55,
+                    startDate: '2026-04-20', endDate: '2026-07-10',
+                    notes: 'CFD 模擬完成初版\n下壓力目標 80kg@200km/h\n碳纖維材料樣品已取得',
+                    priority: 'medium',
+                    createdAt: new Date(today.getTime() - 12*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'log7', category: '工作日誌', isWorklog: true,
+                    workType: '車體',
+                    name: '座艙人體工學調整',
+                    progress: 90,
+                    startDate: '2026-03-15', endDate: '2026-05-20',
+                    notes: '已完成三位車手坐姿測量\n方向盤角度與踏板位置確定\n安全帶掛點強度驗證通過',
+                    priority: 'medium',
+                    createdAt: new Date(today.getTime() - 20*24*60*60*1000).toISOString()
+                },
+
+                // ── 計畫 ──────────────────────────────────────────────
+                {
+                    id: 'plan1', category: '計畫', isPlan: true,
+                    name: '2026 賽季整體計畫',
+                    url: 'https://www.fsaeta.org/',
+                    content: '本賽季目標：完成完整賽車設計製造，參加台灣方程式賽車大賽（FSAETA）。重點項目包括動力系統優化、底盤剛性提升、空力套件開發，預計於 2026 年 10 月完成整車測試。',
+                    tag: '整體規劃',
+                    order: 1, priority: 'medium',
+                    createdAt: new Date(today.getTime() - 80*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'plan2', category: '計畫', isPlan: true,
+                    name: '引擎動力升級方案',
+                    url: '',
+                    content: '評估更換高性能凸輪軸與進排氣系統，目標提升馬力 15%。同步進行 ECU 重新映射，搭配新進氣歧管改善扭力輸出曲線。',
+                    tag: '引擎',
+                    order: 2, priority: 'medium',
+                    createdAt: new Date(today.getTime() - 40*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'plan3', category: '計畫', isPlan: true,
+                    name: '輕量化工程計畫',
+                    url: '',
+                    content: '目標整車減重 8kg。採用碳纖維車身覆蓋件、鈦合金螺絲，以及鏤空設計的非承載件。完成後預計整車重量低於 180kg（含車手）。',
+                    tag: '車體',
+                    order: 3, priority: 'medium',
+                    createdAt: new Date(today.getTime() - 25*24*60*60*1000).toISOString()
+                },
+
+                // ── 賽事資訊 ──────────────────────────────────────────
+                {
+                    id: 'event1', category: '賽事資訊', isPlan: true,
+                    name: 'FSAETA 2026 方程式賽車大賽',
+                    url: 'https://www.fsaeta.org/',
+                    content: '台灣最大學生方程式賽車競賽，設有靜態審查（設計報告、成本報告、商業計畫）與動態競賽（直線加速、8字繞錐、耐久賽）等項目。',
+                    location: '台灣賽車公園，龍潭',
+                    eventDate: '2026-11-15',
+                    tag: '國內賽事',
+                    priority: 'high',
+                    createdAt: new Date(today.getTime() - 60*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'event2', category: '賽事資訊', isPlan: true,
+                    name: '2026 期末成果發表',
+                    url: '',
+                    content: '學校內部成果展示，邀請業界評審與教師參觀，展示本學年設計製造進度與技術文件。',
+                    location: '國立高雄科技大學 建工校區',
+                    eventDate: '2026-06-20',
+                    tag: '學校活動',
+                    priority: 'medium',
+                    createdAt: new Date(today.getTime() - 15*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'event3', category: '賽事資訊', isPlan: true,
+                    name: '賽車技術研討會',
+                    url: '',
+                    content: '由台灣機械工程學會主辦，邀請各大學賽車隊分享技術經驗，包含 CFD 分析、輕量化材料應用等主題。',
+                    location: '台北國際會議中心',
+                    eventDate: '2026-08-05',
+                    tag: '研討會',
+                    priority: 'low',
+                    createdAt: new Date(today.getTime() - 5*24*60*60*1000).toISOString()
+                },
+
+                // ── 零件供應商 ────────────────────────────────────────
+                {
+                    id: 'part1', category: '零件供應商',
+                    name: '台灣鋁業股份有限公司',
+                    url: 'https://www.aluminium.com.tw',
+                    partCategories: '車體,懸吊',
+                    tag: '車體,懸吊',
+                    price: '依規格報價',
+                    priority: 'high',
+                    description: '提供 7075-T6 航太鋁合金板材與型材，供應車架與懸吊臂製作。最小訂購量 5kg，交期 7 個工作天。',
+                    createdAt: new Date(today.getTime() - 30*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'part2', category: '零件供應商',
+                    name: 'Brembo 台灣代理商',
+                    url: 'https://www.brembo.com',
+                    partCategories: '煞車',
+                    tag: '煞車',
+                    price: 'NT$ 45,000 / 套',
+                    priority: 'high',
+                    description: '義大利 Brembo 賽用煞車系統，含前後對四卡鉗、浮動碟盤。提供學生賽車隊折扣優惠。',
+                    createdAt: new Date(today.getTime() - 25*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'part3', category: '零件供應商',
+                    name: 'Ohlins 避震器台灣總代理',
+                    url: 'https://www.ohlins.com',
+                    partCategories: '懸吊',
+                    tag: '懸吊',
+                    price: 'NT$ 38,000 / 對',
+                    priority: 'medium',
+                    description: '瑞典 Ohlins TTX GP 系列避震器，可調阻尼與預載，適合學生方程式賽車使用。',
+                    createdAt: new Date(today.getTime() - 20*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'part4', category: '零件供應商',
+                    name: 'MoTeC 亞太授權經銷商',
+                    url: 'https://www.motec.com.au',
+                    partCategories: '電裝',
+                    tag: '電裝',
+                    price: 'NT$ 85,000 / 套',
+                    priority: 'medium',
+                    description: '澳洲 MoTeC M150 ECU 及 ADL3 數據記錄儀，提供完整賽車電子控制解決方案，支援 CAN Bus 擴充。',
+                    createdAt: new Date(today.getTime() - 15*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'part5', category: '零件供應商',
+                    name: '瑞聖碳纖維科技',
+                    url: '',
+                    partCategories: '空力,車體',
+                    tag: '空力,車體',
+                    price: '依面積報價',
+                    priority: 'low',
+                    description: '台灣本土碳纖維複合材料廠商，可客製化製作空力套件、車身板件。提供 2x2 Twill 及 UD 碳纖維選項。',
+                    createdAt: new Date(today.getTime() - 10*24*60*60*1000).toISOString()
+                },
+
+                // ── 工程工具 ──────────────────────────────────────────
+                {
+                    id: 'tool1', category: '工程工具',
+                    name: 'SolidWorks 2024',
+                    url: 'https://www.solidworks.com',
+                    tag: '3D 設計',
+                    priority: 'high',
+                    description: '主要 3D CAD 設計軟體，用於車架、懸吊幾何、空力套件建模。學校提供教育授權，支援 FEA 應力分析模組。',
+                    createdAt: new Date(today.getTime() - 90*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'tool2', category: '工程工具',
+                    name: 'ANSYS Fluent',
+                    url: 'https://www.ansys.com',
+                    tag: 'CFD 模擬',
+                    priority: 'high',
+                    description: '計算流體力學模擬軟體，用於空力套件下壓力分析與冷卻系統設計。需搭配高效能工作站執行。',
+                    createdAt: new Date(today.getTime() - 80*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'tool3', category: '工程工具',
+                    name: 'OptimumLap',
+                    url: 'https://www.optimumg.com/software/optimumlap/',
+                    tag: '賽車模擬',
+                    priority: 'medium',
+                    description: '車輛動力學與圈速模擬工具，可輸入賽道地圖與車輛參數，預測圈速並優化車輛調校方向。',
+                    createdAt: new Date(today.getTime() - 40*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'tool4', category: '工程工具',
+                    name: 'MathWorks MATLAB',
+                    url: 'https://www.mathworks.com',
+                    tag: '數值計算',
+                    priority: 'medium',
+                    description: '用於懸吊幾何計算、動力傳動分析、資料後處理。搭配 Simulink 進行控制系統模擬。',
+                    createdAt: new Date(today.getTime() - 60*24*60*60*1000).toISOString()
+                },
+
+                // ── 學習資源 ──────────────────────────────────────────
+                {
+                    id: 'learn1', category: '學習資源',
+                    name: 'Formula SAE Design Guides',
+                    url: 'https://www.sae.org/attend/student-events/formula-sae-electric/resources',
+                    tag: '官方文件',
+                    learnFields: '車體,懸吊',
+                    priority: 'high',
+                    description: 'SAE International 官方提供的學生方程式賽車設計指南，包含規則說明、設計建議與歷屆優秀作品分析。',
+                    createdAt: new Date(today.getTime() - 50*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'learn2', category: '學習資源',
+                    name: 'Carroll Smith 賽車工程系列書籍',
+                    url: 'https://www.amazon.com/s?k=carroll+smith+racing',
+                    tag: '書籍',
+                    learnFields: '懸吊,車體,煞車',
+                    priority: 'high',
+                    description: '《Tune to Win》、《Engineer to Win》等經典賽車工程書籍，涵蓋懸吊設定、煞車系統、材料選擇等核心知識。',
+                    createdAt: new Date(today.getTime() - 45*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'learn3', category: '學習資源',
+                    name: 'YouTube: Driver61 賽車物理頻道',
+                    url: 'https://www.youtube.com/@Driver61',
+                    tag: '影片教學',
+                    learnFields: '空力,懸吊',
+                    priority: 'medium',
+                    description: '專業賽車物理與技術分析頻道，以動畫與實例解說空力原理、輪胎特性、圈速優化技巧，適合工程與駕駛學習。',
+                    createdAt: new Date(today.getTime() - 20*24*60*60*1000).toISOString()
+                },
+                {
+                    id: 'learn4', category: '學習資源',
+                    name: 'GrabCAD 賽車模型庫',
+                    url: 'https://grabcad.com/library?query=formula+student',
+                    tag: '3D 模型',
+                    learnFields: '車體,引擎',
+                    priority: 'low',
+                    description: '開源 3D 模型共享平台，可下載歷屆 Formula Student 賽車模型作為設計參考。格式支援 SolidWorks、STEP、IGES。',
+                    createdAt: new Date(today.getTime() - 10*24*60*60*1000).toISOString()
+                }
+            ];
+
+            samples.forEach(item => {
+                if (!existingIds.has(item.id)) resources.push(item);
+            });
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? '' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeBtn();
+        }
+
+        function updateThemeBtn() {
+            const btn = document.getElementById('themeBtn');
+            if (!btn) return;
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            btn.innerHTML = isDark
+                ? '☀️<span class="pill-label"> 日間</span>'
+                : '🌙<span class="pill-label"> 夜間</span>';
+        }
+
+        function toggleSearch() {
+            const btn = document.getElementById('searchToggle');
+            const input = document.getElementById('searchInput');
+            const isActive = btn.classList.contains('search-active');
+            if (isActive) {
+                btn.classList.remove('search-active');
+                input.value = '';
+                handleSearch({ target: input });
+            } else {
+                btn.classList.add('search-active');
+                input.focus();
+            }
+        }
+
+        function handleSearch(event) {
+            const searchTerm = event.target.value.toLowerCase().trim();
+            
+            if (!searchTerm) {
+                renderResources();
+                return;
+            }
+
+            const container = document.getElementById('resourcesContainer');
+            container.innerHTML = '';
+
+            resources.forEach(resource => {
+                const matchesSearch = 
+                    resource.name?.toLowerCase().includes(searchTerm) ||
+                    resource.description?.toLowerCase().includes(searchTerm) ||
+                    resource.workType?.toLowerCase().includes(searchTerm) ||
+                    resource.category?.toLowerCase().includes(searchTerm) ||
+                    resource.email?.toLowerCase().includes(searchTerm) ||
+                    resource.phone?.includes(searchTerm);
+
+                if (matchesSearch && (currentFilter === 'all' || resource.category === currentFilter)) {
+                    const grid = document.createElement('div');
+                    grid.className = 'resources-grid';
+                    
+                    if (resource.isPerson) {
+                        grid.appendChild(createPersonCard(resource));
+                    } else if (resource.isWorklog) {
+                        grid.appendChild(createWorklogCard(resource));
+                    } else if (resource.isPlan) {
+                        grid.appendChild(createPlanCard(resource));
+                    } else {
+                        grid.appendChild(createResourceCard(resource));
+                    }
+                    
+                    container.appendChild(grid);
+                }
+            });
+        }
+
+        // Close search when clicking outside
+        document.addEventListener('click', function(event) {
+            const searchContainer = document.querySelector('.search-container-header');
+            const searchInput = document.getElementById('searchInput');
+            
+            if (searchInput && searchInput.classList.contains('active')) {
+                if (!searchContainer.contains(event.target)) {
+                    searchInput.classList.remove('active');
+                    searchInput.value = '';
+                    renderResources();
+                }
+            }
+        });
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) document.body.setAttribute('data-theme', savedTheme);
+
+        function loadData() {
+            const saved = localStorage.getItem('fsaeResources');
+            if (saved) {
+                resources = JSON.parse(saved);
+            } else {
+                // 初始化教授提供的學習資源
+                initializeLearningResources();
+            }
+        }
+
+        function initializeLearningResources() {
+            const learningResources = [
+                // 官方文件與規則
+                {
+                    id: 'res_' + Date.now() + '_1',
+                    category: '學習資源',
+                    name: '台灣 FS 官網 - SES 文件審查',
+                    url: 'https://www.fstaiwan.net/3-ses-document-review',
+                    priority: '高',
+                    description: 'Formula Student Taiwan 官方文件審查說明',
+                    detailedContent: '台灣賽事官方網站，包含 SES（結構等效性檢查）文件審查相關資訊與規範。'
+                },
+                {
+                    id: 'res_' + Date.now() + '_2',
+                    category: '學習資源',
+                    name: 'FSAEOnline 官方文件資源',
+                    url: 'https://www.fsaeonline.com/cdsweb/gen/documentresources.aspx',
+                    priority: '高',
+                    description: 'FSAE 官方線上文件資源中心',
+                    detailedContent: 'Formula SAE 官方網站的文件資源頁面，包含規則、技術文件、表格等。'
+                },
+                {
+                    id: 'res_' + Date.now() + '_3',
+                    category: '賽事資訊',
+                    name: 'JSAE 官方公告 - 第23屆 ICV',
+                    url: 'https://www.jsae.or.jp/formula/past-result/23rd_official_announce_icvclass/',
+                    priority: '高',
+                    description: '日本第23屆全日本學生賽車大賽 ICV 組公告',
+                    detailedContent: '日本自動車技術會（JSAE）主辦的 Formula Student Japan 第23屆賽事 ICV 組官方公告。'
+                },
+                {
+                    id: 'res_' + Date.now() + '_4',
+                    category: '學習資源',
+                    name: 'JSAE Formula 2025 數位手冊',
+                    url: 'https://digitalbook.jsae.or.jp/library/books/fsaej2025/book/?_gl=1*47e67o*_ga*ODI0MDY0MTY3LjE2ODUzNjc0MjA.*_ga_TPEZ3HK0HG*czE3NzUyMjI3NDMkbzg4JGcxJHQxNzc1MjIyNzU5JGo0NCRsMCRoMA..#target/page_no=1',
+                    priority: '高',
+                    description: '2025 年日本賽事官方數位手冊',
+                    detailedContent: 'JSAE Formula 2025 完整賽事規則與技術規範數位版。'
+                },
+                
+                // 贊助商申請
+                {
+                    id: 'res_' + Date.now() + '_5',
+                    category: '學習資源',
+                    name: 'Realis Simulation 學術贊助申請',
+                    url: 'https://www.realis-simulation.com/zh/support/academia/formula-sae-grant-request/',
+                    priority: '中',
+                    description: 'Realis 模擬軟體學術贊助計畫',
+                    detailedContent: 'Realis Simulation 提供給 Formula SAE 車隊的軟體贊助申請頁面，支援中文介面。'
+                },
+                {
+                    id: 'res_' + Date.now() + '_6',
+                    category: '學習資源',
+                    name: 'Altair 技術贊助申請',
+                    url: 'https://altair.com/technology-sponsorship-request',
+                    priority: '中',
+                    description: 'Altair CAE 軟體技術贊助計畫',
+                    detailedContent: 'Altair 提供的技術贊助申請，包含 HyperWorks、SimSolid 等工程模擬軟體。'
+                },
+                {
+                    id: 'res_' + Date.now() + '_7',
+                    category: '學習資源',
+                    name: 'ANSYS 學生車隊計畫',
+                    url: 'https://www.ansys.com/academic/students/student-teams',
+                    priority: '中',
+                    description: 'ANSYS 學生車隊支持計畫',
+                    detailedContent: 'ANSYS 針對學生競賽團隊提供的軟體授權與技術支援計畫。'
+                },
+                {
+                    id: 'res_' + Date.now() + '_8',
+                    category: '學習資源',
+                    name: 'MATLAB 學術競賽支持',
+                    url: 'https://jp.mathworks.com/academia/student-competitions/formula-student-michigan.html',
+                    priority: '中',
+                    description: 'MathWorks Formula Student 支持計畫',
+                    detailedContent: 'MATLAB 和 Simulink 針對 Formula Student 車隊的學術支援資源。'
+                },
+                
+                // 零件供應商 - 輪圈
+                {
+                    id: 'res_' + Date.now() + '_9',
+                    category: '零件供應商',
+                    name: 'OZ Racing - Formula Student 輪圈',
+                    url: 'https://www.ozracing.com/motorsport/formula-student/wheels',
+                    priority: '高',
+                    description: 'OZ Racing Formula Student 專用輪圈',
+                    detailedContent: '義大利 OZ Racing 提供的 Formula Student 競賽輪圈產品線。'
+                },
+                {
+                    id: 'res_' + Date.now() + '_10',
+                    category: '零件供應商',
+                    name: 'Keizer Wheels - FSAE',
+                    url: 'https://keizerwheels.com/product-category/fsae/',
+                    priority: '高',
+                    description: 'Keizer 鋁合金賽車輪圈 FSAE 系列',
+                    detailedContent: 'Keizer Wheels 專為 FSAE 設計的輕量化鋁合金輪圈。'
+                },
+                {
+                    id: 'res_' + Date.now() + '_11',
+                    category: '零件供應商',
+                    name: 'Enkei SF-01 規格書',
+                    url: 'https://www.enkei.co.jp/upload/product/wheels/_2512_SF-01_web_02.pdf',
+                    priority: '中',
+                    description: 'Enkei SF-01 輪圈技術規格 PDF',
+                    detailedContent: 'Enkei 日本原廠 SF-01 輪圈詳細技術規格文件。'
+                },
+                
+                // 零件供應商 - 輪胎
+                {
+                    id: 'res_' + Date.now() + '_12',
+                    category: '零件供應商',
+                    name: 'Hoosier Tire - Formula Student/FSAE',
+                    url: 'https://www.hoosiertirewest.com/categories/circuit-racing-road-course-rally/formula-student-fsae.html',
+                    priority: '高',
+                    description: 'Hoosier 賽車輪胎 FSAE 系列',
+                    detailedContent: 'Hoosier Racing Tire 提供的 Formula Student/FSAE 專用賽車輪胎。'
+                },
+                {
+                    id: 'res_' + Date.now() + '_13',
+                    category: '零件供應商',
+                    name: 'GY Racing - FSAE 產品',
+                    url: 'https://gyracing.com.au/product-category/fsae/',
+                    priority: '中',
+                    description: 'GY Racing 澳洲 FSAE 零件供應商',
+                    detailedContent: 'GY Racing 提供的 FSAE 相關零件與配件。'
+                },
+                
+                // 技術資源
+                {
+                    id: 'res_' + Date.now() + '_14',
+                    category: '學習資源',
+                    name: 'Learn And Compete - FSAE 入門手冊',
+                    url: 'https://www.scribd.com/document/511418795/Learn-And-Compete-A-Primer-For-Formula-SAE',
+                    priority: '高',
+                    description: 'FSAE 入門完整指南',
+                    detailedContent: '適合新手的 Formula SAE 入門手冊，涵蓋基本概念與競賽準備。'
+                },
+                {
+                    id: 'res_' + Date.now() + '_15',
+                    category: '學習資源',
+                    name: 'Race Car Design by Derek Seward',
+                    url: 'https://www.scribd.com/document/868117502/pdfcoffee-com-race-car-design-by-derek-seward-2-pdf-free',
+                    priority: '高',
+                    description: '賽車設計經典教材',
+                    detailedContent: 'Derek Seward 的賽車設計教科書，Formula Student 必讀經典。'
+                },
+                {
+                    id: 'res_' + Date.now() + '_16',
+                    category: '學習資源',
+                    name: 'FSAE 概念與客觀設計',
+                    url: 'https://www.designjudges.com/articles/conceptual-and-objective-design-in-fsae',
+                    priority: '高',
+                    description: 'Design Event 評審觀點文章',
+                    detailedContent: '來自資深 Design Judge 的文章，解釋如何在 FSAE 中進行概念設計與客觀設計。'
+                },
+                {
+                    id: 'res_' + Date.now() + '_17',
+                    category: '學習資源',
+                    name: 'FSAE TO WIN - 技術資源網站',
+                    url: 'https://xxkizashi.github.io/FSAE_TO_WIN/',
+                    priority: '高',
+                    description: '綜合性 FSAE 技術資源網站',
+                    detailedContent: '包含設計理論、計算工具、技術文章的綜合性 Formula SAE 技術資源網站。'
+                }
+            ];
+            
+            resources = learningResources;
+            saveData();
+        }
+
+        function saveData() {
+            localStorage.setItem('fsaeResources', JSON.stringify(resources));
+            // 寫到 Firebase（即時同步給所有人）
+            if (window._fbDb) {
+                window._fbSet(window._fbRef(window._fbDb, 'resources'), resources)
+                    .catch(err => console.error('Firebase 寫入失敗:', err));
+            }
+            updateHeaderStats();
+        }
+
+        function updateHeaderStats() {
+            document.getElementById('peopleCount').textContent = 
+                resources.filter(r => r.category === '人員管理').length;
+
+            const logs = resources.filter(r => r.category === '工作日誌')
+                .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+            
+            if (logs.length > 0 && logs[0].createdAt) {
+                const d = new Date(logs[0].createdAt);
+                document.getElementById('lastLogDate').textContent = `${d.getMonth()+1}/${d.getDate()}`;
+            } else {
+                document.getElementById('lastLogDate').textContent = '-';
+            }
+        }
+
+        function createWorklogColumns(worklogs) {
+            const categories = ['車體','引擎','懸吊','煞車','電裝','空力','其他'];
+            const wrap = document.createElement('div');
+            wrap.className = 'worklog-columns';
+
+            categories.forEach(cat => {
+                const col = document.createElement('div');
+                col.className = 'worklog-col';
+                const color = workTypeColors[cat] || '#999';
+
+                const header = document.createElement('div');
+                header.className = 'worklog-col-header';
+                header.style.borderBottomColor = color;
+                header.style.color = color;
+                header.textContent = cat;
+                col.appendChild(header);
+
+                const items = worklogs
+                    .filter(w => (w.workType || '').split(',').map(s=>s.trim()).includes(cat))
+                    .sort((a, b) => {
+                        if (!a.endDate && !b.endDate) return 0;
+                        if (!a.endDate) return 1;
+                        if (!b.endDate) return -1;
+                        return new Date(a.endDate) - new Date(b.endDate);
+                    });
+
+                if (items.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'worklog-col-empty';
+                    empty.textContent = '—';
+                    col.appendChild(empty);
+                } else {
+                    items.forEach(w => {
+                        const card = document.createElement('div');
+                        card.className = 'worklog-col-card';
+                        card.style.borderLeftColor = color;
+
+                        const pct = w.progress != null ? w.progress : 0;
+                        const startFmt = w.startDate ? w.startDate.slice(5) : '—';
+                        const endFmt = w.endDate ? w.endDate.slice(5) : '—';
+
+                        card.innerHTML = `
+                            <div class="wc-pct">${pct}%</div>
+                            <div class="wc-mid">${w.name || ''}</div>
+                            <div class="wc-dates"><div>${startFmt}</div><div>${endFmt}</div></div>
+                        `;
+                        card.onclick = () => showWorklogDetail(w.id);
+                        col.appendChild(card);
+                    });
+                }
+                wrap.appendChild(col);
+            });
+            return wrap;
+        }
+
+        function createPartColumns(parts) {
+            const categories = ['車體','引擎','懸吊','煞車','電裝','空力','其他'];
+            const priorityOrder = {high:0, medium:1, low:2, '高':0, '中':1, '低':2};
+            const wrap = document.createElement('div');
+            wrap.className = 'worklog-columns';
+
+            categories.forEach(cat => {
+                const col = document.createElement('div');
+                col.className = 'worklog-col';
+                const color = workTypeColors[cat] || '#999';
+
+                const header = document.createElement('div');
+                header.className = 'worklog-col-header';
+                header.style.borderBottomColor = color;
+                header.style.color = color;
+                header.textContent = cat;
+                col.appendChild(header);
+
+                const items = parts
+                    .filter(p => (p.partCategories || p.tag || '').split(',').map(s=>s.trim()).includes(cat))
+                    .sort((a, b) => (priorityOrder[a.priority]??1) - (priorityOrder[b.priority]??1));
+
+                if (items.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'worklog-col-empty';
+                    empty.textContent = '—';
+                    col.appendChild(empty);
+                } else {
+                    items.forEach(p => {
+                        const card = document.createElement('div');
+                        card.className = 'worklog-col-card';
+                        card.style.borderLeftColor = color;
+                        const priceText = p.price ? p.price : '';
+                        card.innerHTML = `
+                            <div class="part-col-card">
+                                <div class="part-col-name">${p.name || ''}</div>
+                                ${priceText ? `<div class="part-col-price">${priceText}</div>` : ''}
+                            </div>
+                        `;
+                        card.onclick = () => showResourceDetail(p.id);
+                        col.appendChild(card);
+                    });
+                }
+                wrap.appendChild(col);
+            });
+            return wrap;
+        }
+
+        function buildCategorySection(category, forceAll) {
+            const isOverview = currentFilter === 'all' && !forceAll;
+            const categoryResources = resources
+                .filter(r => r.category === category)
+                .sort((a, b) => {
+                    if (a.pinned && !b.pinned) return -1;
+                    if (!a.pinned && b.pinned) return 1;
+                    return 0;
+                });
+
+            const section = document.createElement('div');
+            section.className = 'category-section';
+            section.innerHTML = `
+                <div class="category-header">
+                    <h2 class="category-title">${category}</h2>
+                    <button class="add-category-btn" onclick="openAddModalForCategory('${category}')">+</button>
+                    <span class="category-count">${categoryResources.length}</span>
+                </div>
+                <div class="content-area"></div>
+            `;
+
+            const contentArea = section.querySelector('.content-area');
+
+            if (category === '工作日誌') {
+                contentArea.appendChild(createWorklogTimeline(categoryResources));
+                if (!isOverview) {
+                    contentArea.appendChild(createWorklogColumns(categoryResources));
+                }
+                return section;
+            }
+
+            if (category === '零件供應商' && !isOverview) {
+                contentArea.appendChild(createPartColumns(categoryResources));
+                return section;
+            }
+
+            {
+                const grid = document.createElement('div');
+                grid.className = (category === '人員管理' && !isOverview) ? 'person-full-grid' : 'resources-grid';
+
+                const sortedResources = category === '計畫'
+                    ? [...categoryResources].sort((a, b) => (a.order || 0) - (b.order || 0))
+                    : categoryResources;
+
+                const OVERVIEW_LIMIT = 6;
+                const displayResources = (isOverview && sortedResources.length > OVERVIEW_LIMIT)
+                    ? sortedResources.slice(0, OVERVIEW_LIMIT)
+                    : sortedResources;
+                const hiddenCount = sortedResources.length - displayResources.length;
+
+                displayResources.forEach(resource => {
+                    if (resource.isPerson) {
+                        grid.appendChild(isOverview ? createPersonCard(resource) : createPersonFullCard(resource));
+                    } else if (resource.isWorklog) {
+                        grid.appendChild(createWorklogCard(resource));
+                    } else if (resource.isPlan) {
+                        grid.appendChild(createPlanCard(resource));
+                    } else if (['學習資源','零件供應商','賽事資訊'].includes(resource.category)) {
+                        grid.appendChild(createResourceCard(resource));
+                    } else {
+                        grid.appendChild(createResourceCard(resource));
+                    }
+                });
+
+                contentArea.appendChild(grid);
+
+                if (isOverview && hiddenCount > 0) {
+                    const moreBtn = document.createElement('button');
+                    moreBtn.className = 'show-more-btn';
+                    moreBtn.innerHTML = `展開查看全部 ${sortedResources.length} 筆 ▾`;
+                    moreBtn.onclick = () => filterByCategory(category, null);
+                    contentArea.appendChild(moreBtn);
+                }
+            }
+            return section;
+        }
+
+        function renderResources() {
+            const container = document.getElementById('resourcesContainer');
+            container.innerHTML = '';
+            const isOverview = currentFilter === 'all';
+
+            if (isOverview) {
+                // Top: 人員管理 + 工作日誌 side by side
+                const splitRow = document.createElement('div');
+                splitRow.className = 'overview-split-row';
+                splitRow.appendChild(buildCategorySection('人員管理'));
+                splitRow.appendChild(buildCategorySection('工作日誌'));
+                container.appendChild(splitRow);
+
+                // Remaining categories below
+                categories
+                    .filter(c => c !== '人員管理' && c !== '工作日誌')
+                    .forEach(category => {
+                        const count = resources.filter(r => r.category === category).length;
+                        if (count === 0) return;
+                        container.appendChild(buildCategorySection(category));
+                    });
+            } else {
+                const categoryResources = resources.filter(r => r.category === currentFilter);
+                if (categoryResources.length >= 0) {
+                    container.appendChild(buildCategorySection(currentFilter, true));
+                }
+            }
+        }
+
+        function switchWorklogView(mode) {
+            worklogViewMode = mode;
+            renderResources();
+        }
+
+        function createWorklogTimeline(worklogs) {
+            if (worklogs.length === 0) {
+                const empty = document.createElement('div');
+                empty.style.padding = '40px';
+                empty.style.textAlign = 'center';
+                empty.style.color = 'var(--text-secondary)';
+                empty.textContent = '尚無工作日誌';
+                return empty;
+            }
+
+            const timeline = document.createElement('div');
+            timeline.className = 'timeline-container';
+
+            let minDate = new Date();
+            let maxDate = new Date();
+            
+            worklogs.forEach(log => {
+                const start = new Date(log.startDate || log.createdAt);
+                const end = new Date(log.endDate || log.startDate || log.createdAt);
+                if (start < minDate) minDate = start;
+                if (end > maxDate) maxDate = end;
+            });
+
+            const today = new Date();
+            if (timelineRange === '1month') {
+                minDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                maxDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            } else if (timelineRange === '3months') {
+                minDate = new Date(today.getTime() - 90*24*60*60*1000);
+                maxDate = new Date(today.getTime() + 90*24*60*60*1000);
+            } else if (timelineRange === '6months') {
+                minDate = new Date(today.getTime() - 180*24*60*60*1000);
+                maxDate = new Date(today.getTime() + 180*24*60*60*1000);
+            } else if (timelineRange === '12months') {
+                minDate = new Date(today.getTime() - 365*24*60*60*1000);
+                maxDate = new Date(today.getTime() + 365*24*60*60*1000);
+            } else {
+                const padding = (maxDate - minDate) * 0.1;
+                minDate = new Date(minDate.getTime() - padding);
+                maxDate = new Date(maxDate.getTime() + padding);
+            }
+
+            const totalDays = (maxDate - minDate) / (1000 * 60 * 60 * 24);
+
+            timeline.innerHTML = `
+                <div class="timeline-controls">
+                    <button class="timeline-range-btn ${timelineRange === 'auto' ? 'active' : ''}" onclick="setTimelineRange('auto')">全部</button>
+                    <button class="timeline-range-btn ${timelineRange === '1month' ? 'active' : ''}" onclick="setTimelineRange('1month')">月</button>
+                    <button class="timeline-range-btn ${timelineRange === '3months' ? 'active' : ''}" onclick="setTimelineRange('3months')">3個月</button>
+                    <button class="timeline-range-btn ${timelineRange === '6months' ? 'active' : ''}" onclick="setTimelineRange('6months')">6個月</button>
+                    <button class="timeline-range-btn ${timelineRange === '12months' ? 'active' : ''}" onclick="setTimelineRange('12months')">12個月</button>
+                </div>
+                <div class="timeline-scale" id="timelineScale"></div>
+                <div class="timeline-tracks" id="timelineTracks"></div>
+            `;
+
+            const scale = timeline.querySelector('#timelineScale');
+            const tickCount = totalDays < 30 ? 10 : totalDays < 180 ? 12 : 12;
+            
+            for (let i = 0; i <= tickCount; i++) {
+                const percent = (i / tickCount) * 100;
+                const tickDate = new Date(minDate.getTime() + (maxDate - minDate) * (i / tickCount));
+                
+                const tick = document.createElement('div');
+                tick.className = 'timeline-tick';
+                tick.style.left = percent + '%';
+                
+                let label;
+                if (totalDays < 30) {
+                    label = `${tickDate.getMonth()+1}/${tickDate.getDate()}`;
+                } else if (totalDays < 180) {
+                    label = `${tickDate.getMonth()+1}/${tickDate.getDate()}`;
+                } else {
+                    label = `${tickDate.getFullYear()}/${tickDate.getMonth()+1}`;
+                }
+                
+                tick.innerHTML = `
+                    <div class="timeline-tick-line"></div>
+                    <div class="timeline-tick-label">${label}</div>
+                `;
+                scale.appendChild(tick);
+            }
+
+            const todayPercent = ((today - minDate) / (maxDate - minDate)) * 100;
+            if (todayPercent >= 0 && todayPercent <= 100) {
+                const todayLine = document.createElement('div');
+                todayLine.className = 'timeline-today';
+                todayLine.style.left = todayPercent + '%';
+                todayLine.innerHTML = '<div class="timeline-today-label">今天</div>';
+                scale.appendChild(todayLine);
+            }
+
+            const grouped = {};
+            worklogs.forEach(log => {
+                const type = log.workType || '其他';
+                if (!grouped[type]) grouped[type] = [];
+                grouped[type].push(log);
+            });
+
+            const tracksContainer = timeline.querySelector('#timelineTracks');
+            Object.keys(grouped).forEach(type => {
+                const track = document.createElement('div');
+                track.className = 'timeline-track';
+                track.innerHTML = `
+                    <div class="track-label">${type}</div>
+                    <div class="track-timeline" data-type="${type}"></div>
+                `;
+                tracksContainer.appendChild(track);
+
+                const trackTimeline = track.querySelector('.track-timeline');
+                const items = [];
+                
+                grouped[type].forEach(log => {
+                    const start = new Date(log.startDate || log.createdAt);
+                    const end = new Date(log.endDate || log.startDate || log.createdAt);
+                    
+                    const leftPercent = ((start - minDate) / (maxDate - minDate)) * 100;
+                    const widthPercent = Math.max(5, ((end - start) / (maxDate - minDate)) * 100);
+                    
+                    if (leftPercent + widthPercent < 0 || leftPercent > 100) return;
+                    
+                    items.push({
+                        log,
+                        left: Math.max(0, leftPercent),
+                        width: Math.min(100 - Math.max(0, leftPercent), widthPercent),
+                        start: leftPercent,
+                        end: leftPercent + widthPercent
+                    });
+                });
+
+                // Detect overlaps and adjust Y position
+                items.forEach((item, idx) => {
+                    let yOffset = 0;
+                    for (let i = 0; i < idx; i++) {
+                        const other = items[i];
+                        if (!(item.start >= other.end || item.end <= other.start)) {
+                            yOffset = Math.max(yOffset, (other.yOffset || 0) + 60);
+                        }
+                    }
+                    item.yOffset = yOffset;
+                });
+
+                items.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'timeline-item';
+                    div.style.left = item.left + '%';
+                    div.style.width = item.width + '%';
+                    div.style.top = item.yOffset + 'px';
+                    div.style.background = workTypeColors[item.log.workType] || '#95A5A6';
+                    
+                    div.innerHTML = `
+                        <div class="timeline-item-title">${item.log.name}</div>
+                        <div class="timeline-item-progress">${item.log.progress}%</div>
+                    `;
+                    
+                    div.onclick = () => editResource(item.log.id);
+                    trackTimeline.appendChild(div);
+                });
+
+                if (items.length > 0) {
+                    const maxY = Math.max(...items.map(i => i.yOffset));
+                    trackTimeline.style.minHeight = (maxY + 60) + 'px';
+                }
+            });
+
+            return timeline;
+        }
+
+        function setTimelineRange(range) {
+            timelineRange = range;
+            renderResources();
+        }
+
+        function showWorklogDetail(id) {
+            const log = resources.find(r => r.id === id);
+            if (!log) return;
+
+            const color = workTypeColors[log.workType] || '#95A5A6';
+
+            document.getElementById('worklogDetailContent').innerHTML = `
+                <div class="worklog-detail-card">
+                    <div class="worklog-detail-header">
+                        <div>
+                            <div style="color: ${color}; font-size: 12px; font-weight: 600; margin-bottom: 4px;">${log.workType}</div>
+                            <div class="worklog-detail-title">${log.name}</div>
+                        </div>
+                        <div class="worklog-detail-actions">
+                            <button class="icon-btn" onclick="editResource('${log.id}'); closeWorklogDetail();" title="編輯">✏️</button>
+                            <button class="icon-btn" onclick="deleteResourceFromDetail('${log.id}')" title="刪除">🗑️</button>
+                        </div>
+                    </div>
+
+                    <div class="worklog-detail-meta">
+                        <div class="worklog-detail-field">
+                            <div class="worklog-detail-label">完成度</div>
+                            <div class="worklog-detail-value" style="color: ${color};">${log.progress}%</div>
+                        </div>
+                        <div class="worklog-detail-field">
+                            <div class="worklog-detail-label">開始日期</div>
+                            <div class="worklog-detail-value">${log.startDate || '-'}</div>
+                        </div>
+                        <div class="worklog-detail-field">
+                            <div class="worklog-detail-label">預計完成</div>
+                            <div class="worklog-detail-value">${log.endDate || '-'}</div>
+                        </div>
+                        <div class="worklog-detail-field">
+                            <div class="worklog-detail-label">狀態</div>
+                            <div class="worklog-detail-value">${log.progress === 100 ? '✅ 已完成' : '🔄 進行中'}</div>
+                        </div>
+                    </div>
+
+                    ${log.notes ? `
+                        <div class="worklog-detail-notes">
+                            <div class="worklog-detail-notes-title">📝 備註 / 想法 / 規劃</div>
+                            <div class="worklog-detail-notes-content">${log.notes}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            document.getElementById('worklogDetailModal').classList.add('show');
+        }
+
+        function closeWorklogDetail() {
+            document.getElementById('worklogDetailModal').classList.remove('show', 'person-modal');
+        }
+
+        function deleteResourceFromDetail(id) {
+            if (confirm('確定要刪除這個工作日誌嗎？')) {
+                resources = resources.filter(r => r.id !== id);
+                saveData();
+                closeWorklogDetail();
+                renderResources();
+                showNotification('已刪除');
+            }
+        }
+
+        function createWorklogCard(log) {
+            const card = document.createElement('div');
+            card.className = 'worklog-card' + (log.progress === 100 ? ' completed' : '');
+            card.style.borderLeftColor = workTypeColors[log.workType] || '#95A5A6';
+
+            card.innerHTML = `
+                <div class="worklog-header">
+                    <div class="worklog-title">${log.name}</div>
+                    <div class="worklog-progress">${log.progress}%</div>
+                </div>
+                <div class="worklog-meta">
+                    <span style="color: ${workTypeColors[log.workType]};">📁 ${log.workType || '未分類'}</span>
+                    ${log.startDate ? `<span>📅 ${log.startDate}</span>` : ''}
+                </div>
+                ${log.notes ? `<div class="worklog-description" style="margin-top: 8px;">${log.notes.substring(0, 100)}${log.notes.length > 100 ? '...' : ''}</div>` : ''}
+            `;
+
+            card.onclick = () => showWorklogDetail(log.id);
+            return card;
+        }
+
+        function createPlanCard(plan) {
+            const card = document.createElement('div');
+            card.className = 'plan-card';
+            card.draggable = true;
+            card.dataset.id = plan.id;
+
+            const imageHTML = plan.image ? 
+                `<img src="${plan.image}" alt="${plan.name}">` : 
+                `<img class="plan-og-img" alt="" style="display:none;"><span class="plan-img-placeholder">⛓️💥</span>`;
+
+            card.innerHTML = `
+                <div class="plan-card-actions">
+                    <button class="icon-btn" onclick="editResource('${plan.id}'); event.stopPropagation();">✏️</button>
+                    <button class="icon-btn" onclick="deleteResource('${plan.id}'); event.stopPropagation();">🗑️</button>
+                </div>
+                <div class="plan-card-image">${imageHTML}</div>
+                <div class="plan-card-content">
+                    <div class="plan-card-header">
+                        <div class="plan-card-title">${plan.name}</div>
+                        ${plan.tag ? `<div class="plan-card-tag">${plan.tag}</div>` : ''}
+                    </div>
+                    ${plan.url ? `
+                        <div class="plan-card-meta">
+                            <span>🔗 連結</span>
+                        </div>
+                    ` : ''}
+                    ${plan.content ? `<div class="plan-card-desc">${plan.content.substring(0, 80)}${plan.content.length > 80 ? '...' : ''}</div>` : ''}
+                    ${plan.description ? `<div class="plan-card-desc">${plan.description.substring(0, 80)}${plan.description.length > 80 ? '...' : ''}</div>` : ''}
+                </div>
+            `;
+
+            // 沒有手動圖片但有 URL → 抓 og:image
+            if (!plan.image && plan.url) {
+                const img = card.querySelector('.plan-og-img');
+                const placeholder = card.querySelector('.plan-img-placeholder');
+                if (ogImageCache[plan.url]) {
+                    img.src = ogImageCache[plan.url];
+                    img.style.display = 'block';
+                    if (placeholder) placeholder.style.display = 'none';
+                } else {
+                    fetch(`https://api.microlink.io/?url=${encodeURIComponent(plan.url)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            const imgUrl = data?.data?.image?.url;
+                            if (imgUrl && img) {
+                                ogImageCache[plan.url] = imgUrl;
+                                img.src = imgUrl;
+                                img.style.display = 'block';
+                                if (placeholder) placeholder.style.display = 'none';
+                            }
+                        })
+                        .catch(() => {});
+                }
+            }
+
+            // Drag events
+            card.addEventListener('dragstart', (e) => {
+                draggedPlanId = plan.id;
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+                draggedPlanId = null;
+            });
+
+            card.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+
+            card.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (draggedPlanId && draggedPlanId !== plan.id) {
+                    swapPlanOrder(draggedPlanId, plan.id);
+                }
+            });
+
+            // Click to view detail
+            card.onclick = (e) => {
+                if (!e.target.closest('.plan-card-actions')) {
+                    if (plan.isPlan) {
+                        showPlanDetail(plan.id);
+                    } else {
+                        showResourceDetail(plan.id);
+                    }
+                }
+            };
+
+            return card;
+        }
+
+        function swapPlanOrder(id1, id2) {
+            const idx1 = resources.findIndex(r => r.id === id1);
+            const idx2 = resources.findIndex(r => r.id === id2);
+            
+            if (idx1 !== -1 && idx2 !== -1) {
+                const temp = resources[idx1].order;
+                resources[idx1].order = resources[idx2].order;
+                resources[idx2].order = temp;
+                
+                saveData();
+                renderResources();
+                showNotification('已調整順序');
+            }
+        }
+
+        function showPlanDetail(id) {
+            const plan = resources.find(r => r.id === id);
+            if (!plan) return;
+
+            const imageHTML = plan.image ? 
+                `<img src="${plan.image}" class="plan-detail-image" alt="${plan.name}">` : '';
+
+            document.getElementById('worklogDetailContent').innerHTML = `
+                <div class="plan-detail-modal">
+                    <div id="planDetailImgWrap">${imageHTML}</div>
+                    <div class="plan-detail-content">
+                        <div class="plan-detail-header">
+                            <div class="plan-detail-title">${plan.name}</div>
+                            <div class="plan-detail-meta">
+                                ${plan.tag ? `<span>${plan.tag}</span>` : ''}
+                            </div>
+                        </div>
+                        ${plan.url ? `
+                            <div style="margin-bottom: 16px;">
+                                <a href="${plan.url}" target="_blank" style="color: var(--primary-orange); text-decoration: none;">
+                                    🔗 ${plan.url}
+                                </a>
+                            </div>
+                        ` : ''}
+                        ${plan.content ? `
+                            <div class="plan-detail-body">${plan.content}</div>
+                        ` : ''}
+                        <div class="plan-detail-actions">
+                            <button class="icon-btn" onclick="editResource('${plan.id}'); closeWorklogDetail();" title="編輯">✏️</button>
+                            <button class="icon-btn" onclick="deleteResourceFromDetail('${plan.id}')" title="刪除">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 若無圖片但有 URL，抓 og:image
+            if (!plan.image && plan.url) {
+                const wrap = document.getElementById('planDetailImgWrap');
+                const fetchImg = (url) => {
+                    const img = document.createElement('img');
+                    img.className = 'plan-detail-image';
+                    img.alt = plan.name;
+                    img.src = url;
+                    wrap.appendChild(img);
+                };
+                if (ogImageCache[plan.url]) {
+                    fetchImg(ogImageCache[plan.url]);
+                } else {
+                    fetch(`https://api.microlink.io/?url=${encodeURIComponent(plan.url)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            const imgUrl = data?.data?.image?.url;
+                            if (imgUrl) { ogImageCache[plan.url] = imgUrl; fetchImg(imgUrl); }
+                        })
+                        .catch(() => {});
+                }
+            }
+
+            document.getElementById('worklogDetailModal').classList.add('show');
+        }
+
+        function createPersonCard(person) {
+            const card = document.createElement('div');
+            card.className = 'person-card';
+            
+            const workTypes = person.workTypes ? person.workTypes.split(',').map(t => t.trim()) : [];
+            
+            const avatarHTML = person.avatar && person.avatar.startsWith('data:') ? 
+                `<img src="${person.avatar}">` : 
+                person.avatar || '👤';
+
+            const workTypeTags = workTypes.map(type => {
+                const color = workTypeColors[type] || '#999999';
+                return `<span class="work-type-tag" style="background: ${color};">${type}</span>`;
+            }).join('');
+
+            card.innerHTML = `
+                <div class="person-card-content">
+                    <div class="person-avatar-col">
+                        <div class="person-avatar-large">${avatarHTML}</div>
+                        ${person.position ? `<div class="person-position-badge">${person.position}</div>` : ''}
+                    </div>
+                    <div class="person-info">
+                        <div class="person-name">${person.name}</div>
+                        ${workTypes.length > 0 ? `<div class="person-work-types">${workTypeTags}</div>` : ''}
+                    </div>
+                </div>
+            `;
+
+            card.onclick = (e) => {
+                if (!e.target.closest('.person-card-actions')) {
+                    showPersonDetail(person.id);
+                }
+            };
+
+            return card;
+        }
+
+        function createPersonFullCard(person) {
+            const card = document.createElement('div');
+            card.className = 'person-full-card';
+            const workTypes = person.workTypes ? person.workTypes.split(',').map(t => t.trim()) : [];
+            const avatarHTML = person.avatar && person.avatar.startsWith('data:') ?
+                `<img src="${person.avatar}">` : person.avatar || '👤';
+            const workTypeTags = workTypes.map(type => {
+                const color = workTypeColors[type] || '#999999';
+                return `<span class="work-type-tag" style="background:${color};">${type}</span>`;
+            }).join('');
+            card.onclick = () => showPersonDetail(person.id);
+            card.innerHTML = `
+                <div class="person-full-card-content">
+                    <div class="person-full-avatar-col">
+                        <div class="person-full-avatar">${avatarHTML}</div>
+                        ${person.position ? `<div class="person-detail-position">${person.position}</div>` : ''}
+                    </div>
+                    <div class="person-full-info">
+                        <div class="person-full-name">${person.name}</div>
+                        ${person.email ? `<div class="person-full-contact">GMAIL: ${person.email}</div>` : ''}
+                        ${person.phone ? `<div class="person-full-contact">Phone: ${person.phone}</div>` : ''}
+                        ${workTypes.length > 0 ? `<div class="person-work-types" style="margin-top:8px;">${workTypeTags}</div>` : ''}
+                        ${person.department || person.grade ? `<div class="person-full-meta">${[person.department, person.grade].filter(Boolean).join(' · ')}</div>` : ''}
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        function showPersonDetail(id) {
+            const person = resources.find(r => r.id === id);
+            if (!person) return;
+
+            const workTypes = person.workTypes ? person.workTypes.split(',').map(t => t.trim()) : [];
+            const avatarHTML = person.avatar && person.avatar.startsWith('data:') ? 
+                `<img src="${person.avatar}">` : 
+                person.avatar || '👤';
+
+            const workTypeTags = workTypes.map(type => {
+                const color = workTypeColors[type] || '#999999';
+                return `<span class="person-detail-tag" style="background: ${color};">${type}</span>`;
+            }).join('');
+
+            document.getElementById('worklogDetailContent').innerHTML = `
+                <div class="person-detail-modal">
+                    <div class="person-detail-content">
+                        <div class="person-detail-avatar-col">
+                            <div class="person-detail-avatar">${avatarHTML}</div>
+                            ${person.position ? `<div class="person-detail-position">${person.position}</div>` : ''}
+                        </div>
+                        <div class="person-detail-info">
+                            <div class="person-detail-name">${person.name}</div>
+                            ${person.email ? `<div class="person-detail-contact">GMAIL: ${person.email}</div>` : ''}
+                            ${person.phone ? `<div class="person-detail-contact">Phone: ${person.phone}</div>` : ''}
+                            ${workTypes.length > 0 ? `<div class="person-detail-tags">${workTypeTags}</div>` : ''}
+                            ${person.department || person.grade || person.joinDate || person.skills || person.otherInfo ? `
+                                <div class="person-detail-extra">
+                                    ${person.department ? `<div class="person-detail-field"><div class="person-detail-label">科系</div><div class="person-detail-value">${person.department}</div></div>` : ''}
+                                    ${person.grade ? `<div class="person-detail-field"><div class="person-detail-label">年級</div><div class="person-detail-value">${person.grade}</div></div>` : ''}
+                                    ${person.joinDate ? `<div class="person-detail-field"><div class="person-detail-label">入隊日期</div><div class="person-detail-value">${person.joinDate}</div></div>` : ''}
+                                    ${person.skills ? `<div class="person-detail-field"><div class="person-detail-label">興趣技能</div><div class="person-detail-value">${person.skills}</div></div>` : ''}
+                                    ${person.otherInfo ? `<div class="person-detail-field"><div class="person-detail-label">其他資訊</div><div class="person-detail-value">${person.otherInfo}</div></div>` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="person-modal-bottom-actions">
+                        <button class="icon-btn" onclick="editResource('${person.id}'); closeWorklogDetail();" title="編輯">✏️ 編輯</button>
+                        <button class="icon-btn" onclick="deleteResourceFromDetail('${person.id}')" title="刪除">🗑️ 刪除</button>
+                    </div>
+                </div>
+            `;
+
+            const m = document.getElementById('worklogDetailModal');
+            m.classList.add('show', 'person-modal');
+        }
+
+        function createResourceCard(resource) {
+            const card = document.createElement('div');
+            card.className = 'resource-card' + (resource.pinned ? ' pinned' : '');
+            card.style.cursor = 'pointer';
+
+            const priorityMap = {high: '重要', medium: '中等', low: '參考', '高': '重要', '中': '中等', '低': '參考'};
+            const priorityText = priorityMap[resource.priority] || resource.priority || '';
+            const priorityCls = ({high: 'high', medium: 'medium', low: 'low', '高': 'high', '中': 'medium', '低': 'low'}[resource.priority]) || 'medium';
+
+            card.innerHTML = `
+                ${resource.url ? `<div class="resource-preview-wrap"><img class="resource-preview-img" alt=""></div>` : ''}
+                <div class="card-header">
+                    <div class="resource-name">${resource.name}</div>
+                    <div class="card-actions">
+                        <button class="icon-btn" onclick="togglePin('${resource.id}'); event.stopPropagation();">📌</button>
+                        <button class="icon-btn" onclick="editResource('${resource.id}'); event.stopPropagation();">✏️</button>
+                        <button class="icon-btn" onclick="deleteResource('${resource.id}'); event.stopPropagation();">🗑️</button>
+                    </div>
+                </div>
+                ${priorityText ? `<span class="priority-badge priority-${priorityCls}">${priorityText}</span>` : ''}
+                <p class="resource-description">${resource.description || ''}</p>
+                ${resource.url ? `<a href="${resource.url}" class="resource-url" target="_blank" onclick="event.stopPropagation()">${resource.url.replace(/^https?:\/\//, '')}</a>` : ''}
+            `;
+
+            // 載入 og:image（有 cache 就直接用）
+            if (resource.url) {
+                const img = card.querySelector('.resource-preview-img');
+                if (ogImageCache[resource.url]) {
+                    img.src = ogImageCache[resource.url];
+                } else {
+                    fetch(`https://api.microlink.io/?url=${encodeURIComponent(resource.url)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            const imgUrl = data?.data?.image?.url;
+                            if (imgUrl) {
+                                ogImageCache[resource.url] = imgUrl;
+                                img.src = imgUrl;
+                            } else {
+                                // 沒有 og:image 就隱藏預覽區
+                                card.querySelector('.resource-preview-wrap').style.display = 'none';
+                            }
+                        })
+                        .catch(() => {
+                            const wrap = card.querySelector('.resource-preview-wrap');
+                            if (wrap) wrap.style.display = 'none';
+                        });
+                }
+            }
+
+            card.onclick = () => showResourceDetail(resource.id);
+            return card;
+        }
+
+        function showResourceDetail(id) {
+            const resource = resources.find(r => r.id === id);
+            if (!resource) return;
+
+            const priorityMap2 = {high: '重要', medium: '中等', low: '參考', '高': '重要', '中': '中等', '低': '參考'};
+            const priorityText = priorityMap2[resource.priority] || resource.priority || '';
+            const priorityCls = ({high: 'high', medium: 'medium', low: 'low', '高': 'high', '中': 'medium', '低': 'low'}[resource.priority]) || 'medium';
+
+            // Part categories as tags
+            const partCatTags = (resource.partCategories || '')
+                .split(',').map(s => s.trim()).filter(Boolean)
+                .map(c => `<span class="priority-badge priority-medium" style="background:${workTypeColors[c]||'var(--bg-secondary)'}; color:#fff; border:none;">${c}</span>`)
+                .join(' ');
+
+            document.getElementById('worklogDetailContent').innerHTML = `
+                <div class="plan-detail-modal">
+                    <div class="plan-detail-content">
+                        <div class="plan-detail-header">
+                            <div class="plan-detail-title">${resource.name}</div>
+                            <div class="plan-detail-meta">
+                                ${priorityText ? `<span class="priority-badge priority-${priorityCls}">${priorityText}</span>` : ''}
+                                ${partCatTags}
+                            </div>
+                        </div>
+                        ${resource.price ? `
+                            <div style="font-size:15px; font-weight:700; color:var(--primary-orange); margin-bottom:12px;">💰 ${resource.price}</div>
+                        ` : ''}
+                        ${resource.url ? `
+                            <div style="margin-bottom: 16px;">
+                                <a href="${resource.url}" target="_blank" style="color: var(--accent-blue); text-decoration: none; font-size:13px; word-break:break-all;">
+                                    🔗 ${resource.url}
+                                </a>
+                            </div>
+                        ` : ''}
+                        ${resource.description ? `
+                            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height:1.6;">${resource.description}</div>
+                        ` : ''}
+                        ${resource.detailedContent ? `
+                            <div class="plan-detail-body">${resource.detailedContent}</div>
+                        ` : ''}
+                        <div class="plan-detail-actions">
+                            <button class="icon-btn" onclick="editResource('${resource.id}'); closeWorklogDetail();" title="編輯">✏️ 編輯</button>
+                            <button class="icon-btn" onclick="deleteResourceFromDetail('${resource.id}')" title="刪除">🗑️ 刪除</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('worklogDetailModal').classList.add('show');
+        }
+
+        function togglePin(id) {
+            const resource = resources.find(r => r.id === id);
+            resource.pinned = !resource.pinned;
+            saveData();
+            renderResources();
+            showNotification(resource.pinned ? '已置頂' : '已取消置頂');
+        }
+
+        function filterByCategory(category, btn) {
+            currentFilter = category;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            if (btn) {
+                btn.classList.add('active');
+            } else {
+                // Called programmatically (e.g. from show-more): find matching tab
+                document.querySelectorAll('.filter-btn').forEach(b => {
+                    if (b.getAttribute('onclick')?.includes(`'${category}'`)) b.classList.add('active');
+                });
+            }
+            renderResources();
+        }
+
+        function setupSearch() {
+            document.getElementById('searchInput').addEventListener('input', function() {
+                const term = this.value.toLowerCase();
+                document.querySelectorAll('.resource-card, .person-card, .worklog-card').forEach(card => {
+                    card.style.display = card.textContent.toLowerCase().includes(term) ? 'block' : 'none';
+                });
+            });
+        }
+
+        function openAddModalForCategory(category) {
+            currentEditId = null;
+            currentAvatarData = null;
+            document.getElementById('modalTitle').textContent = `新增${category}`;
+            document.getElementById('resourceForm').reset();
+            document.getElementById('formCategory').value = category;
+            resetWorkTypePills();
+            resetPillSelector('formPosition-pills', 'formPosition');
+            resetPillSelector('formGrade-pills', 'formGrade');
+            resetPillSelector('formDepartment-pills', 'formDepartment');
+            resetPillSelector('formWorkType-pills', 'formWorkType');
+            document.getElementById('formDepartmentOther').style.display = 'none';
+            document.getElementById('formDepartmentOther').value = '';
+
+            // planTag 預設「討論中」
+            setPillOption('formPlanTag-pills', 'formPlanTag', '討論中');
+            // event pills 預設
+            setPillOption('formEventPriority-pills', 'formEventPriority', 'medium');
+            setPillOption('formEventTag-pills', 'formEventTag', '即將到來');
+            // resource priority 預設
+            setPillOption('formPriority-pills', 'formPriority', 'medium');
+            // tool / part / learning 預設
+            resetPillSelector('formToolType-pills', 'formToolType');
+            setPillOption('formToolPriority-pills', 'formToolPriority', 'medium');
+            resetMultiPills('partCategory-pills');
+            setPillOption('formPartPriority-pills', 'formPartPriority', 'medium');
+            resetPillSelector('formLearnType-pills', 'formLearnType');
+            resetMultiPills('learnField-pills');
+            setPillOption('formLearnPriority-pills', 'formLearnPriority', 'medium');
+            // 清除 event 圖片
+            currentEventImageData = null;
+            document.getElementById('eventImagePreview').style.display = 'none';
+            document.getElementById('eventImagePreviewImg').src = '';
+            document.getElementById('eventUrlInput').style.display = 'none';
+            document.getElementById('formEventUrl').value = '';
+
+            // 所有日期欄位預設 2026-今天
+            const today = new Date();
+            const defaultDate = `2026-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            ['formJoinDate', 'formStartDate', 'formEndDate', 'formEventDate'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = defaultDate;
+            });
+            updateWeekday('formJoinDate', 'joinWeekday');
+            updateWeekday('formStartDate', 'startWeekday');
+            updateWeekday('formEndDate', 'endWeekday');
+            updateWeekday('formEventDate', 'eventWeekday');
+
+            toggleFormFields();
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function toggleFormFields() {
+            const category  = document.getElementById('formCategory').value;
+            const isPerson   = category === '人員管理';
+            const isWorklog  = category === '工作日誌';
+            const isPlan     = category === '計畫';
+            const isEvent    = category === '賽事資訊';
+            const isTool     = category === '工程工具';
+            const isPart     = category === '零件供應商';
+            const isLearning = category === '學習資源';
+
+            document.getElementById('personFormFields').classList.toggle('hidden', !isPerson);
+            document.getElementById('worklogFormFields').classList.toggle('hidden', !isWorklog);
+            document.getElementById('planFormFields').classList.toggle('hidden', !isPlan);
+            document.getElementById('eventFormFields').classList.toggle('hidden', !isEvent);
+            document.getElementById('toolFormFields').classList.toggle('hidden', !isTool);
+            document.getElementById('partFormFields').classList.toggle('hidden', !isPart);
+            document.getElementById('learningFormFields').classList.toggle('hidden', !isLearning);
+
+            document.getElementById('formPersonName').required   = isPerson;
+            document.getElementById('formWorklogTitle').required  = isWorklog;
+            document.getElementById('formStartDate').required    = isWorklog;
+            document.getElementById('formPlanTitle').required    = isPlan;
+            document.getElementById('formEventTitle').required   = isEvent;
+            document.getElementById('formToolName').required     = isTool;
+            document.getElementById('formPartName').required     = isPart;
+            document.getElementById('formLearnName').required    = isLearning;
+        }
+
+        function toggleEventUrlInput() {
+            const el = document.getElementById('eventUrlInput');
+            const show = el.style.display === 'none';
+            el.style.display = show ? 'block' : 'none';
+            if (!show) document.getElementById('formEventUrl').value = '';
+        }
+
+        function previewEventImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                currentEventImageData = e.target.result;
+                document.getElementById('eventImagePreview').style.display = 'block';
+                document.getElementById('eventImagePreviewImg').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function editResource(id) {
+            currentEditId = id;
+            const resource = resources.find(r => r.id === id);
+            
+            document.getElementById('modalTitle').textContent = '編輯';
+            document.getElementById('formCategory').value = resource.category;
+            toggleFormFields();
+
+            if (resource.isPerson) {
+                document.getElementById('formPersonName').value = resource.name || '';
+                document.getElementById('formJoinDate').value = resource.joinDate || '';
+                document.getElementById('formEmail').value = resource.email || '';
+                document.getElementById('formPhone').value = resource.phone || '';
+                document.getElementById('formSkills').value = resource.skills || '';
+                document.getElementById('formOtherInfo').value = resource.otherInfo || '';
+                
+                // Set checkboxes + sync pills
+                const types = resource.workTypes ? resource.workTypes.split(',').map(t => t.trim()) : [];
+                resetWorkTypePills();
+                document.querySelectorAll('.work-type-checkbox').forEach(cb => { cb.checked = types.includes(cb.value); });
+                document.querySelectorAll('.work-type-pill').forEach(pill => {
+                    if (types.includes(pill.dataset.value)) pill.classList.add('active');
+                });
+
+                setPillOption('formPosition-pills', 'formPosition', resource.position || '');
+                setPillOption('formGrade-pills', 'formGrade', resource.grade || '');
+                resetPillSelector('formDepartment-pills', 'formDepartment');
+                const dept = resource.department || '';
+                const stdDepts = ['機械工程系','車輛工程系','模具工程系','電機工程系','環境安全系','造船系'];
+                if (dept && !stdDepts.includes(dept)) {
+                    setPillOption('formDepartment-pills', 'formDepartment', '其他');
+                    document.getElementById('formDepartmentOther').value = dept;
+                    document.getElementById('formDepartmentOther').style.display = 'block';
+                } else {
+                    setPillOption('formDepartment-pills', 'formDepartment', dept);
+                    document.getElementById('formDepartmentOther').style.display = 'none';
+                }
+
+                // Update weekday
+                updateWeekday('formJoinDate', 'joinWeekday');
+
+                if (resource.avatar) {
+                    const preview = document.getElementById('avatarPreview');
+                    if (resource.avatar.startsWith('data:')) {
+                        preview.innerHTML = `<img src="${resource.avatar}">`;
+                    } else {
+                        preview.textContent = resource.avatar;
+                    }
+                    currentAvatarData = resource.avatar;
+                }
+            } else if (resource.isWorklog) {
+                document.getElementById('formWorkType').value = resource.workType || '';
+                setPillOption('formWorkType-pills', 'formWorkType', resource.workType || '');
+                document.getElementById('formWorklogTitle').value = resource.name || '';
+                document.getElementById('formProgress').value = resource.progress || 0;
+                document.getElementById('formStartDate').value = resource.startDate || '';
+                document.getElementById('formEndDate').value = resource.endDate || '';
+                document.getElementById('formWorklogNotes').value = resource.notes || '';
+                
+                updateWeekday('formStartDate', 'startWeekday');
+                updateWeekday('formEndDate', 'endWeekday');
+            } else if (resource.isPlan) {
+                document.getElementById('formPlanTitle').value = resource.name || '';
+                document.getElementById('formPlanUrl').value = resource.url || '';
+                document.getElementById('formPlanContent').value = resource.content || '';
+                document.getElementById('formPlanTag').value = resource.tag || '討論中';
+                
+                if (resource.image) {
+                    currentPlanImageData = resource.image;
+                    document.getElementById('planImagePreview').style.display = 'block';
+                    document.getElementById('planImagePreviewImg').src = resource.image;
+                }
+                
+                if (resource.url) {
+                    document.getElementById('planUrlInput').style.display = 'block';
+                }
+            } else if (resource.category === '工程工具') {
+                document.getElementById('formToolName').value = resource.name || '';
+                document.getElementById('formToolUrl').value = resource.url || '';
+                setPillOption('formToolType-pills', 'formToolType', resource.tag || '');
+                setPillOption('formToolPriority-pills', 'formToolPriority', resource.priority || 'medium');
+                document.getElementById('formToolDesc').value = resource.description || '';
+            } else if (resource.category === '零件供應商') {
+                document.getElementById('formPartName').value = resource.name || '';
+                document.getElementById('formPartUrl').value = resource.url || '';
+                setActivePills('partCategory-pills', resource.partCategories || resource.tag || '');
+                document.getElementById('formPartPrice').value = resource.price || '';
+                setPillOption('formPartPriority-pills', 'formPartPriority', resource.priority || 'medium');
+                document.getElementById('formPartDesc').value = resource.description || '';
+            } else if (resource.category === '學習資源') {
+                document.getElementById('formLearnName').value = resource.name || '';
+                document.getElementById('formLearnUrl').value = resource.url || '';
+                setPillOption('formLearnType-pills', 'formLearnType', resource.tag || '');
+                setActivePills('learnField-pills', resource.learnFields || '');
+                setPillOption('formLearnPriority-pills', 'formLearnPriority', resource.priority || 'medium');
+                document.getElementById('formLearnDesc').value = resource.description || '';
+            } else {
+                document.getElementById('formName').value = resource.name;
+                document.getElementById('formUrl').value = resource.url || '';
+                document.getElementById('formPriority').value = resource.priority;
+                document.getElementById('formDescription').value = resource.description;
+                document.getElementById('formDetailedContent').value = resource.detailedContent || '';
+            }
+
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('show');
+            currentEditId = null;
+            currentAvatarData = null;
+            currentPlanImageData = null;
+            currentEventImageData = null;
+            document.getElementById('avatarPreview').textContent = '👤';
+            document.getElementById('emojiPicker').style.display = 'none';
+            document.getElementById('planImagePreview').style.display = 'none';
+            document.getElementById('planImagePreviewImg').src = '';
+            document.getElementById('eventImagePreview').style.display = 'none';
+            document.getElementById('eventImagePreviewImg').src = '';
+            document.getElementById('eventUrlInput').style.display = 'none';
+        }
+
+        function previewAvatar(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentAvatarData = e.target.result;
+                    document.getElementById('avatarPreview').innerHTML = 
+                        `<img src="${e.target.result}">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function previewPlanImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentPlanImageData = e.target.result;
+                    document.getElementById('planImagePreview').style.display = 'block';
+                    document.getElementById('planImagePreviewImg').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveResource(event) {
+            event.preventDefault();
+            
+            const category = document.getElementById('formCategory').value;
+            const isPerson = category === '人員管理';
+            const isWorklog = category === '工作日誌';
+
+            const resource = {
+                id: currentEditId || Date.now().toString(),
+                category: category,
+                pinned: currentEditId ? resources.find(r => r.id === currentEditId)?.pinned || false : false,
+                createdAt: currentEditId ? resources.find(r => r.id === currentEditId)?.createdAt : new Date().toISOString()
+            };
+
+            if (isPerson) {
+                resource.isPerson = true;
+                resource.name = document.getElementById('formPersonName').value;
+                
+                // Get checked work types
+                const checkedTypes = Array.from(document.querySelectorAll('.work-type-checkbox:checked'))
+                    .map(cb => cb.value);
+                resource.workTypes = checkedTypes.join(',');
+                
+                resource.position = document.getElementById('formPosition').value;
+                
+                // Handle department with "其他" option
+                const deptSelect = document.getElementById('formDepartment').value;
+                if (deptSelect === '其他') {
+                    resource.department = document.getElementById('formDepartmentOther').value;
+                } else {
+                    resource.department = deptSelect;
+                }
+                
+                resource.grade = document.getElementById('formGrade').value;
+                resource.joinDate = document.getElementById('formJoinDate').value;
+                resource.email = document.getElementById('formEmail').value;
+                resource.phone = document.getElementById('formPhone').value;
+                resource.skills = document.getElementById('formSkills').value;
+                resource.otherInfo = document.getElementById('formOtherInfo').value;
+                resource.avatar = currentAvatarData || '👤';
+                resource.priority = 'medium';
+            } else if (isWorklog) {
+                const workTypeVal = document.getElementById('formWorkType').value;
+                if (!workTypeVal) { alert('請選擇工作類別'); return; }
+                resource.isWorklog = true;
+                resource.workType = workTypeVal;
+                resource.name = document.getElementById('formWorklogTitle').value;
+                resource.progress = parseInt(document.getElementById('formProgress').value) || 0;
+                resource.startDate = document.getElementById('formStartDate').value;
+                resource.endDate = document.getElementById('formEndDate').value;
+                resource.notes = document.getElementById('formWorklogNotes').value;
+                resource.priority = 'medium';
+            } else if (category === '計畫') {
+                resource.isPlan = true;
+                resource.name = document.getElementById('formPlanTitle').value;
+                resource.image = currentPlanImageData;
+                resource.url = document.getElementById('formPlanUrl').value;
+                resource.content = document.getElementById('formPlanContent').value;
+                resource.tag = document.getElementById('formPlanTag').value;
+                resource.order = currentEditId ? resources.find(r => r.id === currentEditId)?.order || Date.now() : Date.now();
+                resource.priority = 'medium';
+            } else if (category === '賽事資訊') {
+                resource.isPlan = true;
+                resource.name = document.getElementById('formEventTitle').value;
+                resource.image = currentEventImageData;
+                resource.url = document.getElementById('formEventUrl').value;
+                resource.content = document.getElementById('formEventDesc').value;
+                resource.location = document.getElementById('formEventLocation').value;
+                resource.eventDate = document.getElementById('formEventDate').value;
+                resource.tag = document.getElementById('formEventTag').value;
+                resource.priority = document.getElementById('formEventPriority').value;
+            } else if (category === '工程工具') {
+                resource.name = document.getElementById('formToolName').value;
+                resource.url = document.getElementById('formToolUrl').value;
+                resource.tag = document.getElementById('formToolType').value;
+                resource.priority = document.getElementById('formToolPriority').value;
+                resource.description = document.getElementById('formToolDesc').value;
+            } else if (category === '零件供應商') {
+                resource.name = document.getElementById('formPartName').value;
+                resource.url = document.getElementById('formPartUrl').value;
+                resource.partCategories = getActivePills('partCategory-pills');
+                resource.tag = resource.partCategories;
+                resource.price = document.getElementById('formPartPrice').value;
+                resource.priority = document.getElementById('formPartPriority').value;
+                resource.description = document.getElementById('formPartDesc').value;
+            } else if (category === '學習資源') {
+                resource.name = document.getElementById('formLearnName').value;
+                resource.url = document.getElementById('formLearnUrl').value;
+                resource.tag = document.getElementById('formLearnType').value;
+                resource.learnFields = getActivePills('learnField-pills');
+                resource.priority = document.getElementById('formLearnPriority').value;
+                resource.description = document.getElementById('formLearnDesc').value;
+            } else {
+                resource.name = document.getElementById('formName').value;
+                resource.url = document.getElementById('formUrl').value;
+                resource.priority = 'medium';
+                resource.description = '';
+            }
+
+            const wasEditing = !!currentEditId;
+            if (currentEditId) {
+                const index = resources.findIndex(r => r.id === currentEditId);
+                resources[index] = resource;
+            } else {
+                resources.push(resource);
+            }
+
+            saveData();
+            try { renderResources(); } catch(e) { console.error('renderResources:', e); }
+            closeModal();
+            showNotification(wasEditing ? '已更新' : '已新增');
+        }
+
+        function deleteResource(id) {
+            if (confirm('確定要刪除嗎？')) {
+                resources = resources.filter(r => r.id !== id);
+                saveData();
+                renderResources();
+                showNotification('已刪除');
+            }
+        }
+
+        function openCalendar() {
+            document.getElementById('calendarContent').innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">行事曆功能開發中...</p>';
+            document.getElementById('calendarModal').classList.add('show');
+        }
+
+        function closeCalendar() {
+            document.getElementById('calendarModal').classList.remove('show');
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 2000);
+        }
+
+        init();
+    </script>
+</body>
+</html>

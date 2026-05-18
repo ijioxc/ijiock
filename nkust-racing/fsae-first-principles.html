@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>機械第一性原則 × 學生方程式</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,600;1,400&family=Noto+Serif+TC:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #f4efe6;
+  --ink:      #0f0f0f;
+  --faint:    #888070;
+  --rule:     #d0c8b8;
+  --red:      #b83025;
+  --red-bg:   #f5e8e6;
+  --blue:     #1c3d5e;
+  --blue-bg:  #e2eaf2;
+  --gold:     #8a6610;
+  --gold-bg:  #f2e8ce;
+  --green:    #2a6b38;
+  --green-bg: #e0f0e4;
+  --grey:     #444;
+  --grey-bg:  #ebebeb;
+}
+
+body {
+  background: #2a2a2a;
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  padding: 40px 20px 80px;
+  min-height: 100vh;
+}
+
+.sheet {
+  max-width: 1100px;
+  margin: 0 auto;
+  background: var(--bg);
+  padding: 56px 60px 48px;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.5);
+}
+
+/* ======================== PAGINATION ======================== */
+.page { display: none; min-height: 500px; }
+.page.active { display: block; animation: fadeIn 0.22s ease; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.slim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 18px;
+  margin-bottom: 36px;
+  border-bottom: 1px solid var(--rule);
+}
+.slim-doc {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: var(--faint);
+  text-transform: uppercase;
+}
+.slim-pg {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.pager-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 44px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+}
+.pager-center { display: flex; align-items: center; gap: 16px; }
+.pager-dots   { display: flex; gap: 7px; align-items: center; }
+.dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--rule); cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.dot.active            { background: var(--ink); transform: scale(1.5); }
+.dot:hover:not(.active){ background: var(--faint); }
+.pager-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--faint);
+}
+.pager-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  background: none;
+  border: 1px solid var(--ink);
+  padding: 9px 22px;
+  cursor: pointer;
+  color: var(--ink);
+  transition: all 0.15s;
+}
+.pager-btn:hover:not(:disabled) { background: var(--ink); color: var(--bg); }
+.pager-btn:disabled { opacity: 0.22; cursor: default; }
+
+/* ======================== SHARED ======================== */
+.label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--faint);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.label::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+
+hr.rule { border: none; border-top: 1px solid var(--rule); margin: 32px 0; }
+
+/* ======================== PAGE 1 — HEADER & DIAGNOSIS ======================== */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 24px;
+  margin-bottom: 40px;
+  gap: 40px;
+}
+.doc-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--faint);
+  margin-bottom: 10px;
+}
+.main-title {
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.main-title em { font-style: normal; color: var(--red); }
+.sub-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 8px;
+}
+.header-right {
+  text-align: right;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--faint);
+  line-height: 2.2;
+  white-space: nowrap;
+}
+
+.diagnosis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+.diag-q {
+  background: var(--red-bg);
+  border-left: 3px solid var(--red);
+  padding: 24px 26px;
+}
+.q-big {
+  font-family: 'Space Mono', monospace;
+  font-size: 60px;
+  color: var(--red);
+  opacity: 0.12;
+  line-height: 1;
+  margin-bottom: -16px;
+}
+.q-title { font-size: 15px; font-weight: 700; color: var(--red); margin-bottom: 12px; }
+.q-body  { font-size: 13px; line-height: 1.85; color: #3a3a3a; }
+.q-body em { font-style: italic; color: var(--faint); }
+
+.diag-black { background: var(--ink); color: var(--bg); padding: 24px 26px; }
+.db-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  color: var(--rule);
+  margin-bottom: 12px;
+}
+.db-body    { font-size: 13px; line-height: 1.85; }
+.db-body em { font-style: italic; color: #aaa; }
+
+/* ======================== PAGE 2 — PRINCIPLES ======================== */
+.principles-intro {
+  font-size: 13px;
+  line-height: 1.85;
+  color: #555;
+  font-style: italic;
+  margin-bottom: 24px;
+  max-width: 700px;
+}
+.principles-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.p-card {
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--red);
+  padding: 18px 16px;
+  background: white;
+}
+.p-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--red);
+  opacity: 0.2;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.p-title    { font-size: 13px; font-weight: 700; line-height: 1.4; margin-bottom: 8px; }
+.p-question { font-size: 11.5px; line-height: 1.7; color: var(--faint); font-style: italic; }
+
+.p-fsae-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 40px;
+}
+.p-fsae-item {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--faint);
+  line-height: 1.9;
+  padding: 10px 12px;
+  border-left: 1px solid var(--rule);
+}
+.p-fsae-item::before {
+  content: 'FSAE →';
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--rule);
+  margin-bottom: 4px;
+}
+
+/* ======================== PAGE 3 — TREE ======================== */
+.tree-caption {
+  font-size: 12.5px;
+  color: var(--faint);
+  line-height: 1.75;
+  font-style: italic;
+  margin-bottom: 20px;
+  max-width: 720px;
+}
+.tree-container {
+  background: white;
+  border: 1px solid var(--rule);
+  padding: 28px 24px 24px;
+  overflow-x: auto;
+  margin-bottom: 18px;
+}
+.tree-legend {
+  display: flex;
+  gap: 0;
+  margin-bottom: 40px;
+  border: 1px solid var(--rule);
+  overflow: hidden;
+}
+.legend-item {
+  flex: 1;
+  padding: 12px 16px;
+  border-right: 1px solid var(--rule);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  line-height: 1.7;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.legend-item:last-child { border-right: none; }
+.legend-swatch {
+  width: 4px; flex-shrink: 0; align-self: stretch;
+  border-radius: 1px; margin-top: 1px;
+}
+.legend-text { color: var(--faint); }
+.legend-text strong { font-weight: 600; }
+
+/* ======================== PAGE 4 — TOOL STACK ======================== */
+.layers-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--rule);
+  margin-bottom: 20px;
+}
+.layer-col {
+  padding: 22px 20px;
+  border-right: 1px solid var(--rule);
+}
+.layer-col:last-child { border-right: none; }
+.layer-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid;
+  line-height: 1.6;
+}
+.c-ai   .layer-tag { color: var(--gold);  border-color: var(--gold); }
+.c-vis  .layer-tag { color: var(--grey);  border-color: var(--grey); }
+.c-phy  .layer-tag { color: var(--red);   border-color: var(--red);  }
+.c-iter .layer-tag { color: var(--green); border-color: var(--green);}
+
+.layer-item {
+  font-size: 12px;
+  line-height: 2.15;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.layer-item::before {
+  content: '—';
+  color: var(--rule);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+}
+
+.stack-note {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 20px 28px;
+  font-size: 13px;
+  line-height: 1.85;
+  margin-bottom: 40px;
+}
+.stack-note-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--rule);
+  display: block;
+  margin-bottom: 10px;
+}
+.stack-note strong { color: #e0d0b0; }
+
+/* ======================== PAGE 5 — EQUATION & TABLE ======================== */
+.eq-block {
+  background: var(--blue-bg);
+  border: 1px solid var(--blue);
+  border-top: 3px solid var(--blue);
+  padding: 28px 32px;
+  margin-bottom: 32px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 36px;
+  align-items: center;
+}
+.eq-formula {
+  font-family: 'Space Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--blue);
+  line-height: 2;
+  white-space: nowrap;
+}
+.eq-formula + .eq-formula { margin-top: 14px; }
+.eq-sub { font-size: 10px; color: #888; font-weight: 400; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.06em; }
+.eq-explain { font-size: 13px; line-height: 1.9; }
+.eq-explain strong { color: var(--blue); }
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 40px;
+  font-size: 13px;
+}
+.compare-table thead tr { background: var(--ink); color: var(--bg); }
+.compare-table thead th {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  padding: 13px 16px;
+  text-align: left;
+  font-weight: 400;
+}
+.compare-table tbody tr     { border-bottom: 1px solid var(--rule); }
+.compare-table tbody tr:nth-child(odd) { background: white; }
+.compare-table tbody td     { padding: 12px 16px; vertical-align: top; line-height: 1.65; }
+.col-dim { font-weight: 700; }
+.col-old { color: var(--faint); text-decoration: line-through; text-decoration-color: var(--red); }
+.col-new { color: var(--blue); font-weight: 700; }
+.col-p   { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--red); letter-spacing: 0.1em; font-weight: 700; }
+
+/* ======================== PAGE 6 — VISION ======================== */
+.vision-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+.vision-left {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 32px 36px;
+}
+.vision-big {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+.vision-big em { font-style: normal; color: #e8a090; }
+.vision-body   { font-size: 13px; line-height: 1.95; color: #bbb; }
+
+.vision-right  { display: flex; flex-direction: column; gap: 16px; }
+
+.gold-box {
+  background: var(--gold-bg);
+  border-left: 3px solid var(--gold);
+  padding: 22px 24px;
+  flex: 1;
+}
+.gold-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: var(--gold); margin-bottom: 12px; }
+.gold-body  { font-size: 13px; line-height: 1.9; }
+.gold-body strong { color: var(--gold); }
+
+.stack-box {
+  background: var(--green-bg);
+  border-left: 3px solid var(--green);
+  padding: 22px 24px;
+}
+.stack-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: var(--green); margin-bottom: 12px; }
+.stack-eq    { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; line-height: 2; color: var(--green); }
+.stack-eq-sub{ font-size: 10px; color: var(--faint); font-family: 'IBM Plex Mono', monospace; display: block; margin-top: -4px; margin-bottom: 10px; }
+.stack-body  { font-size: 12px; line-height: 1.8; color: #444; }
+.stack-body em { font-style: italic; }
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--faint);
+  letter-spacing: 0.12em;
+}
+.footer-c {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ======================== ROLE GATE ======================== */
+#role-gate {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(42,42,42,0.92);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.gate-card {
+  background: var(--bg);
+  max-width: 640px; width: 100%;
+  padding: 52px 60px 48px;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.65);
+}
+.gate-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--faint); margin-bottom: 10px;
+}
+.gate-title {
+  font-size: 24px; font-weight: 900;
+  line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 6px;
+}
+.gate-title em { font-style: normal; color: var(--red); }
+.gate-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--faint); margin-bottom: 36px;
+}
+.gate-rule { border: none; border-top: 1px solid var(--rule); margin: 0 0 24px; }
+.gate-prompt {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--faint); margin-bottom: 16px;
+}
+.gate-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.gate-choice {
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  letter-spacing: 0.1em; line-height: 1.7;
+  border: 1px solid var(--ink); padding: 20px 22px;
+  cursor: pointer; background: none; color: var(--ink);
+  text-align: left; transition: all 0.15s;
+}
+.gate-choice:hover { background: var(--ink); color: var(--bg); }
+.gate-choice small {
+  display: block; font-size: 8.5px; letter-spacing: 0.2em;
+  color: var(--faint); margin-bottom: 6px;
+}
+.gate-choice:hover small { color: rgba(244,239,230,0.5); }
+
+/* ======================== WORK BADGE ======================== */
+#work-badge {
+  display: none; position: fixed; top: 24px; right: 24px; z-index: 20;
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  letter-spacing: 0.18em; background: var(--ink); color: var(--bg);
+  border: none; padding: 10px 22px; cursor: pointer;
+  transition: background 0.15s;
+}
+#work-badge:hover { background: var(--red); }
+
+/* ======================== NEWCOMER PROGRESS ======================== */
+.step-strip {
+  display: none; align-items: center; gap: 14px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  letter-spacing: 0.18em; color: var(--faint);
+  margin-bottom: 24px;
+}
+.step-strip.show { display: flex; }
+.step-track { flex: 1; height: 2px; background: var(--rule); }
+.step-fill { height: 100%; background: var(--ink); transition: width 0.3s; }
+
+/* ======================== P1 ROLE FALLBACK ======================== */
+#role-fallback {
+  display: none; border-top: 1px solid var(--rule);
+  padding-top: 24px; margin-top: 32px;
+}
+#role-fallback.show { display: block; }
+.rf-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--faint); margin-bottom: 14px;
+}
+.rf-btns { display: flex; gap: 10px; }
+.rf-btn {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  letter-spacing: 0.14em; border: 1px solid var(--ink);
+  padding: 10px 22px; cursor: pointer; background: none; color: var(--ink);
+  transition: all 0.15s;
+}
+.rf-btn:hover { background: var(--ink); color: var(--bg); }
+</style>
+</head>
+<body>
+
+<!-- ROLE GATE MODAL -->
+<div id="role-gate">
+  <div class="gate-card">
+    <div class="gate-tag">PHILOSOPHICAL FRAMEWORK · NKUST FST · V1.0</div>
+    <div class="gate-title">機械的<em>第一性原則</em>危機<br>與學生方程式的重建路徑</div>
+    <div class="gate-sub">First Principles of Mechanical Engineering × Formula Student as System Platform</div>
+    <hr class="gate-rule">
+    <div class="gate-prompt">▸ 選擇你的身份</div>
+    <div class="gate-choices">
+      <button class="gate-choice" onclick="setRole('insider')">
+        <small>MEMBER · 內部人士</small>
+        直接進入<br>WORK →
+      </button>
+      <button class="gate-choice" onclick="setRole('newcomer')">
+        <small>NEWCOMER · 新人</small>
+        帶我了解框架<br>逐頁閱讀 →
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet">
+  <!-- INSIDER WORK BADGE -->
+  <button id="work-badge" onclick="window.location.href='nkust_racing.html'">▸ 進入 WORK</button>
+
+  <div id="pages">
+
+    <!-- ==================== PAGE 1 · 診斷 ==================== -->
+    <div class="page active" id="p1">
+      <div class="header">
+        <div>
+          <div class="doc-tag">PHILOSOPHICAL FRAMEWORK · ENGINEERING SYSTEMS · V1.0</div>
+          <div class="main-title">機械的<em>第一性原則</em>危機<br>與學生方程式的重建路徑</div>
+          <div class="sub-title">First Principles of Mechanical Engineering × Formula Student as System Platform</div>
+        </div>
+        <div class="header-right">
+          <div>NKUST · FST Team</div>
+          <div>ME × AI × VIS</div>
+          <div>2025 – 2026</div>
+        </div>
+      </div>
+
+      <div class="label">§ 01 · 診斷 — 機械系在解決什麼問題？</div>
+      <div class="diagnosis-grid">
+        <div class="diag-q">
+          <div class="q-big">?</div>
+          <div class="q-title">當我們問「機械系是什麼」</div>
+          <div class="q-body">
+            得到的答案通常是：<br><br>
+            <em>「畫圖、算力、做零件。」</em><br><br>
+            但這不是第一性原則。<br>
+            這是技術手段的清單。<br><br>
+            真正的問題從來沒有被問出來：<br>
+            <strong>機械工程的存在，是為了解決什麼？</strong>
+          </div>
+        </div>
+        <div class="diag-black">
+          <div class="db-label">▸ DIAGNOSIS</div>
+          <div class="db-body">
+            現行課程以「零件知識」替代了「系統思維」訓練。<br><br>
+            學生學會分析單一元件，卻無法回答：<br><br>
+            <em>「這個系統為何存在？<br>
+            它在解決什麼真實問題？<br>
+            如果失敗，哪裡最先斷？」</em><br><br>
+            這是教育框架的問題，不是學生的問題。
+          </div>
+        </div>
+      </div>
+
+      <!-- ROLE FALLBACK (shown on P1 when no role chosen) -->
+      <div id="role-fallback">
+        <div class="rf-label">▸ 你的身份</div>
+        <div class="rf-btns">
+          <button class="rf-btn" onclick="setRole('insider')">內部人士 · 直接進入 WORK →</button>
+          <button class="rf-btn" onclick="setRole('newcomer')">我是新人 · 逐頁閱讀 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE 2 · 第一性原則 ==================== -->
+    <div class="page" id="p2">
+      <div class="slim-header">
+        <span class="slim-doc">PHIL. FRAMEWORK · NKUST FST · 2025–2026</span>
+        <span class="slim-pg">02 / 06</span>
+      </div>
+
+      <div class="label">§ 02 · 機械工程的五個第一性原則問題</div>
+      <p class="principles-intro">
+        第一性原則思維要求我們不從現有框架出發，而是從根本問題重建理解。
+        以下五個問題是機械工程的根本出發點，也是 FST 設計框架的哲學底層。
+      </p>
+
+      <div class="principles-row">
+        <div class="p-card">
+          <div class="p-num">P1</div>
+          <div class="p-title">力與運動的控制問題</div>
+          <div class="p-question">物理世界的力與運動，如何被人類意圖所精確控制？</div>
+        </div>
+        <div class="p-card">
+          <div class="p-num">P2</div>
+          <div class="p-title">能量轉換的效率邊界</div>
+          <div class="p-question">能量在哪裡損失？為何在那裡？如何逼近理論極限？</div>
+        </div>
+        <div class="p-card">
+          <div class="p-num">P3</div>
+          <div class="p-title">結構的最優化問題</div>
+          <div class="p-question">如何在最少材料下，承受最大且最不確定的載荷？</div>
+        </div>
+        <div class="p-card">
+          <div class="p-num">P4</div>
+          <div class="p-title">失效模式的預測問題</div>
+          <div class="p-question">如何在系統投入運行之前，窮舉並量化所有可能的失效模式？</div>
+        </div>
+        <div class="p-card">
+          <div class="p-num">P5</div>
+          <div class="p-title">系統邊界的定義問題</div>
+          <div class="p-question">這個設計系統從哪裡開始？在哪裡結束？誰是它真正服務的對象？</div>
+        </div>
+      </div>
+
+      <div class="p-fsae-row">
+        <div class="p-fsae-item">懸吊幾何<br>制動系統</div>
+        <div class="p-fsae-item">引擎調校<br>傳動效率</div>
+        <div class="p-fsae-item">車架設計<br>空力套件</div>
+        <div class="p-fsae-item">FMEA 流程<br>安全設計</div>
+        <div class="p-fsae-item">整車性能<br>規則合規</div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE 3 · 系統分解樹 ==================== -->
+    <div class="page" id="p3">
+      <div class="slim-header">
+        <span class="slim-doc">PHIL. FRAMEWORK · NKUST FST · 2025–2026</span>
+        <span class="slim-pg">03 / 06</span>
+      </div>
+
+      <div class="label">§ 03 · 賽車系統分解樹 — System Decomposition Tree</div>
+      <p class="tree-caption">
+        本圖展示 FSAE 賽車的四大子系統分解結構。每個子系統對應不同的工程原則優先序，並由不同工具棧支撐。
+        決策樹從「整車性能」頂層需求向下拆解，確保每個零件設計都能追溯至系統層需求。
+      </p>
+
+      <div class="tree-container">
+        <svg viewBox="0 0 670 265" width="100%" style="display:block;overflow:visible;">
+
+          <!-- MAIN ROOT SPINE -->
+          <!-- Root right edge → spine vertical -->
+          <line stroke="#d0c8b8" stroke-width="1.5" x1="186" y1="143" x2="230" y2="143"/>
+          <line stroke="#d0c8b8" stroke-width="1.5" x1="230" y1="60"  x2="230" y2="225"/>
+          <!-- Spine → L1 branches -->
+          <line stroke="#d0c8b8" stroke-width="1.5" x1="230" y1="60"  x2="265" y2="60"/>
+          <line stroke="#d0c8b8" stroke-width="1.5" x1="230" y1="115" x2="265" y2="115"/>
+          <line stroke="#d0c8b8" stroke-width="1.5" x1="230" y1="170" x2="265" y2="170"/>
+          <line stroke="#d0c8b8" stroke-width="1.5" x1="230" y1="225" x2="265" y2="225"/>
+
+          <!-- 動力 L1 → L2 (L1 center y=60; L2 centers 46, 74) -->
+          <line stroke="#b83025" stroke-width="1.2" opacity="0.55" x1="415" y1="60"  x2="452" y2="60"/>
+          <line stroke="#b83025" stroke-width="1.2" opacity="0.55" x1="452" y1="46"  x2="452" y2="74"/>
+          <line stroke="#b83025" stroke-width="1.2" opacity="0.55" x1="452" y1="46"  x2="490" y2="46"/>
+          <line stroke="#b83025" stroke-width="1.2" opacity="0.55" x1="452" y1="74"  x2="490" y2="74"/>
+
+          <!-- 底盤 L1 → L2 (L1 center y=115; L2 centers 101, 129) -->
+          <line stroke="#1c3d5e" stroke-width="1.2" opacity="0.55" x1="415" y1="115" x2="452" y2="115"/>
+          <line stroke="#1c3d5e" stroke-width="1.2" opacity="0.55" x1="452" y1="101" x2="452" y2="129"/>
+          <line stroke="#1c3d5e" stroke-width="1.2" opacity="0.55" x1="452" y1="101" x2="490" y2="101"/>
+          <line stroke="#1c3d5e" stroke-width="1.2" opacity="0.55" x1="452" y1="129" x2="490" y2="129"/>
+
+          <!-- 氣動 L1 → L2 (L1 center y=170; L2 centers 156, 184) -->
+          <line stroke="#8a6610" stroke-width="1.2" opacity="0.55" x1="415" y1="170" x2="452" y2="170"/>
+          <line stroke="#8a6610" stroke-width="1.2" opacity="0.55" x1="452" y1="156" x2="452" y2="184"/>
+          <line stroke="#8a6610" stroke-width="1.2" opacity="0.55" x1="452" y1="156" x2="490" y2="156"/>
+          <line stroke="#8a6610" stroke-width="1.2" opacity="0.55" x1="452" y1="184" x2="490" y2="184"/>
+
+          <!-- 電控 L1 → L2 (L1 center y=225; L2 centers 211, 239) -->
+          <line stroke="#2a6b38" stroke-width="1.2" opacity="0.55" x1="415" y1="225" x2="452" y2="225"/>
+          <line stroke="#2a6b38" stroke-width="1.2" opacity="0.55" x1="452" y1="211" x2="452" y2="239"/>
+          <line stroke="#2a6b38" stroke-width="1.2" opacity="0.55" x1="452" y1="211" x2="490" y2="211"/>
+          <line stroke="#2a6b38" stroke-width="1.2" opacity="0.55" x1="452" y1="239" x2="490" y2="239"/>
+
+          <!-- ROOT (y=121, h=44, center=143) -->
+          <rect x="10" y="121" width="176" height="44" rx="2" fill="#0f0f0f"/>
+          <text x="98" y="139" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="11" font-weight="600" fill="#f4efe6">賽車性能</text>
+          <text x="98" y="154" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="11" font-weight="600" fill="#f4efe6">系統分解</text>
+
+          <!-- L1: 動力系統 (rect y=45, h=30, center y=60) -->
+          <rect x="265" y="45" width="150" height="30" rx="2" fill="#f5e8e6" stroke="#b83025" stroke-width="1.5"/>
+          <text x="340" y="64" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="11" font-weight="600" fill="#b83025">動力系統</text>
+
+          <!-- L1: 底盤結構 (rect y=100, center y=115) -->
+          <rect x="265" y="100" width="150" height="30" rx="2" fill="#e2eaf2" stroke="#1c3d5e" stroke-width="1.5"/>
+          <text x="340" y="119" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="11" font-weight="600" fill="#1c3d5e">底盤結構</text>
+
+          <!-- L1: 氣動力學 (rect y=155, center y=170) -->
+          <rect x="265" y="155" width="150" height="30" rx="2" fill="#f2e8ce" stroke="#8a6610" stroke-width="1.5"/>
+          <text x="340" y="174" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="11" font-weight="600" fill="#8a6610">氣動力學</text>
+
+          <!-- L1: 電控整合 (rect y=210, center y=225) -->
+          <rect x="265" y="210" width="150" height="30" rx="2" fill="#e0f0e4" stroke="#2a6b38" stroke-width="1.5"/>
+          <text x="340" y="229" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="11" font-weight="600" fill="#2a6b38">電控整合</text>
+
+          <!-- L2: 動力 (rects y=33, y=61; centers 46, 74) -->
+          <rect x="490" y="33" width="155" height="26" rx="2" fill="#f5e8e6" stroke="#b83025" stroke-width="1"/>
+          <text x="567" y="50" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="10" fill="#b83025">引擎調校</text>
+          <rect x="490" y="61" width="155" height="26" rx="2" fill="#f5e8e6" stroke="#b83025" stroke-width="1"/>
+          <text x="567" y="78" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="10" fill="#b83025">傳動設計</text>
+
+          <!-- L2: 底盤 (rects y=88, y=116; centers 101, 129) -->
+          <rect x="490" y="88"  width="155" height="26" rx="2" fill="#e2eaf2" stroke="#1c3d5e" stroke-width="1"/>
+          <text x="567" y="105" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="10" fill="#1c3d5e">車架分析</text>
+          <rect x="490" y="116" width="155" height="26" rx="2" fill="#e2eaf2" stroke="#1c3d5e" stroke-width="1"/>
+          <text x="567" y="133" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="10" fill="#1c3d5e">懸吊幾何</text>
+
+          <!-- L2: 氣動 (rects y=143, y=171; centers 156, 184) -->
+          <rect x="490" y="143" width="155" height="26" rx="2" fill="#f2e8ce" stroke="#8a6610" stroke-width="1"/>
+          <text x="567" y="160" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="10" fill="#8a6610">下壓力優化</text>
+          <rect x="490" y="171" width="155" height="26" rx="2" fill="#f2e8ce" stroke="#8a6610" stroke-width="1"/>
+          <text x="567" y="188" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="10" fill="#8a6610">阻力管理</text>
+
+          <!-- L2: 電控 (rects y=198, y=226; centers 211, 239) -->
+          <rect x="490" y="198" width="155" height="26" rx="2" fill="#e0f0e4" stroke="#2a6b38" stroke-width="1"/>
+          <text x="567" y="215" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="10" fill="#2a6b38">資料採集</text>
+          <rect x="490" y="226" width="155" height="26" rx="2" fill="#e0f0e4" stroke="#2a6b38" stroke-width="1"/>
+          <text x="567" y="243" text-anchor="middle"
+            font-family="'IBM Plex Mono', monospace" font-size="10" fill="#2a6b38">制動控制</text>
+
+          <!-- Principle tags (far right) -->
+          <text x="660" y="50"  text-anchor="end" font-family="'IBM Plex Mono', monospace" font-size="9" fill="#b83025" opacity="0.65">P1 P2</text>
+          <text x="660" y="78"  text-anchor="end" font-family="'IBM Plex Mono', monospace" font-size="9" fill="#b83025" opacity="0.65">P1 P2</text>
+          <text x="660" y="105" text-anchor="end" font-family="'IBM Plex Mono', monospace" font-size="9" fill="#1c3d5e" opacity="0.65">P1 P3</text>
+          <text x="660" y="133" text-anchor="end" font-family="'IBM Plex Mono', monospace" font-size="9" fill="#1c3d5e" opacity="0.65">P1 P3</text>
+          <text x="660" y="160" text-anchor="end" font-family="'IBM Plex Mono', monospace" font-size="9" fill="#8a6610" opacity="0.65">P2 P3</text>
+          <text x="660" y="188" text-anchor="end" font-family="'IBM Plex Mono', monospace" font-size="9" fill="#8a6610" opacity="0.65">P2 P3</text>
+          <text x="660" y="215" text-anchor="end" font-family="'IBM Plex Mono', monospace" font-size="9" fill="#2a6b38" opacity="0.65">P4 P5</text>
+          <text x="660" y="243" text-anchor="end" font-family="'IBM Plex Mono', monospace" font-size="9" fill="#2a6b38" opacity="0.65">P4 P5</text>
+        </svg>
+      </div>
+
+      <div class="tree-legend">
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#b83025;"></div>
+          <div class="legend-text"><strong style="color:#b83025;">動力系統</strong><br>P1 力控制 · P2 能量效率</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#1c3d5e;"></div>
+          <div class="legend-text"><strong style="color:#1c3d5e;">底盤結構</strong><br>P1 力控制 · P3 結構優化</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#8a6610;"></div>
+          <div class="legend-text"><strong style="color:#8a6610;">氣動力學</strong><br>P2 能量效率 · P3 結構</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#2a6b38;"></div>
+          <div class="legend-text"><strong style="color:#2a6b38;">電控整合</strong><br>P4 失效預測 · P5 系統邊界</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE 4 · 四層工具棧 ==================== -->
+    <div class="page" id="p4">
+      <div class="slim-header">
+        <span class="slim-doc">PHIL. FRAMEWORK · NKUST FST · 2025–2026</span>
+        <span class="slim-pg">04 / 06</span>
+      </div>
+
+      <div class="label">§ 04 · 四層工具棧 — Integrated Tool Stack</div>
+
+      <div class="layers-grid">
+        <div class="layer-col c-ai">
+          <div class="layer-tag">L01 · AI 工具層<br>INTELLIGENCE</div>
+          <div class="layer-item">Gemini API 文本生成</div>
+          <div class="layer-item">Claude Code 工程計算</div>
+          <div class="layer-item">生成式設計提案</div>
+          <div class="layer-item">FEA 參數空間探索</div>
+          <div class="layer-item">自然語言設計審查</div>
+        </div>
+        <div class="layer-col c-vis">
+          <div class="layer-tag">L02 · 視覺化層<br>VISUALIZATION</div>
+          <div class="layer-item">SolidWorks 三維建模</div>
+          <div class="layer-item">MATLAB 數值模擬</div>
+          <div class="layer-item">SVG 動態工程圖</div>
+          <div class="layer-item">性能儀表板設計</div>
+          <div class="layer-item">設計審查簡報生成</div>
+        </div>
+        <div class="layer-col c-phy">
+          <div class="layer-tag">L03 · 工程計算層<br>PHYSICS</div>
+          <div class="layer-item">懸吊運動學分析</div>
+          <div class="layer-item">結構有限元分析</div>
+          <div class="layer-item">空氣動力學 CFD</div>
+          <div class="layer-item">熱管理系統設計</div>
+          <div class="layer-item">制動力矩計算</div>
+        </div>
+        <div class="layer-col c-iter">
+          <div class="layer-tag">L04 · 迭代管理層<br>ITERATION</div>
+          <div class="layer-item">每週原型測試</div>
+          <div class="layer-item">Git 版本控制</div>
+          <div class="layer-item">FMEA 失效分析</div>
+          <div class="layer-item">賽前系統整合測試</div>
+          <div class="layer-item">跨部門設計審查</div>
+        </div>
+      </div>
+
+      <div class="stack-note">
+        <span class="stack-note-label">▸ STACK ARCHITECTURE NOTE</span>
+        四層棧的核心邏輯：<strong>AI 層</strong>不替代工程計算，它擴展問題搜索空間；
+        <strong>視覺化層</strong>不只是呈現，它是思維工具；
+        <strong>工程計算層</strong>是邊界的守門者；
+        <strong>迭代管理層</strong>確保知識不在人員流動中消失。
+      </div>
+    </div>
+
+    <!-- ==================== PAGE 5 · 方程式 & 比較表 ==================== -->
+    <div class="page" id="p5">
+      <div class="slim-header">
+        <span class="slim-doc">PHIL. FRAMEWORK · NKUST FST · 2025–2026</span>
+        <span class="slim-pg">05 / 06</span>
+      </div>
+
+      <div class="label">§ 05 · 核心方程式 — Core Performance Equations</div>
+
+      <div class="eq-block">
+        <div>
+          <div class="eq-formula">
+            V<sub style="font-size:0.62em;vertical-align:sub;">car</sub>
+            = f(m<sup style="font-size:0.62em;vertical-align:super;">−1</sup>,
+               P, C<sub style="font-size:0.62em;vertical-align:sub;">L</sub>, μ, η)
+            <div class="eq-sub">質量 · 功率 · 下壓力 · 摩擦係數 · 系統效率</div>
+          </div>
+          <div class="eq-formula" style="margin-top:18px;font-size:14px;">
+            V<sub style="font-size:0.62em;vertical-align:sub;">team</sub>
+            = Σ (K<sub style="font-size:0.62em;vertical-align:sub;">i</sub>
+               × T<sub style="font-size:0.62em;vertical-align:sub;">i</sub>
+               × I<sub style="font-size:0.62em;vertical-align:sub;">i</sub>)
+            <div class="eq-sub">知識深度 · 工具熟練度 · 迭代速度</div>
+          </div>
+        </div>
+        <div class="eq-explain">
+          車輛性能是多變數函數：<strong>任一參數的劣化都抑制整體性能</strong>。
+          設計優化不能只改一個維度。<br><br>
+          同理，團隊能力是知識、工具與迭代速度的<strong>乘積</strong>——
+          任一趨近於零，整體能力崩潰。
+          FST 的設計哲學正是從這兩個等式展開：
+          車與團隊，遵循同一個系統邏輯。
+        </div>
+      </div>
+
+      <div class="label">§ 06 · 框架比較 — Old vs. New Paradigm</div>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>系統維度</th>
+            <th>傳統框架</th>
+            <th>FST 框架</th>
+            <th>對應原則</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-dim">設計起點</td>
+            <td class="col-old">零件規格選型</td>
+            <td class="col-new">整車性能需求矩陣</td>
+            <td class="col-p">P1 · P5</td>
+          </tr>
+          <tr>
+            <td class="col-dim">分析方法</td>
+            <td class="col-old">手算 + 靜態 CAD</td>
+            <td class="col-new">FEA + AI 參數優化</td>
+            <td class="col-p">P2 · P3</td>
+          </tr>
+          <tr>
+            <td class="col-dim">迭代週期</td>
+            <td class="col-old">學期末一次整合</td>
+            <td class="col-new">每週原型測試回饋</td>
+            <td class="col-p">P3</td>
+          </tr>
+          <tr>
+            <td class="col-dim">風險管理</td>
+            <td class="col-old">事後故障分析</td>
+            <td class="col-new">FMEA 預設計階段介入</td>
+            <td class="col-p">P4</td>
+          </tr>
+          <tr>
+            <td class="col-dim">系統視角</td>
+            <td class="col-old">單件最優化</td>
+            <td class="col-new">全車子系統耦合分析</td>
+            <td class="col-p">P5</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ==================== PAGE 6 · 願景框架 ==================== -->
+    <div class="page" id="p6">
+      <div class="slim-header">
+        <span class="slim-doc">PHIL. FRAMEWORK · NKUST FST · 2025–2026</span>
+        <span class="slim-pg">06 / 06</span>
+      </div>
+
+      <div class="label">§ 07 · 願景框架 — Vision Statement</div>
+
+      <div class="vision-grid">
+        <div class="vision-left">
+          <div class="vision-big">
+            學生方程式<br>不是在造<em>一台車</em>。<br>
+            是在建立一個<br><em>可重複的</em>工程系統。
+          </div>
+          <div class="vision-body">
+            FST 是一個壓縮的研發生命週期。<br>
+            11 人，一個賽季，從第一性原則到物理實體。<br><br>
+            我們不是在複製別人的解法。<br>
+            我們在建立自己的工程語言。<br><br>
+            每一個設計決策都必須可追溯，<br>
+            每一個失敗都必須成為下一季的知識資產。
+          </div>
+        </div>
+        <div class="vision-right">
+          <div class="gold-box">
+            <div class="gold-label">▸ 2025–2026 近期目標</div>
+            <div class="gold-body">
+              <strong>— AI 輔助懸吊設計工作流</strong>完成建立<br>
+              <strong>— 完整 FMEA 文件體系</strong>覆蓋全車子系統<br>
+              <strong>— 跨部門週例會</strong>設計審查制度上線<br>
+              <strong>— 賽前三個月</strong>系統整合測試計畫<br>
+              <strong>— 知識傳承文件</strong>確保跨年連續性
+            </div>
+          </div>
+          <div class="stack-box">
+            <div class="stack-label">▸ 能力棧等式</div>
+            <div class="stack-eq">V_team = K × T × I</div>
+            <span class="stack-eq-sub">知識深度 × 工具熟練度 × 迭代速度</span>
+            <div class="stack-body">
+              當三者對齊，性能不是被設計出來的，<br>
+              而是<em>自然湧現</em>的。<br>
+              任一趨近於零，整體能力崩潰——<br>
+              這是乘法，不是加法。
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="rule">
+      <div class="footer">
+        <div>NKUST FST — 機械 × 汽車 × 車輛工程 — 11 人跨域團隊</div>
+        <div class="footer-c">◆</div>
+        <div>V1.0 · 2025–2026 · PHILOSOPHICAL FRAMEWORK</div>
+      </div>
+    </div>
+
+  </div><!-- /pages -->
+
+  <!-- PAGINATION NAV -->
+  <div class="pager-nav">
+    <button class="pager-btn" id="btn-prev" onclick="changePage(-1)" disabled>← PREV</button>
+    <div class="pager-center">
+      <div class="pager-dots" id="dots-container"></div>
+      <span class="pager-label" id="pg-counter">01 / 06</span>
+    </div>
+    <button class="pager-btn" id="btn-next" onclick="changePage(1)">NEXT →</button>
+  </div>
+
+</div><!-- /sheet -->
+
+<script>
+var cur  = 1;
+var N    = 6;
+var role = null;
+var pageLabels = ['診斷', '五個原則', '系統分解樹', '四層工具棧', '核心方程式', '願景框架'];
+
+/* ── Role selection ── */
+function setRole(r) {
+  role = r;
+  document.getElementById('role-gate').style.display    = 'none';
+  document.getElementById('role-fallback').classList.remove('show');
+
+  if (r === 'insider') {
+    document.getElementById('work-badge').style.display = 'block';
+  } else {
+    // inject step-strip into each page
+    for (var i = 1; i <= N; i++) {
+      var pg    = document.getElementById('p' + i);
+      var strip = document.createElement('div');
+      strip.className = 'step-strip' + (i === cur ? ' show' : '');
+      strip.id        = 'strip' + i;
+      strip.innerHTML =
+        '<span>STEP ' + String(i).padStart(2,'0') + ' / 0' + N +
+        ' · ' + pageLabels[i - 1] + '</span>' +
+        '<div class="step-track"><div class="step-fill" style="width:' +
+        Math.round(i / N * 100) + '%"></div></div>';
+      var anchor = i === 1 ? pg.querySelector('.header') : pg.querySelector('.slim-header');
+      anchor.insertAdjacentElement('afterend', strip);
+    }
+  }
+  update();
+}
+
+/* ── Page navigation ── */
+function setActivePage(n) {
+  if (role === 'newcomer') {
+    var os = document.getElementById('strip' + cur);
+    if (os) os.classList.remove('show');
+  }
+  document.getElementById('p' + cur).classList.remove('active');
+  cur = n;
+  document.getElementById('p' + cur).classList.add('active');
+  if (role === 'newcomer') {
+    var ns = document.getElementById('strip' + cur);
+    if (ns) ns.classList.add('show');
+  }
+  update();
+}
+
+function changePage(d) {
+  if (role === 'newcomer' && cur === N && d === 1) {
+    window.location.href = 'nkust_racing.html';
+    return;
+  }
+  setActivePage(cur + d);
+  document.querySelector('.sheet').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function goTo(n) { setActivePage(n); }
+
+/* ── UI sync ── */
+function update() {
+  document.getElementById('btn-prev').disabled = cur === 1;
+  var nextBtn = document.getElementById('btn-next');
+  if (role === 'newcomer') {
+    nextBtn.disabled    = false;
+    nextBtn.textContent = cur === 1 ? '開始閱讀 →' : cur === N ? '進入 WORK →' : '繼續 →';
+  } else {
+    nextBtn.textContent = 'NEXT →';
+    nextBtn.disabled    = (cur === N);
+  }
+  document.querySelectorAll('.dot').forEach(function(d, i) {
+    d.classList.toggle('active', i + 1 === cur);
+  });
+  document.getElementById('pg-counter').textContent =
+    String(cur).padStart(2,'0') + ' / ' + String(N).padStart(2,'0');
+}
+
+/* ── Build dots ── */
+var dc = document.getElementById('dots-container');
+for (var i = 1; i <= N; i++) {
+  (function(idx) {
+    var s     = document.createElement('span');
+    s.className = 'dot' + (idx === 1 ? ' active' : '');
+    s.onclick   = function() { goTo(idx); };
+    dc.appendChild(s);
+  })(i);
+}
+
+/* ── Show role fallback on P1 on load ── */
+document.getElementById('role-fallback').classList.add('show');
+
+/* ── Keyboard navigation ── */
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight' && cur < N) changePage(1);
+  if (e.key === 'ArrowLeft'  && cur > 1) changePage(-1);
+});
+
+/* ── Touch / swipe ── */
+var touchX = 0;
+document.addEventListener('touchstart', function(e) { touchX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend',   function(e) {
+  var dx = touchX - e.changedTouches[0].clientX;
+  if (Math.abs(dx) > 52) {
+    if (dx > 0 && cur < N) changePage(1);
+    if (dx < 0 && cur > 1) changePage(-1);
+  }
+}, { passive: true });
+</script>
+</body>
+</html>
