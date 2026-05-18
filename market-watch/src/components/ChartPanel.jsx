@@ -364,9 +364,9 @@ export default function ChartPanel({ darkMode = false }) {
     chartRef.current = chart
 
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: '#26A69A', downColor: '#EF5350',
-      borderUpColor: '#26A69A', borderDownColor: '#EF5350',
-      wickUpColor: '#26A69A', wickDownColor: '#EF5350',
+      upColor: '#EF5350', downColor: '#26A69A',
+      borderUpColor: '#EF5350', borderDownColor: '#26A69A',
+      wickUpColor: '#EF5350', wickDownColor: '#26A69A',
       priceScaleId: 'right',
     })
     seriesRef.current = series
@@ -450,7 +450,7 @@ export default function ChartPanel({ darkMode = false }) {
           volSeriesRef.current.setData(sorted.map(c => ({
             time: c.time,
             value: c.volume ?? 0,
-            color: c.close >= c.open ? 'rgba(38,166,154,.6)' : 'rgba(239,83,80,.6)',
+            color: c.close >= c.open ? 'rgba(239,83,80,.6)' : 'rgba(38,166,154,.6)',
           })))
         }
         const closes = sorted.map(c => c.close)
@@ -553,14 +553,14 @@ export default function ChartPanel({ darkMode = false }) {
               sar = Math.min(sar, sorted[i - 1].low, i >= 2 ? sorted[i - 2].low : sorted[i - 1].low)
               if (sorted[i].low < sar) {
                 bull = false; sar = ep; ep = sorted[i].low; af = 0.02
-                if (prevBull) allMarkers.push({ time: sorted[i].time, position: 'aboveBar', color: 'rgba(239,83,80,.85)', shape: 'arrowDown', text: 'SAR', size: 1 })
+                if (prevBull) allMarkers.push({ time: sorted[i].time, position: 'aboveBar', color: 'rgba(38,166,154,.85)', shape: 'arrowDown', text: 'SAR', size: 1 })
               } else { if (sorted[i].high > ep) { ep = sorted[i].high; af = Math.min(af + 0.02, maxAf) } }
             } else {
               sar = prevSar + af * (ep - prevSar)
               sar = Math.max(sar, sorted[i - 1].high, i >= 2 ? sorted[i - 2].high : sorted[i - 1].high)
               if (sorted[i].high > sar) {
                 bull = true; sar = ep; ep = sorted[i].high; af = 0.02
-                if (!prevBull) allMarkers.push({ time: sorted[i].time, position: 'belowBar', color: 'rgba(38,166,154,.85)', shape: 'arrowUp', text: 'SAR', size: 1 })
+                if (!prevBull) allMarkers.push({ time: sorted[i].time, position: 'belowBar', color: 'rgba(239,83,80,.85)', shape: 'arrowUp', text: 'SAR', size: 1 })
               } else { if (sorted[i].low < ep) { ep = sorted[i].low; af = Math.min(af + 0.02, maxAf) } }
             }
             prevBull = bull

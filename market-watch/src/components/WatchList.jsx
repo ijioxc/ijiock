@@ -5,18 +5,25 @@ const CATS = ['ALL', 'TW', 'US', 'IDX', 'FX']
 const CAT_LABELS = { TW: '台股', US: '美股', IDX: '指數', FX: '外匯' }
 
 function MiniSparkline({ data, up }) {
-  if (!data || data.length < 2) return <svg width="48" height="20" className="sparkline" />
+  const W = 68, H = 36, P = 3
+  if (!data || data.length < 2) return <svg width={W} height={H} className="sparkline" />
   const min = Math.min(...data)
   const max = Math.max(...data)
   const range = max - min || 1
-  const pts = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * 46 + 1
-    const y = 18 - ((v - min) / range) * 16 + 1
-    return `${x},${y}`
-  }).join(' ')
+  const pts = data.map((v, i) => [
+    P + (i / (data.length - 1)) * (W - P * 2),
+    P + (1 - (v - min) / range) * (H - P * 2),
+  ])
+  const polyPts = pts.map(([x, y]) => `${x},${y}`).join(' ')
+  const areaD = `M ${pts[0][0]},${H} ${pts.map(([x, y]) => `L ${x},${y}`).join(' ')} L ${pts[pts.length - 1][0]},${H} Z`
+  const color = up ? 'var(--up)' : 'var(--dn)'
+  const fillRgba = up ? 'rgba(239,83,80,.13)' : 'rgba(38,166,154,.13)'
+  const [lx, ly] = pts[pts.length - 1]
   return (
-    <svg width="48" height="20" className="sparkline">
-      <polyline points={pts} fill="none" stroke={up ? 'var(--up)' : 'var(--dn)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={W} height={H} className="sparkline">
+      <path d={areaD} fill={fillRgba} />
+      <polyline points={polyPts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={lx} cy={ly} r="2.5" fill={color} />
     </svg>
   )
 }
@@ -83,8 +90,16 @@ export default function WatchList() {
   useEffect(() => {
     const handler = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
-      if (e.key === 'j') navigate(1)
-      if (e.key === 'k') navigate(-1)
+      if (e.key === 'ArrowDown' || e.key === 'j') { e.preventDefault(); navigate(1) }
+      if (e.key === 'ArrowUp'   || e.key === 'k') { e.preventDefault(); navigate(-1) }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        setCat(c => { const i = CATS.indexOf(c); return CATS[(i + 1) % CATS.length] })
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        setCat(c => { const i = CATS.indexOf(c); return CATS[(i - 1 + CATS.length) % CATS.length] })
+      }
       if (e.key === '/') { e.preventDefault(); searchRef.current?.focus() }
     }
     window.addEventListener('keydown', handler)

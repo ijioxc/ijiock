@@ -10,10 +10,10 @@
   --text: #2D2D2D;
   --text-2: #5F5F5F;
   --text-3: #9A8E82;
-  --up: #26A69A;
-  --up-soft: rgba(38,166,154,.15);
-  --dn: #EF5350;
-  --dn-soft: rgba(239,83,80,.12);
+  --up: #EF5350;
+  --up-soft: rgba(239,83,80,.15);
+  --dn: #26A69A;
+  --dn-soft: rgba(38,166,154,.12);
   --warn: #f59e0b;
   --warn-soft: rgba(245,158,11,.10);
   --accent: #6366f1;
