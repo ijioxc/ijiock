@@ -1,11 +1,42 @@
 import { useEffect, useRef, useState } from 'react'
 import { createChart, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts'
-import { fetchOHLC } from '../api/market'
+import { fetchOHLC, fetchIntraday } from '../api/market'
 import { useWatchlistStore } from '../store/watchlistStore'
 import { useTechIndicators } from '../hooks/useTechIndicators'
 import TechSignal from './TechSignal'
 
-const RANGES = ['1mo', '3mo', '6mo', '1y']
+const INTERVALS = ['15分', '日', '週', '月']
+const RANGES_BY_INTERVAL = {
+  '15分': ['1日', '3日', '5日'],
+  '日':   ['1mo', '3mo', '6mo', '1y'],
+  '週':   ['3mo', '6mo', '1y', '2y'],
+  '月':   ['1y', '2y', '5y'],
+}
+
+function toWeekly(rows) {
+  const weeks = {}
+  rows.forEach(c => {
+    const d = new Date(c.time * 1000)
+    const day = d.getUTCDay()
+    const off = day === 0 ? -6 : 1 - day
+    const mon = new Date(d); mon.setUTCDate(d.getUTCDate() + off); mon.setUTCHours(0,0,0,0)
+    const key = mon.getTime() / 1000
+    if (!weeks[key]) weeks[key] = { time: key, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume ?? 0 }
+    else { weeks[key].high = Math.max(weeks[key].high, c.high); weeks[key].low = Math.min(weeks[key].low, c.low); weeks[key].close = c.close; weeks[key].volume += c.volume ?? 0 }
+  })
+  return Object.values(weeks).sort((a, b) => a.time - b.time)
+}
+
+function toMonthly(rows) {
+  const months = {}
+  rows.forEach(c => {
+    const d = new Date(c.time * 1000)
+    const key = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1) / 1000
+    if (!months[key]) months[key] = { time: key, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume ?? 0 }
+    else { months[key].high = Math.max(months[key].high, c.high); months[key].low = Math.min(months[key].low, c.low); months[key].close = c.close; months[key].volume += c.volume ?? 0 }
+  })
+  return Object.values(months).sort((a, b) => a.time - b.time)
+}
 
 function calcSMA(closes, times, period) {
   const result = []
@@ -340,6 +371,7 @@ export default function ChartPanel({ darkMode = false }) {
   const [compareSymbol, setCompareSymbol] = useState(null)
   const [compareCandles, setCompareCandles] = useState([])
   const alerts = useWatchlistStore(s => s.alerts)
+  const [interval, setInterval] = useState('日')
   const [range, setRange] = useState('3mo')
   const [candles, setCandles] = useState([])
   const [loading, setLoading] = useState(false)
@@ -379,9 +411,9 @@ export default function ChartPanel({ darkMode = false }) {
     volSeriesRef.current = volSeries
 
     const lineOpts = { crosshairMarkerVisible: false, lastValueVisible: false, priceLineVisible: false }
-    bbUpperRef.current = chart.addSeries(LineSeries, { ...lineOpts, color: 'rgba(249,115,22,.55)', lineWidth: 1, lineStyle: 1 })
-    bbMidRef.current  = chart.addSeries(LineSeries, { ...lineOpts, color: 'rgba(99,102,241,.5)',  lineWidth: 1.5 })
-    bbLowerRef.current = chart.addSeries(LineSeries, { ...lineOpts, color: 'rgba(6,182,212,.55)', lineWidth: 1, lineStyle: 1 })
+    bbUpperRef.current = chart.addSeries(LineSeries, { ...lineOpts, color: 'rgba(249,115,22,.85)', lineWidth: 2 })
+    bbMidRef.current  = chart.addSeries(LineSeries, { ...lineOpts, color: 'rgba(99,102,241,.75)',  lineWidth: 1.5, lineStyle: 1 })
+    bbLowerRef.current = chart.addSeries(LineSeries, { ...lineOpts, color: 'rgba(6,182,212,.85)', lineWidth: 2 })
     ma5Ref.current   = chart.addSeries(LineSeries, { ...lineOpts, color: 'rgba(249,115,22,.85)',  lineWidth: 1.5 })
     ma20Ref.current  = chart.addSeries(LineSeries, { ...lineOpts, color: 'rgba(99,102,241,.85)',  lineWidth: 1.5 })
     ma60Ref.current  = chart.addSeries(LineSeries, { ...lineOpts, color: 'rgba(239,83,80,.75)',   lineWidth: 1.5 })
@@ -432,159 +464,139 @@ export default function ChartPanel({ darkMode = false }) {
     })
   }, [darkMode])
 
+  function applyCandles(sorted) {
+    setCandles(sorted)
+    if (seriesRef.current) {
+      seriesRef.current.setData(sorted)
+      chartRef.current?.timeScale().fitContent()
+    }
+    if (volSeriesRef.current) {
+      volSeriesRef.current.setData(sorted.map(c => ({
+        time: c.time, value: c.volume ?? 0,
+        color: c.close >= c.open ? 'rgba(239,83,80,.6)' : 'rgba(38,166,154,.6)',
+      })))
+    }
+    const closes = sorted.map(c => c.close)
+    const times  = sorted.map(c => c.time)
+    if (sorted.length >= 20) {
+      const bb = calcBB(closes, times)
+      bbUpperRef.current?.setData(bb.map(d => ({ time: d.time, value: d.upper })))
+      bbMidRef.current?.setData(bb.map(d => ({ time: d.time, value: d.mid })))
+      bbLowerRef.current?.setData(bb.map(d => ({ time: d.time, value: d.lower })))
+    }
+    if (sorted.length >= 5)   ma5Ref.current?.setData(calcSMA(closes, times, 5))
+    if (sorted.length >= 20)  ma20Ref.current?.setData(calcSMA(closes, times, 20))
+    if (sorted.length >= 60)  ma60Ref.current?.setData(calcSMA(closes, times, 60))
+    if (sorted.length >= 120) ma120Ref.current?.setData(calcSMA(closes, times, 120))
+    if (sorted.length >= 240) ma240Ref.current?.setData(calcSMA(closes, times, 240))
+  }
+
   useEffect(() => {
     if (!selected) return
     let cancelled = false
     setLoading(true)
     setFetchError(null)
-    fetchOHLC(selected, range)
-      .then(data => {
-        if (cancelled) return
-        const sorted = data.sort((a, b) => a.time - b.time)
-        setCandles(sorted)
-        if (seriesRef.current) {
-          seriesRef.current.setData(sorted)
-          chartRef.current?.timeScale().fitContent()
-        }
-        if (volSeriesRef.current) {
-          volSeriesRef.current.setData(sorted.map(c => ({
-            time: c.time,
-            value: c.volume ?? 0,
-            color: c.close >= c.open ? 'rgba(239,83,80,.6)' : 'rgba(38,166,154,.6)',
-          })))
-        }
-        const closes = sorted.map(c => c.close)
-        const times = sorted.map(c => c.time)
-        if (sorted.length >= 20) {
-          const bb = calcBB(closes, times)
-          bbUpperRef.current?.setData(bb.map(d => ({ time: d.time, value: d.upper })))
-          bbMidRef.current?.setData(bb.map(d => ({ time: d.time, value: d.mid })))
-          bbLowerRef.current?.setData(bb.map(d => ({ time: d.time, value: d.lower })))
-        }
-        if (sorted.length >= 5)   ma5Ref.current?.setData(calcSMA(closes, times, 5))
-        if (sorted.length >= 20)  ma20Ref.current?.setData(calcSMA(closes, times, 20))
-        if (sorted.length >= 60)  ma60Ref.current?.setData(calcSMA(closes, times, 60))
-        if (sorted.length >= 120) ma120Ref.current?.setData(calcSMA(closes, times, 120))
-        if (sorted.length >= 240) ma240Ref.current?.setData(calcSMA(closes, times, 240))
 
-        // Keltner Channel: EMA(20) ± 1.5 × ATR(10)
+    async function load() {
+      let raw
+      if (interval === '15分') {
+        const days = range === '1日' ? 1 : range === '3日' ? 3 : 5
+        raw = await fetchIntraday(selected, '15m', days)
+      } else {
+        raw = await fetchOHLC(selected, range)
+      }
+      const daily = raw.sort((a, b) => a.time - b.time)
+      const sorted = interval === '週' ? toWeekly(daily)
+                   : interval === '月' ? toMonthly(daily)
+                   : daily
+      return sorted
+    }
+
+    load()
+      .then(sorted => {
+        if (cancelled) return
+        applyCandles(sorted)
+        const closes = sorted.map(c => c.close)
+        const times  = sorted.map(c => c.time)
+        const avgInterval = sorted.length > 1 ? (times[sorted.length - 1] - times[0]) / (sorted.length - 1) : 86400
+
+        // Keltner Channel
         if (sorted.length >= 20) {
           const kcPeriod = 20, atrPeriod = 10, mult = 1.5
-          const k = 2 / (kcPeriod + 1)
-          const ka = 2 / (atrPeriod + 1)
+          const k = 2 / (kcPeriod + 1), ka = 2 / (atrPeriod + 1)
           let ema = closes[0], atr = 0
           const kcUp = [], kcLo = []
           for (let i = 1; i < sorted.length; i++) {
-            const tr = Math.max(
-              sorted[i].high - sorted[i].low,
-              Math.abs(sorted[i].high - sorted[i - 1].close),
-              Math.abs(sorted[i].low  - sorted[i - 1].close)
-            )
+            const tr = Math.max(sorted[i].high - sorted[i].low, Math.abs(sorted[i].high - sorted[i-1].close), Math.abs(sorted[i].low - sorted[i-1].close))
             atr = i === 1 ? tr : atr * (1 - ka) + tr * ka
             ema = closes[i] * k + ema * (1 - k)
-            if (i >= kcPeriod - 1) {
-              kcUp.push({ time: times[i], value: ema + mult * atr })
-              kcLo.push({ time: times[i], value: ema - mult * atr })
-            }
+            if (i >= kcPeriod - 1) { kcUp.push({ time: times[i], value: ema + mult * atr }); kcLo.push({ time: times[i], value: ema - mult * atr }) }
           }
           kcUpperRef.current?.setData(kcUp)
           kcLowerRef.current?.setData(kcLo)
         }
 
-        // VWAP (cumulative)
+        // VWAP
         if (sorted.length >= 2) {
           let cumPV = 0, cumV = 0
-          const vwapData = sorted.map(c => {
-            const typical = (c.high + c.low + c.close) / 3
-            const vol = c.volume ?? 1
-            cumPV += typical * vol
-            cumV += vol
+          vwapSeriesRef.current?.setData(sorted.map(c => {
+            const typical = (c.high + c.low + c.close) / 3; const vol = c.volume ?? 1
+            cumPV += typical * vol; cumV += vol
             return { time: c.time, value: cumV > 0 ? cumPV / cumV : typical }
-          })
-          vwapSeriesRef.current?.setData(vwapData)
+          }))
         }
 
-        // Linear regression trendline
-        if (sorted.length >= 10) {
-          linRegRef.current?.setData(calcLinReg(closes, times))
-        }
+        // Linear regression
+        if (sorted.length >= 10) linRegRef.current?.setData(calcLinReg(closes, times))
 
-        // Ichimoku Cloud
+        // Ichimoku
         if (sorted.length >= 52) {
-          const midpoint = (arr, i, p) => {
-            const slice = arr.slice(Math.max(0, i - p + 1), i + 1)
-            return (Math.max(...slice.map(c => c.high)) + Math.min(...slice.map(c => c.low))) / 2
-          }
-          const avgInterval = sorted.length > 1 ? (times[sorted.length - 1] - times[0]) / (sorted.length - 1) : 86400
-          const tenkanData = [], kijunData = [], spanAData = [], spanBData = [], chikouData = []
+          const mid = (arr, i, p) => { const sl = arr.slice(Math.max(0, i-p+1), i+1); return (Math.max(...sl.map(c=>c.high))+Math.min(...sl.map(c=>c.low)))/2 }
+          const tenkanData=[], kijunData=[], spanAData=[], spanBData=[], chikouData=[]
           for (let i = 8; i < sorted.length; i++) {
-            const t = midpoint(sorted, i, 9)
-            const k = midpoint(sorted, i, 26)
-            tenkanData.push({ time: times[i], value: t })
-            kijunData.push({ time: times[i], value: k })
-            const futureTime = Math.round(times[i] + 26 * avgInterval)
-            spanAData.push({ time: futureTime, value: (t + k) / 2 })
+            const t = mid(sorted,i,9), k2 = mid(sorted,i,26)
+            tenkanData.push({ time: times[i], value: t }); kijunData.push({ time: times[i], value: k2 })
+            spanAData.push({ time: Math.round(times[i] + 26*avgInterval), value: (t+k2)/2 })
           }
-          for (let i = 51; i < sorted.length; i++) {
-            const b = midpoint(sorted, i, 52)
-            spanBData.push({ time: Math.round(times[i] + 26 * avgInterval), value: b })
-          }
-          for (let i = 0; i < sorted.length - 26; i++) {
-            chikouData.push({ time: times[i], value: closes[i + 26] })
-          }
-          ichimokuRefs.current.tenkan?.setData(tenkanData)
-          ichimokuRefs.current.kijun?.setData(kijunData)
-          ichimokuRefs.current.spanA?.setData(spanAData)
-          ichimokuRefs.current.spanB?.setData(spanBData)
+          for (let i = 51; i < sorted.length; i++) spanBData.push({ time: Math.round(times[i]+26*avgInterval), value: mid(sorted,i,52) })
+          for (let i = 0; i < sorted.length - 26; i++) chikouData.push({ time: times[i], value: closes[i+26] })
+          ichimokuRefs.current.tenkan?.setData(tenkanData); ichimokuRefs.current.kijun?.setData(kijunData)
+          ichimokuRefs.current.spanA?.setData(spanAData); ichimokuRefs.current.spanB?.setData(spanBData)
           ichimokuRefs.current.chikou?.setData(chikouData)
         }
 
-        // Combined chart markers: PSAR reversals + Volume spikes
+        // Markers: PSAR + Volume spikes
         const allMarkers = []
-
         if (sorted.length >= 5) {
-          let bull = true, af = 0.02, maxAf = 0.2
-          let ep = sorted[0].high, sar = sorted[0].low
-          let prevBull = true
+          let bull = true, af = 0.02, ep = sorted[0].high, sar = sorted[0].low, prevBull = true
           for (let i = 1; i < sorted.length; i++) {
             const prevSar = sar
             if (bull) {
-              sar = prevSar + af * (ep - prevSar)
-              sar = Math.min(sar, sorted[i - 1].low, i >= 2 ? sorted[i - 2].low : sorted[i - 1].low)
-              if (sorted[i].low < sar) {
-                bull = false; sar = ep; ep = sorted[i].low; af = 0.02
-                if (prevBull) allMarkers.push({ time: sorted[i].time, position: 'aboveBar', color: 'rgba(38,166,154,.85)', shape: 'arrowDown', text: 'SAR', size: 1 })
-              } else { if (sorted[i].high > ep) { ep = sorted[i].high; af = Math.min(af + 0.02, maxAf) } }
+              sar = prevSar + af*(ep-prevSar); sar = Math.min(sar, sorted[i-1].low, i>=2 ? sorted[i-2].low : sorted[i-1].low)
+              if (sorted[i].low < sar) { bull=false; sar=ep; ep=sorted[i].low; af=0.02; if(prevBull) allMarkers.push({time:sorted[i].time,position:'aboveBar',color:'rgba(38,166,154,.85)',shape:'arrowDown',text:'SAR',size:1}) }
+              else if (sorted[i].high > ep) { ep=sorted[i].high; af=Math.min(af+0.02,0.2) }
             } else {
-              sar = prevSar + af * (ep - prevSar)
-              sar = Math.max(sar, sorted[i - 1].high, i >= 2 ? sorted[i - 2].high : sorted[i - 1].high)
-              if (sorted[i].high > sar) {
-                bull = true; sar = ep; ep = sorted[i].high; af = 0.02
-                if (!prevBull) allMarkers.push({ time: sorted[i].time, position: 'belowBar', color: 'rgba(239,83,80,.85)', shape: 'arrowUp', text: 'SAR', size: 1 })
-              } else { if (sorted[i].low < ep) { ep = sorted[i].low; af = Math.min(af + 0.02, maxAf) } }
+              sar = prevSar + af*(ep-prevSar); sar = Math.max(sar, sorted[i-1].high, i>=2 ? sorted[i-2].high : sorted[i-1].high)
+              if (sorted[i].high > sar) { bull=true; sar=ep; ep=sorted[i].high; af=0.02; if(!prevBull) allMarkers.push({time:sorted[i].time,position:'belowBar',color:'rgba(239,83,80,.85)',shape:'arrowUp',text:'SAR',size:1}) }
+              else if (sorted[i].low < ep) { ep=sorted[i].low; af=Math.min(af+0.02,0.2) }
             }
             prevBull = bull
           }
         }
-
         if (sorted.length >= 20) {
           const vols = sorted.map(c => c.volume ?? 0)
           for (let i = 20; i < sorted.length; i++) {
-            const avg20 = vols.slice(i - 20, i).reduce((a, b) => a + b, 0) / 20
-            if (vols[i] > avg20 * 2.2) {
-              allMarkers.push({ time: sorted[i].time, position: 'belowBar', color: 'rgba(99,102,241,.8)', shape: 'circle', text: 'V', size: 1 })
-            }
+            if (vols[i] > vols.slice(i-20,i).reduce((a,b)=>a+b,0)/20*2.2)
+              allMarkers.push({time:sorted[i].time,position:'belowBar',color:'rgba(99,102,241,.8)',shape:'circle',text:'V',size:1})
           }
         }
-
-        if (seriesRef.current && allMarkers.length > 0) {
-          createSeriesMarkers(seriesRef.current, allMarkers.sort((a, b) => a.time - b.time))
-        }
+        if (seriesRef.current && allMarkers.length > 0)
+          createSeriesMarkers(seriesRef.current, allMarkers.sort((a,b) => a.time-b.time))
       })
       .catch(e => { if (!cancelled) setFetchError(e.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [selected, range, retryKey])
+  }, [selected, range, interval, retryKey])
 
   // Fullscreen Escape key
   useEffect(() => {
@@ -915,8 +927,21 @@ export default function ChartPanel({ darkMode = false }) {
             onClick={() => setFullscreen(v => !v)}
             title="全螢幕 (Esc 退出)"
           >⛶</button>
+          <div className="interval-tabs">
+            {INTERVALS.map(iv => (
+              <button
+                key={iv}
+                className={`range-tab ${interval === iv ? 'active' : ''}`}
+                onClick={() => {
+                  setInterval(iv)
+                  const ranges = RANGES_BY_INTERVAL[iv]
+                  if (!ranges.includes(range)) setRange(ranges[1] ?? ranges[0])
+                }}
+              >{iv}</button>
+            ))}
+          </div>
           <div className="range-tabs">
-            {RANGES.map(r => (
+            {RANGES_BY_INTERVAL[interval].map(r => (
               <button key={r} className={`range-tab ${range === r ? 'active' : ''}`} onClick={() => setRange(r)}>{r}</button>
             ))}
           </div>

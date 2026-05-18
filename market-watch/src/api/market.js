@@ -230,7 +230,7 @@ function mingouSlashToUnix(dateStr) {
 }
 
 function rangeToMonths(range) {
-  return { '1mo': 1, '3mo': 3, '6mo': 6, '1y': 12 }[range] ?? 3
+  return { '1mo': 1, '3mo': 3, '6mo': 6, '1y': 12, '2y': 24, '5y': 60 }[range] ?? 3
 }
 
 function todayStr() {
@@ -243,4 +243,32 @@ function rangeToFromDate(range) {
   const d = new Date()
   d.setMonth(d.getMonth() - months)
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
+const intradayCache = new Map()
+const INTRADAY_TTL = 5 * 60 * 1000
+
+export async function fetchIntraday(symbol, interval = '15m', days = 5) {
+  const key = `${symbol}|${interval}|${days}`
+  const cached = intradayCache.get(key)
+  if (cached && Date.now() - cached.ts < INTRADAY_TTL) return cached.data
+
+  // Yahoo Finance v8 chart endpoint — works for TW, US, indices, FX
+  const yhSym = encodeURIComponent(symbol)
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yhSym}?interval=${interval}&range=${days}d&includePrePost=false`
+  const r = await fetch(px(url))
+  if (!r.ok) throw new Error(`盤中資料錯誤 ${r.status}`)
+  const json = await r.json()
+  const result = json.chart?.result?.[0]
+  if (!result?.timestamp?.length) throw new Error('無盤中資料（可能非交易時間）')
+
+  const ts = result.timestamp
+  const q  = result.indicators?.quote?.[0] ?? {}
+  const data = ts.map((t, i) => ({
+    time: t,
+    open: q.open?.[i], high: q.high?.[i], low: q.low?.[i], close: q.close?.[i], volume: q.volume?.[i],
+  })).filter(c => c.open != null && c.close != null)
+
+  intradayCache.set(key, { data, ts: Date.now() })
+  return data
 }
