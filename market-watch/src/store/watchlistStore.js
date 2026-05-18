@@ -73,6 +73,11 @@ export const useWatchlistStore = create(
           }
         }),
 
+      seedPriceHistory: (symbol, prices) =>
+        set(s => ({
+          priceHistory: { ...s.priceHistory, [symbol]: prices },
+        })),
+
       setAlert: (symbol, target, stop, pctMove = null, rsiThresh = null) =>
         set(s => ({ alerts: { ...s.alerts, [symbol]: { target, stop, pctMove, rsiThresh } } })),
 

@@ -577,6 +577,14 @@ export default function TechSignal({ tech }) {
   const { trend, kdSignal, macdSignal, maStatus, lastK, lastD, lastMacd, lastSignal, ma5, ma20, ma60, ma120, ma240, lastRsi, rsiSignal, candlePattern, atr, atrPct, volatility, lastMfi, mfiSignal, obvTrend, stochRsiK, stochRsiD, stochRsiSignal, williamsR, wrSignal, bbWidth, bbSqueezeSignal, bbPattern, psarBull, psarSignal, rsiDivergence, adx, plusDI, minusDI, adxSignal, roc10, roc21, rocSignal, weeklyRsi, monthlyRsi, weeklyMacd, cci20, cciSignal, cmf20, cmfSignal, bullPower, bearPower, elderSignal } = tech
   const isBull = trend.includes('上升')
 
+  const bbMeta = BB_PATTERN_META[bbPattern] ?? BB_PATTERN_META.neutral
+  const bbV = parseFloat(bbWidth) || 0
+  const bbWidthPct = Math.min(bbV / 25, 1) * 100
+  const bbHint = /突破上軌|跌破下軌/.test(bbSqueezeSignal) ? '⚡ 突破訊號，注意假突破風險'
+    : /騎乘/.test(bbSqueezeSignal) ? '🏄 趨勢強勁，跟隨但設好停損'
+    : /收縮|等待/.test(bbSqueezeSignal) ? '🔋 能量蓄積中，突破方向決定多空'
+    : ''
+
   return (
     <div className="tech-panel">
       <div className="tech-top-row">
@@ -586,6 +594,27 @@ export default function TechSignal({ tech }) {
         </div>
         <CompositeScore tech={tech} />
       </div>
+
+      {bbWidth && (
+        <div className={`bb-banner bb-banner-${bbPattern ?? 'neutral'}`}>
+          <div className="bb-banner-icon">{bbMeta.icon}</div>
+          <div className="bb-banner-body">
+            <div className="bb-banner-title">布林通道訊號</div>
+            <div className="bb-banner-sig">{bbSqueezeSignal}</div>
+            {bbHint && <div className="bb-banner-hint">{bbHint}</div>}
+          </div>
+          <div className="bb-banner-right">
+            <div className="bb-banner-width-label">帶寬</div>
+            <div className="bb-banner-width-val" style={{ color: bbMeta.color }}>{bbV.toFixed(1)}%</div>
+            <div className="bb-bw-track">
+              <div className="bb-bw-fill" style={{ width: `${bbWidthPct}%`, background: bbMeta.color }} />
+              <div className="bb-bw-mark" style={{ left: '16%' }} title="收縮(4%)" />
+              <div className="bb-bw-mark" style={{ left: '32%', opacity: .4 }} title="窄帶(8%)" />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="tech-grid">
         <SigCard label="KD 隨機指標" sig={kdSignal}>
           <div className="bar-row">

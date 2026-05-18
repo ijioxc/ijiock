@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { fetchQuote } from '../api/market'
+import { fetchQuote, fetchOHLC } from '../api/market'
 import { useWatchlistStore } from '../store/watchlistStore'
 
 const INTERVAL_MS = 30_000
@@ -9,9 +9,12 @@ export function useQuotes() {
   const alerts = useWatchlistStore(s => s.alerts)
   const quotes = useWatchlistStore(s => s.quotes)
   const setQuote = useWatchlistStore(s => s.setQuote)
+  const seedPriceHistory = useWatchlistStore(s => s.seedPriceHistory)
+  const priceHistory = useWatchlistStore(s => s.priceHistory)
   const pushTriggered = useWatchlistStore(s => s.pushTriggered)
   const forceRefresh = useWatchlistStore(s => s.forceRefresh)
   const prevQuotesRef = useRef({})
+  const seededRef = useRef(new Set())
 
   async function poll() {
     await Promise.allSettled(
@@ -51,7 +54,23 @@ export function useQuotes() {
     )
   }
 
+  async function seedHistory(symbol) {
+    if (seededRef.current.has(symbol)) return
+    seededRef.current.add(symbol)
+    try {
+      const rows = await fetchOHLC(symbol, '1mo')
+      if (rows.length >= 5) {
+        const closes = rows.slice(-25).map(r => r.close)
+        seedPriceHistory(symbol, closes)
+      }
+    } catch (_) {}
+  }
+
   useEffect(() => {
+    symbols.forEach(({ symbol }) => {
+      const hist = priceHistory[symbol]
+      if (!hist || hist.length < 5) seedHistory(symbol)
+    })
     poll()
     const id = setInterval(poll, INTERVAL_MS)
     return () => clearInterval(id)
