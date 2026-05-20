@@ -3,7 +3,7 @@ const SYSTEM = '你是一位專業的台灣股市與全球金融市場投資顧�
 export async function askGemini({ apiKey, messages, system = SYSTEM }) {
   if (!apiKey) throw new Error('請先設定 Gemini API Key')
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
 
   const contents = messages.map(m => ({
     role: m.role === 'ai' ? 'model' : 'user',
@@ -22,7 +22,13 @@ export async function askGemini({ apiKey, messages, system = SYSTEM }) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    const msg = err?.error?.message ?? `API 錯誤 ${res.status}`
+    const raw = err?.error?.message ?? `API 錯誤 ${res.status}`
+    let msg = raw
+    if (raw.includes('free_tier') && raw.includes('limit: 0')) {
+      msg = `❌ 此專案未啟用免費配額（limit: 0）。請至 aistudio.google.com/apikey 點「建立 API 金鑰」→「在新專案中建立」，確認計費層級顯示「免費層級」後再試。\n\n原始錯誤：${raw.slice(0, 200)}`
+    } else if (raw.includes('RESOURCE_EXHAUSTED') || (raw.includes('quota') && res.status === 429)) {
+      msg = `❌ 配額不足（429）。若剛建立 key 請等 1 分鐘再試；或已達每分鐘上限（15 RPM），請稍後重試。`
+    }
     throw new Error(msg)
   }
   const data = await res.json()

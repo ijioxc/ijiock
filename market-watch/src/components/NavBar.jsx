@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useWatchlistStore } from '../store/watchlistStore'
 
 function SessionClock() {
@@ -81,6 +82,7 @@ export default function NavBar({ darkMode, onToggleDark }) {
   const clearTriggered = useWatchlistStore(s => s.clearTriggered)
 
   return (
+    <>
     <nav className="navbar">
       <div className="logo">
         <div className="logo-mark">
@@ -131,7 +133,9 @@ export default function NavBar({ darkMode, onToggleDark }) {
         >?</button>
       </div>
 
-      {showKey && (
+    </nav>
+
+      {showKey && createPortal(
         <div className="key-modal" onClick={() => setShowKey(false)}>
           <div className="key-panel" onClick={e => e.stopPropagation()}>
             <h3>AI 投資顧問設定</h3>
@@ -151,10 +155,10 @@ export default function NavBar({ darkMode, onToggleDark }) {
             {tab === 'gemini' ? (
               <>
                 <p className="key-hint" style={{ color: 'var(--dn)', fontWeight: 700 }}>
-                  Gemini 2.0 Flash 免費，每天 1500 次請求
+                  Gemini 1.5 Flash 免費，每天 1500 次請求
                 </p>
                 <p className="key-hint">
-                  至 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>aistudio.google.com/apikey</a> 取得免費 API Key
+                  ⚠️ 必須至 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>aistudio.google.com/apikey</a> 取得 Key（非 Google Cloud Console）
                 </p>
                 <input
                   type="password"
@@ -187,8 +191,9 @@ export default function NavBar({ darkMode, onToggleDark }) {
               <button className="ghost" onClick={() => setShowKey(false)}>取消</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </nav>
+    </>
   )
 }

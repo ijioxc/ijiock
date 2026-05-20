@@ -127,7 +127,7 @@ export default function AdvisorChat() {
     <div className="advisor-panel">
       <div className="adv-header">
         <span className="adv-title">AI 投資顧問</span>
-        <span className="adv-model mono">{aiProvider === 'gemini' ? 'gemini-2.0-flash 🆓' : 'claude-sonnet-4-6'}</span>
+        <span className="adv-model mono">{aiProvider === 'gemini' ? 'gemini-1.5-flash 🆓' : 'claude-sonnet-4-6'}</span>
       </div>
 
       {!activeKey && (

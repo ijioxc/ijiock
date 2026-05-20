@@ -112,7 +112,7 @@ export default defineConfig({
   plugins: [react(), marketProxyPlugin()],
   base: '/ijiock/',
   build: {
-    outDir: '..',
-    emptyOutDir: false,
+    outDir: '../docs',
+    emptyOutDir: true,
   },
 })
