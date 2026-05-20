@@ -155,7 +155,7 @@ export default function NavBar({ darkMode, onToggleDark }) {
             {tab === 'gemini' ? (
               <>
                 <p className="key-hint" style={{ color: 'var(--dn)', fontWeight: 700 }}>
-                  Gemini 1.5 Flash 免費，每天 1500 次請求
+                  Gemini 2.0 Flash Lite 免費，每天 1500 次請求
                 </p>
                 <p className="key-hint">
                   ⚠️ 必須至 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>aistudio.google.com/apikey</a> 取得 Key（非 Google Cloud Console）
