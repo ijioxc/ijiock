@@ -1,0 +1,90 @@
+/* ============================================================
+   MarketWatch Base Styles & Global Resets
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--fs-13);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-md);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
+/* ── Utility classes ── */
+.mono {
+  font-family: var(--font-mono);
+}
+
+.up {
+  color: var(--up);
+}
+
+.dn {
+  color: var(--dn);
+}
+
+.up-bg {
+  background: var(--up-soft);
+}
+
+.dn-bg {
+  background: var(--dn-soft);
+}
+
+/* ── Flash animations (price ticks) ── */
+@keyframes flash-up {
+  0% {
+    background: var(--up-soft);
+    border-radius: 4px;
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+@keyframes flash-dn {
+  0% {
+    background: var(--dn-soft);
+    border-radius: 4px;
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+.flash-up {
+  animation: flash-up 0.65s ease-out forwards;
+}
+
+.flash-dn {
+  animation: flash-dn 0.65s ease-out forwards;
+}
