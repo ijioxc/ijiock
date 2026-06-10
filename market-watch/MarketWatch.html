@@ -691,7 +691,90 @@ button, input, textarea, select { font-family: inherit; }
 
 <script type="text/babel">
 /* ── mw-components.jsx ──────────────────────────────────── */
-const { useState, useEffect, useRef, useMemo } = React
+const { useState, useEffect, useRef, useMemo, useCallback } = React
+
+/* ── Live Quotes via Yahoo Finance + corsproxy.io ─────────── */
+const CORS_PROXY = 'https://corsproxy.io/?'
+
+async function fetchYahooBatch(symbols) {
+  const joined = symbols.join(',')
+  const baseUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(joined)}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketVolume`
+  const proxyUrl = CORS_PROXY + encodeURIComponent(baseUrl)
+  const res = await fetch(proxyUrl)
+  if (!res.ok) throw new Error(`Yahoo ${res.status}`)
+  const json = await res.json()
+  return json?.quoteResponse?.result ?? []
+}
+
+function buildTickerFromQuotes(quotes) {
+  const fmt = (q) => ({
+    label: q.name,
+    price: q.price >= 10000 ? Math.round(q.price).toLocaleString('en-US')
+         : q.price >= 1000  ? q.price.toLocaleString('en-US', {minimumFractionDigits:0,maximumFractionDigits:0})
+         : q.price.toFixed(2),
+    pct: (q.changePct >= 0 ? '+' : '') + q.changePct.toFixed(2) + '%',
+    up: q.changePct >= 0,
+  })
+  const flat = Object.values(quotes).flat()
+  const pick = (sym) => flat.find(q => q.symbol === sym)
+  const syms = ['^TWII','2330.TW','^GSPC','^IXIC','NVDA','BTC-USD','2603.TW','^VIX']
+  return syms.map(s => pick(s)).filter(Boolean).map(fmt)
+}
+
+function useLiveQuotes() {
+  const [quotes, setQuotes] = useState(() => ({ ...window.MW_DATA.quotes }))
+  const [lastUpdate, setLastUpdate] = useState(null)
+  const [liveError, setLiveError] = useState(null)
+  const [liveLoading, setLiveLoading] = useState(false)
+
+  const allSymbols = useMemo(
+    () => Object.values(window.MW_DATA.quotes).flat().map(q => q.symbol),
+    []
+  )
+
+  const fetchAll = useCallback(async () => {
+    setLiveLoading(true)
+    setLiveError(null)
+    try {
+      const results = await fetchYahooBatch(allSymbols)
+      if (!results.length) return
+
+      const bySymbol = {}
+      results.forEach(r => {
+        bySymbol[r.symbol] = {
+          price:     r.regularMarketPrice ?? 0,
+          change:    r.regularMarketChange ?? 0,
+          changePct: r.regularMarketChangePercent ?? 0,
+          volume:    r.regularMarketVolume ?? 0,
+        }
+      })
+
+      const updated = {}
+      Object.entries(window.MW_DATA.quotes).forEach(([cat, items]) => {
+        updated[cat] = items.map(item => {
+          const live = bySymbol[item.symbol]
+          return live ? { ...item, ...live } : item
+        })
+      })
+
+      Object.assign(window.MW_DATA.quotes, updated)
+      setQuotes({ ...updated })
+      setLastUpdate(new Date())
+    } catch (e) {
+      setLiveError(e.message)
+    } finally {
+      setLiveLoading(false)
+    }
+  }, [allSymbols])
+
+  useEffect(() => {
+    fetchAll()
+    const tid = window.setInterval(fetchAll, 30000)
+    return () => window.clearInterval(tid)
+  }, [fetchAll])
+
+  return { quotes, lastUpdate, liveError, liveLoading }
+}
 
 function MiniSparkline({ data, up, width = 64, height = 30 }) {
   if (!data || data.length < 2) return <svg width={width} height={height} />
@@ -742,7 +825,10 @@ function SessionClock() {
   )
 }
 
-function NavBar({ dark, onToggleDark }) {
+function NavBar({ dark, onToggleDark, liveLoading, liveError, lastUpdate }) {
+  const timeStr = lastUpdate
+    ? lastUpdate.toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', second:'2-digit' })
+    : null
   return (
     <div className="navbar-wrapper">
       <nav className="navbar">
@@ -755,7 +841,11 @@ function NavBar({ dark, onToggleDark }) {
             <div className="logo-sub">自動盯盤 · 投資顧問</div>
           </div>
         </div>
-        <div className="live-badge"><span className="live-dot" />LIVE</div>
+        <div className="live-badge" title={liveError ? `錯誤：${liveError}` : timeStr ? `上次更新 ${timeStr}` : '連線中...'}>
+          <span className="live-dot" style={liveError ? {background:'var(--warn)',animationPlayState:'paused'} : liveLoading ? {background:'var(--accent)'} : {}} />
+          {liveError ? 'ERR' : liveLoading ? '更新中' : lastUpdate ? 'LIVE' : '…'}
+          {timeStr && !liveLoading && !liveError && <span style={{fontSize:9,marginLeft:4,opacity:0.7,fontVariantNumeric:'tabular-nums'}}>{timeStr}</span>}
+        </div>
         <SessionClock />
         <div className="nav-right">
           <button className="ibtn" title="搜尋 ⌘K">
@@ -781,8 +871,8 @@ function NavBar({ dark, onToggleDark }) {
   )
 }
 
-function MarketTicker() {
-  const items = window.MW_DATA.ticker
+function MarketTicker({ ticker }) {
+  const items = ticker || window.MW_DATA.ticker
   const doubled = [...items, ...items]
   return (
     <div className="market-ticker">
@@ -800,14 +890,14 @@ function MarketTicker() {
   )
 }
 
-function WatchList({ selected, onSelect }) {
+function WatchList({ selected, onSelect, quotes }) {
   const CATS = ['TW','US','ETF','IDX','CRYPTO']
   const CAT_LABELS = { TW:'台股', US:'美股', ETF:'ETF', IDX:'指數', CRYPTO:'加密' }
   const [cat, setCat] = useState('TW')
   const [search, setSearch] = useState('')
   const [view, setView] = useState('list')
   const [sort, setSort] = useState('default')
-  const data = window.MW_DATA.quotes
+  const data = quotes || window.MW_DATA.quotes
 
   const allItems = data[cat] || []
   const q = search.toLowerCase()
@@ -1676,6 +1766,9 @@ function App() {
   const [selected, setSelected] = useState('2330.TW')
   const [rightTab, setRightTab] = useState('sector')
 
+  const { quotes, lastUpdate, liveError, liveLoading } = useLiveQuotes()
+  const ticker = useMemo(() => buildTickerFromQuotes(quotes), [quotes])
+
   useEffect(() => {
     document.documentElement.setAttribute('data-appearance', dark ? 'dark' : 'light')
     localStorage.setItem('mw-dark', dark ? '1' : '0')
@@ -1691,10 +1784,10 @@ function App() {
 
   return (
     <div className={`app${dark?' dark':''}`}>
-      <NavBar dark={dark} onToggleDark={() => setDark(d => !d)} />
-      <MarketTicker />
+      <NavBar dark={dark} onToggleDark={() => setDark(d => !d)} liveLoading={liveLoading} liveError={liveError} lastUpdate={lastUpdate} />
+      <MarketTicker ticker={ticker} />
       <div className="main-layout">
-        <WatchList selected={selected} onSelect={setSelected} />
+        <WatchList selected={selected} onSelect={setSelected} quotes={quotes} />
         <div className="center-col">
           <ChartPanel symbol={selected} />
           <TechSignals symbol={selected} />
