@@ -10,12 +10,29 @@
    ============================================================ */
 
 :root {
-  /* ── Surfaces (light) ── */
-  --bg:          #F5F5F7;   /* app canvas — Apple system gray 6 */
-  --surface:     #FFFFFF;   /* cards, panels */
-  --surface-2:   #FAFAFC;   /* inset rows, sub-panels */
-  --surface-3:   #EFEFF2;   /* pressed / track / chips */
-  --glass:       rgba(255,255,255,.72); /* nav bars, modals (blurred) */
+  /* ── Background & page gradient ── */
+  --bg:          #eef0f3;
+  --page-bg:     #eef0f3;
+  --page-gradient:
+    radial-gradient(45% 36% at 0% 0%,    rgba(255,150,80,.32)  0%, transparent 70%),
+    radial-gradient(42% 36% at 100% 0%,  rgba(0,113,227,.26)   0%, transparent 70%),
+    radial-gradient(50% 42% at 0% 100%,  rgba(184,48,37,.22)   0%, transparent 70%),
+    radial-gradient(45% 38% at 100% 100%,rgba(46,107,127,.26)  0%, transparent 70%),
+    radial-gradient(40% 35% at 50% 100%, rgba(246,171,0,.14)   0%, transparent 75%);
+
+  /* ── Surfaces (semi-transparent for glass effect) ── */
+  --surface:     rgba(255,255,255,.35);
+  --surface-2:   rgba(255,255,255,.20);
+  --surface-3:   rgba(255,255,255,.10);
+  --glass:       rgba(255,255,255,.80);
+
+  /* ── Glass card tokens ── */
+  --card-fill:      rgba(255,255,255,.66);
+  --card-blur:      blur(28px) saturate(180%);
+  --card-border:    0.5px solid rgba(255,255,255,.55);
+  --card-highlight: inset 0 1px 0 rgba(255,255,255,.70), inset 0 -0.5px 0 rgba(0,0,0,.03);
+  --card-shadow:    0 1px 3px rgba(0,0,0,.04), 0 12px 32px rgba(0,0,0,.05);
+  --card-shadow-hover: 0 2px 6px rgba(0,0,0,.05), 0 20px 48px rgba(0,0,0,.09);
 
   /* ── Hairlines & dividers ── */
   --border:      rgba(0,0,0,.06);
@@ -54,14 +71,25 @@
   --tag-blue:    #6366F1;
 }
 
-/* ── Dark theme — mirrors the app's `.app.dark` scope ──
-   Apply via <html data-theme="dark"> (or .dark on the app root). */
+/* ── Dark theme ── */
 [data-theme="dark"], .dark {
-  --bg:          #1C1C1E;
-  --surface:     #2C2C2E;
-  --surface-2:   #232325;
-  --surface-3:   #18181A;
+  --bg:          #141417;
+  --page-bg:     #141417;
+  --page-gradient:
+    radial-gradient(45% 36% at 0% 0%,    rgba(255,120,60,.16)  0%, transparent 72%),
+    radial-gradient(42% 36% at 100% 0%,  rgba(10,132,255,.15)  0%, transparent 72%),
+    radial-gradient(50% 42% at 0% 100%,  rgba(255,69,58,.10)   0%, transparent 72%),
+    radial-gradient(45% 38% at 100% 100%,rgba(100,210,255,.11) 0%, transparent 72%),
+    radial-gradient(40% 35% at 50% 100%, rgba(255,214,10,.07)  0%, transparent 78%);
+  --surface:     rgba(44,44,46,.35);
+  --surface-2:   rgba(58,58,60,.20);
+  --surface-3:   rgba(72,72,74,.10);
   --glass:       rgba(28,28,30,.72);
+  --card-fill:   rgba(44,44,50,.74);
+  --card-border: 0.5px solid rgba(255,255,255,.09);
+  --card-highlight: inset 0 1px 0 rgba(255,255,255,.06), inset 0 -0.5px 0 rgba(0,0,0,.18);
+  --card-shadow: 0 1px 3px rgba(0,0,0,.18), 0 12px 32px rgba(0,0,0,.28);
+  --card-shadow-hover: 0 2px 6px rgba(0,0,0,.26), 0 20px 48px rgba(0,0,0,.40);
   --border:      rgba(255,255,255,.08);
   --border-md:   rgba(255,255,255,.14);
   --text:        #F5F5F7;
