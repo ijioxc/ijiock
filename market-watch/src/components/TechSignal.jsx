@@ -24,27 +24,35 @@ function MacdBar({ value }) {
 }
 
 function RsiGauge({ value }) {
-  const v = parseFloat(value) || 50
-  const angle = -135 + (v / 100) * 270
+  // Geometry: CX=40 CY=44 R=32 → left=(8,44) top=(40,12) right=(72,44)
+  // Split semicircle into TWO quarter arcs to avoid SVG degenerate-arc bug (chord=2r).
+  // All arcs use sweep=1 (clockwise in SVG coords) which draws the UPPER half.
+  // Needle: ang=(1-v/100)*π maps v=0→π(left), v=50→π/2(top), v=100→0(right)
+  const v = Math.min(100, Math.max(0, parseFloat(value) || 50))
+  const CX = 40, CY = 44, R = 32, NL = 26
+  const ang = (1 - v / 100) * Math.PI
+  const nx = (CX + NL * Math.cos(ang)).toFixed(1)
+  const ny = (CY - NL * Math.sin(ang)).toFixed(1)
+  // Zone boundary points: v=30 → 126°, v=70 → 54°
+  const a30 = 0.7 * Math.PI, a70 = 0.3 * Math.PI
+  const x30 = (CX + R * Math.cos(a30)).toFixed(1), y30 = (CY - R * Math.sin(a30)).toFixed(1)
+  const x70 = (CX + R * Math.cos(a70)).toFixed(1), y70 = (CY - R * Math.sin(a70)).toFixed(1)
+  const topX = CX, topY = CY - R  // (40, 12)
   const zone = v >= 70 ? 'var(--dn)' : v <= 30 ? 'var(--up)' : 'var(--accent)'
   return (
     <div className="rsi-gauge-wrap">
       <svg viewBox="0 0 80 48" className="rsi-gauge-svg">
-        {/* track arc */}
-        <path d="M 8 44 A 34 34 0 1 1 72 44" fill="none" stroke="var(--border-md)" strokeWidth="5" strokeLinecap="round" />
-        {/* oversold zone */}
-        <path d="M 8 44 A 34 34 0 0 1 22 17" fill="none" stroke="rgba(38,166,154,.4)" strokeWidth="5" strokeLinecap="round" />
-        {/* overbought zone */}
-        <path d="M 58 17 A 34 34 0 0 1 72 44" fill="none" stroke="rgba(239,83,80,.4)" strokeWidth="5" strokeLinecap="round" />
-        {/* needle */}
-        <line
-          x1="40" y1="44"
-          x2={40 + 26 * Math.cos((angle - 90) * Math.PI / 180)}
-          y2={44 + 26 * Math.sin((angle - 90) * Math.PI / 180)}
-          stroke={zone} strokeWidth="2" strokeLinecap="round"
-        />
-        <circle cx="40" cy="44" r="3" fill={zone} />
-        <text x="40" y="38" textAnchor="middle" fontSize="10" fontWeight="800" fill={zone}>{value}</text>
+        {/* Track: two quarter-arcs (sweep=1 CW) avoids the degenerate chord=2R case */}
+        <path d={`M ${CX-R} ${CY} A ${R} ${R} 0 0 1 ${topX} ${topY}`} fill="none" stroke="var(--border-md)" strokeWidth="5" strokeLinecap="round" />
+        <path d={`M ${topX} ${topY} A ${R} ${R} 0 0 1 ${CX+R} ${CY}`} fill="none" stroke="var(--border-md)" strokeWidth="5" strokeLinecap="round" />
+        {/* Oversold zone 0–30: CW from left to 126° — Taiwan: 超賣偏多 → up color (red) */}
+        <path d={`M ${CX-R} ${CY} A ${R} ${R} 0 0 1 ${x30} ${y30}`} fill="none" stroke="rgba(239,68,68,.42)" strokeWidth="5" strokeLinecap="round" />
+        {/* Overbought zone 70–100: CW from 54° to right — Taiwan: 超買偏空 → dn color (green) */}
+        <path d={`M ${x70} ${y70} A ${R} ${R} 0 0 1 ${CX+R} ${CY}`} fill="none" stroke="rgba(34,197,94,.42)" strokeWidth="5" strokeLinecap="round" />
+        {/* Needle — pivot at (CX,CY), tip follows arc angle */}
+        <line x1={CX} y1={CY} x2={nx} y2={ny} stroke={zone} strokeWidth="2.2" strokeLinecap="round" />
+        <circle cx={CX} cy={CY} r="3.5" fill={zone} />
+        <text x={CX} y={CY - 11} textAnchor="middle" fontSize="10" fontWeight="800" fill={zone}>{value}</text>
       </svg>
       <div className="rsi-zone-labels">
         <span style={{ color: 'var(--up)', fontSize: 8 }}>30</span>
