@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import NavBar from './components/NavBar'
 import WatchList from './components/WatchList'
-import ChartPanel from './components/ChartPanel'
+const ChartPanel = lazy(() => import('./components/ChartPanel'))
 import AdvisorChat from './components/AdvisorChat'
 import AlertPanel from './components/AlertPanel'
 import PortfolioPanel from './components/PortfolioPanel'
@@ -60,7 +60,9 @@ export default function App() {
       <div className="main-layout">
         <WatchList />
         <div className="center-col">
-          <ChartPanel darkMode={darkMode} />
+          <Suspense fallback={<div className="chart-overlay">載入圖表中…</div>}>
+            <ChartPanel darkMode={darkMode} />
+          </Suspense>
         </div>
         <div className="right-col">
           <div className="right-tabs">

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { askAdvisor } from '../api/claude'
+import { askAdvisor, askAdvisorFree } from '../api/claude'
 import { askGemini } from '../api/gemini'
 import { useWatchlistStore } from '../store/watchlistStore'
 import { fetchOHLC } from '../api/market'
@@ -96,24 +96,8 @@ export default function AdvisorChat() {
         const history = messages.map(m => ({ role: m.role, text: m.text }))
         reply = await askGemini({ apiKey: geminiKey, messages: [...history, { role: 'user', text: fullMsg }] })
       } else {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
-          },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 800,
-            system: '你是一位專業的台灣股市與全球金融市場投資顧問，擅長技術分析。回覆使用繁體中文，語氣專業但親切，回答精簡有重點，善用條列式。投資有風險，建議加入風險提示。',
-            messages: [{ role: 'user', content: fullMsg }],
-          }),
-        })
-        if (!res.ok) throw new Error(`API 錯誤 ${res.status}`)
-        const data = await res.json()
-        reply = data.content?.[0]?.text ?? '無回應'
+        const history = messages.map(m => ({ role: m.role, text: m.text }))
+        reply = await askAdvisorFree({ apiKey, messages: [...history, { role: 'user', text: fullMsg }] })
       }
       setMessages(m => [...m, { role: 'ai', text: reply }])
     } catch (e) {

@@ -3,7 +3,7 @@ const SYSTEM = '你是一位專業的台灣股市與全球金融市場投資顧�
 export async function askGemini({ apiKey, messages, system = SYSTEM }) {
   if (!apiKey) throw new Error('請先設定 Gemini API Key')
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent'
 
   const contents = messages.map(m => ({
     role: m.role === 'ai' ? 'model' : 'user',
@@ -12,7 +12,7 @@ export async function askGemini({ apiKey, messages, system = SYSTEM }) {
 
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
       system_instruction: { parts: [{ text: system }] },
       contents,
