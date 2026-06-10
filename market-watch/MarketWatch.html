@@ -201,7 +201,7 @@ button, input, textarea, select { font-family: inherit; }
 .chart-area { flex: 1; min-height: 0; position: relative; overflow: hidden; }
 
 /* ── Tech Signals ────────────────────────────────────────── */
-.tech-panel { display: flex; flex-direction: column; flex-shrink: 0; padding: 10px 12px 12px; overflow-y: auto; max-height: 340px; }
+.tech-panel { display: flex; flex-direction: column; flex-shrink: 0; padding: 10px 12px 12px; overflow-y: auto; max-height: 400px; }
 .tech-top-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 .trend-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; flex-shrink: 0; }
 .composite-score { flex: 1; display: flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: 8px; padding: 5px 10px; min-width: 180px; }
@@ -233,20 +233,26 @@ button, input, textarea, select { font-family: inherit; }
 .bb-bw-fill { height: 100%; border-radius: 4px; transition: width .4s; }
 .bb-bw-mark { position: absolute; top: -2px; width: 1.5px; height: 8px; background: var(--warn); border-radius: 2px; }
 /* tech grid */
-.tech-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.sig-card { display: flex; flex-direction: column; gap: 6px; padding: 10px 11px; background: var(--surface-2); border-radius: 10px; border-left: 3px solid transparent; transition: all .2s; }
-.sig-card:hover { transform: translateY(-2px); }
-.sig-card.bull { border-left-color: var(--up); background: var(--up-soft); }
-.sig-card.bear { border-left-color: var(--dn); background: var(--dn-soft); }
-.sig-card.neutral { border-left-color: var(--text-3); }
+.tech-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.sig-card {
+  display: flex; flex-direction: column; gap: 6px; padding: 9px 11px;
+  background: var(--card-fill);
+  backdrop-filter: var(--card-blur); -webkit-backdrop-filter: var(--card-blur);
+  border: var(--card-border); border-radius: 14px;
+  box-shadow: var(--card-highlight), var(--card-shadow);
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s;
+}
+.sig-card:hover { transform: translateY(-2px); box-shadow: var(--card-highlight), var(--card-shadow-hover); }
+.sig-card.bull { background: var(--up-soft); border-color: rgba(239,68,68,.22); }
+.sig-card.bear { background: var(--dn-soft); border-color: rgba(34,197,94,.22); }
 .sig-top { display: flex; align-items: flex-start; gap: 7px; }
-.sig-geo { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; flex-shrink: 0; }
-.sig-geo.bull { background: var(--up-soft); color: var(--up); }
-.sig-geo.bear { background: var(--dn-soft); color: var(--dn); }
+.sig-geo { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; flex-shrink: 0; }
+.sig-geo.bull { background: rgba(239,68,68,.18); color: var(--up); }
+.sig-geo.bear { background: rgba(34,197,94,.18); color: var(--dn); }
 .sig-geo.neutral { background: var(--surface-3); color: var(--text-3); }
 .sig-body { flex: 1; min-width: 0; }
-.tech-label { font-size: 9px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing:.4px; }
-.tech-sig { font-size: 11px; font-weight: 700; margin-top: 2px; line-height: 1.3; }
+.tech-label { font-size: 8.5px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing:.4px; }
+.tech-sig { font-size: 10px; font-weight: 700; margin-top: 2px; line-height: 1.3; }
 .sig-bars { display: flex; flex-direction: column; gap: 4px; }
 .bar-row { display: flex; align-items: center; gap: 5px; }
 .bar-lbl { font-size: 9px; font-weight: 700; color: var(--text-3); width: 24px; flex-shrink: 0; text-transform: uppercase; }
@@ -265,8 +271,8 @@ button, input, textarea, select { font-family: inherit; }
 .atr-gauge { display: flex; flex-direction: column; gap: 3px; }
 .atr-track { height: 8px; border-radius: 6px; background: var(--border-md); position: relative; overflow: hidden; }
 .atr-fill { height: 100%; border-radius: 6px; transition: width .4s; }
-.atr-zone-lo { position: absolute; left: 30%; top: 0; width: 1px; height: 100%; background: rgba(255,255,255,.3); }
-.atr-zone-hi { position: absolute; left: 60%; top: 0; width: 1px; height: 100%; background: rgba(255,255,255,.3); }
+.atr-zone-lo { position: absolute; left: 30%; top: 0; width: 1px; height: 100%; background: var(--border-md); }
+.atr-zone-hi { position: absolute; left: 60%; top: 0; width: 1px; height: 100%; background: var(--border-md); }
 .atr-labels { display: flex; justify-content: space-between; font-size: 8px; color: var(--text-3); }
 .atr-val { font-size: 11px; font-weight: 800; text-align: center; }
 /* cci track */
@@ -283,6 +289,33 @@ button, input, textarea, select { font-family: inherit; }
 .mtf-item { display: flex; align-items: center; justify-content: space-between; }
 .mtf-k { font-size: 8px; color: var(--text-3); font-weight: 600; }
 .mtf-v { font-size: 9px; font-weight: 800; font-family: var(--font-mono); }
+
+/* ── Event Calendar ──────────────────────────────────────── */
+.event-cal { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.ec-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 6px; flex-shrink: 0; }
+.ec-title { font-size: 12px; font-weight: 800; }
+.ec-filters { display: flex; gap: 3px; }
+.ec-filter-btn { padding: 3px 8px; border: 1.5px solid var(--border-md); border-radius: 20px; background: transparent; color: var(--text-3); font-size: 10px; font-weight: 700; cursor: pointer; transition: all .15s; font-family: inherit; }
+.ec-filter-btn:hover { background: var(--surface-2); color: var(--text-2); }
+.ec-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.ec-list { flex: 1; overflow-y: auto; padding: 0 8px 12px; }
+.ec-empty { padding: 24px; text-align: center; color: var(--text-3); font-size: 12px; }
+.ec-date-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 4px 3px; font-size: 10px; font-weight: 800; color: var(--text-3); text-transform: uppercase; letter-spacing:.4px; margin-top: 6px; }
+.ec-date-header.today { color: var(--accent); }
+.ec-date-str { font-family: var(--font-mono); font-size: 9px; }
+.ec-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 8px; border-radius: 9px; cursor: pointer; transition: background .15s; margin-bottom: 2px; }
+.ec-item:hover { background: var(--surface-2); }
+.ec-item.expanded { background: var(--surface-2); border-radius: 9px 9px 0 0; }
+.ec-item-left { display: flex; align-items: center; gap: 7px; }
+.ec-flag { font-size: 14px; line-height: 1; flex-shrink: 0; }
+.ec-name { font-size: 11px; font-weight: 700; line-height: 1.3; }
+.ec-time { font-size: 9px; color: var(--text-3); font-family: var(--font-mono); margin-top: 1px; }
+.ec-item-right { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.ec-impact-badge { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 10px; }
+.ec-forecast { font-size: 9px; font-weight: 700; color: var(--text-3); font-family: var(--font-mono); }
+.ec-detail { display: flex; gap: 12px; align-items: center; padding: 6px 8px 7px 12px; background: var(--surface-2); border-radius: 0 0 9px 9px; margin-bottom: 2px; }
+.ec-detail-k { font-size: 9px; color: var(--text-3); font-weight: 600; }
+.ec-detail-v { font-size: 10px; font-weight: 800; font-family: var(--font-mono); }
 
 /* ── Right Column ────────────────────────────────────────── */
 .right-col { width: 354px; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
@@ -1741,11 +1774,108 @@ function PortfolioPanel() {
 }
 
 /* ── mw-app.jsx ─────────────────────────────────────────── */
+/* ── EventCalendar ───────────────────────────────────────── */
+const EC_EVENTS = [
+  { date: '2026-06-10', time: '14:00', name: 'FOMC 議事紀錄公布',  region: 'US', impact: 'high', forecast: null,    prev: null     },
+  { date: '2026-06-11', time: '14:00', name: 'FOMC 利率決議',      region: 'US', impact: 'high', forecast: '4.25%', prev: '4.50%'  },
+  { date: '2026-06-12', time: '08:30', name: 'CPI 核心年增率',     region: 'US', impact: 'high', forecast: '2.8%',  prev: '2.9%'   },
+  { date: '2026-06-12', time: '08:30', name: '初請失業金',         region: 'US', impact: 'med',  forecast: '225K',  prev: '228K'   },
+  { date: '2026-06-13', time: '08:30', name: 'PPI 生產者物價',     region: 'US', impact: 'med',  forecast: '2.1%',  prev: '2.4%'   },
+  { date: '2026-06-18', time: '09:00', name: '台灣 GDP 初值',      region: 'TW', impact: 'high', forecast: '+2.8%', prev: '+2.6%'  },
+  { date: '2026-06-20', time: '08:30', name: '零售銷售月增率',     region: 'US', impact: 'med',  forecast: '+0.3%', prev: '+0.1%'  },
+  { date: '2026-06-25', time: '08:30', name: 'PCE 物價指數',       region: 'US', impact: 'high', forecast: '2.2%',  prev: '2.3%'   },
+  { date: '2026-06-25', time: '09:00', name: '台灣出口訂單',       region: 'TW', impact: 'med',  forecast: null,    prev: '+5.2%'  },
+  { date: '2026-06-27', time: '08:30', name: 'Q1 GDP 終值',        region: 'US', impact: 'med',  forecast: '+1.2%', prev: '+1.1%'  },
+  { date: '2026-07-02', time: '08:30', name: '非農就業人數',       region: 'US', impact: 'high', forecast: '190K',  prev: '185K'   },
+  { date: '2026-07-10', time: '08:30', name: 'CPI 年增率',         region: 'US', impact: 'high', forecast: '2.3%',  prev: '2.4%'   },
+]
+
+const EC_IMPACT = {
+  high: { bg: 'rgba(239,68,68,.15)',  color: 'var(--up)',   label: '高' },
+  med:  { bg: 'rgba(245,158,11,.15)', color: 'var(--warn)', label: '中' },
+  low:  { bg: 'rgba(34,197,94,.12)',  color: 'var(--dn)',   label: '低' },
+}
+const EC_FLAGS = { US: '🇺🇸', TW: '🇹🇼', EU: '🇪🇺', JP: '🇯🇵', CN: '🇨🇳' }
+
+function EventCalendar() {
+  const [filter, setFilter] = useState('ALL')
+  const [expanded, setExpanded] = useState(null)
+  const today = new Date().toISOString().slice(0, 10)
+
+  const list = EC_EVENTS
+    .filter(e => e.date >= today)
+    .filter(e => filter === 'ALL' || e.region === filter || (filter === 'HIGH' && e.impact === 'high'))
+    .slice(0, 20)
+
+  const dayLabel = (ds) => {
+    const diff = Math.round((new Date(ds + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000)
+    if (diff === 0) return '今天'
+    if (diff === 1) return '明天'
+    if (diff <= 7) return `${diff}天後`
+    return new Date(ds + 'T00:00:00').toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' })
+  }
+
+  let lastDate = null
+  return (
+    <div className="event-cal">
+      <div className="ec-header">
+        <div className="ec-title">📅 總經日曆</div>
+        <div className="ec-filters">
+          {['ALL','HIGH','US','TW'].map(f => (
+            <button key={f} className={`ec-filter-btn ${filter===f?'active':''}`} onClick={() => setFilter(f)}>
+              {f === 'HIGH' ? '⚡高' : f}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="ec-list">
+        {list.length === 0 && <div className="ec-empty">近期無符合事件</div>}
+        {list.map((ev, i) => {
+          const imp = EC_IMPACT[ev.impact]
+          const showDate = ev.date !== lastDate
+          lastDate = ev.date
+          const isToday = ev.date === today
+          return (
+            <div key={i}>
+              {showDate && (
+                <div className={`ec-date-header${isToday?' today':''}`}>
+                  <span>{isToday ? '📅 今天' : dayLabel(ev.date)}</span>
+                  <span className="ec-date-str">{ev.date.slice(5)}</span>
+                </div>
+              )}
+              <div className={`ec-item${expanded===i?' expanded':''}`} onClick={() => setExpanded(v => v===i ? null : i)}>
+                <div className="ec-item-left">
+                  <span className="ec-flag">{EC_FLAGS[ev.region] ?? ev.region}</span>
+                  <div>
+                    <div className="ec-name">{ev.name}</div>
+                    <div className="ec-time">{ev.time} {ev.region==='US'?'ET':'TST'}</div>
+                  </div>
+                </div>
+                <div className="ec-item-right">
+                  <span className="ec-impact-badge" style={{background:imp.bg,color:imp.color}}>{imp.label}</span>
+                  {ev.forecast && <span className="ec-forecast">預 {ev.forecast}</span>}
+                </div>
+              </div>
+              {expanded===i && (ev.prev || ev.forecast) && (
+                <div className="ec-detail">
+                  {ev.prev && <><span className="ec-detail-k">前值</span><span className="ec-detail-v">{ev.prev}</span></>}
+                  {ev.forecast && <><span className="ec-detail-k">預測</span><span className="ec-detail-v">{ev.forecast}</span></>}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 const TABS = [
   { id:'sector',    label:'板塊' },
   { id:'screener',  label:'選股' },
   { id:'ai',        label:'AI' },
   { id:'portfolio', label:'持倉' },
+  { id:'calendar',  label:'日曆' },
   { id:'news',      label:'新聞' },
   { id:'alert',     label:'警示' },
 ]
@@ -1801,6 +1931,7 @@ function App() {
             {rightTab === 'screener'  && <ScreenerPanel  onSelect={setSelected} />}
             {rightTab === 'ai'        && <AIPanel        symbol={selected} />}
             {rightTab === 'portfolio' && <PortfolioPanel />}
+            {rightTab === 'calendar'  && <EventCalendar />}
             {rightTab === 'news'      && <NewsPanel />}
             {rightTab === 'alert'     && <AlertPanel />}
           </div>
