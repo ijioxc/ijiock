@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && cp MarketWatch.html ../docs/MarketWatch.html",
+    "build": "vite build && cp MarketWatch.html ../docs/MarketWatch.html && cp MarketWatch.html ../docs/index.html",
     "lint": "eslint .",
     "preview": "vite preview"
   },
