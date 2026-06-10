@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MarketWatch — 自動盯盤 · 投資顧問</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;600;700;900&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ── Token: Colors ───────────────────────────────────────── */
+:root {
+  --up: #ef4444; --up-soft: rgba(239,68,68,.10); --up-tone: #EF5350;
+  --dn: #22c55e; --dn-soft: rgba(34,197,94,.10);  --dn-tone: #26A69A;
+  --warn: #f59e0b; --warn-soft: rgba(245,158,11,.10);
+  --accent: #2563eb; --accent-soft: rgba(37,99,235,.10);
+  --accent-2: #3b82f6; --accent-3: #60a5fa;
+  --text: #18181b; --text-2: #3f3f46; --text-3: #71717a;
+  --surface: rgba(255,255,255,.35); --surface-2: rgba(255,255,255,.20); --surface-3: rgba(255,255,255,.10);
+  --border: rgba(0,0,0,.06); --border-md: rgba(0,0,0,.12);
+  --page-bg: #eef0f3;
+  --page-gradient:
+    radial-gradient(45% 36% at 0% 0%,   rgba(255,150,80,.32)  0%, transparent 70%),
+    radial-gradient(42% 36% at 100% 0%, rgba(0,113,227,.26)   0%, transparent 70%),
+    radial-gradient(50% 42% at 0% 100%,  rgba(184,48,37,.22)  0%, transparent 70%),
+    radial-gradient(45% 38% at 100% 100%,rgba(46,107,127,.26) 0%, transparent 70%),
+    radial-gradient(40% 35% at 50% 100%, rgba(246,171,0,.14)  0%, transparent 75%);
+  --card-fill: rgba(255,255,255,.66);
+  --card-blur: blur(28px) saturate(180%);
+  --card-border: 0.5px solid rgba(255,255,255,.55);
+  --card-highlight: inset 0 1px 0 rgba(255,255,255,.70), inset 0 -0.5px 0 rgba(0,0,0,.03);
+  --card-shadow: 0 1px 3px rgba(0,0,0,.04), 0 12px 32px rgba(0,0,0,.05);
+  --card-shadow-hover: 0 2px 6px rgba(0,0,0,.05), 0 20px 48px rgba(0,0,0,.09);
+  --font-sans: 'Outfit','Noto Sans TC',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --font-mono: 'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --radius-card: 20px; --radius-tile: 13px;
+  --ease-back: cubic-bezier(.34,1.56,.64,1); --ease-out: cubic-bezier(.16,1,.3,1);
+}
+:root[data-appearance="dark"], [data-appearance="dark"], .dark {
+  --surface: rgba(44,44,46,.35); --surface-2: rgba(58,58,60,.20); --surface-3: rgba(72,72,74,.10);
+  --text: #ffffff; --text-2: #a1a1aa; --text-3: #71717a;
+  --accent: #3b82f6; --accent-soft: rgba(59,130,246,.20);
+  --up: #f87171; --up-soft: rgba(248,113,113,.15);
+  --dn: #4ade80; --dn-soft: rgba(74,222,128,.15);
+  --border: rgba(255,255,255,.08); --border-md: rgba(255,255,255,.15);
+  --page-bg: #141417;
+  --page-gradient:
+    radial-gradient(45% 36% at 0% 0%,   rgba(255,120,60,.16) 0%, transparent 72%),
+    radial-gradient(42% 36% at 100% 0%, rgba(10,132,255,.15) 0%, transparent 72%),
+    radial-gradient(50% 42% at 0% 100%,  rgba(255,69,58,.10) 0%, transparent 72%),
+    radial-gradient(45% 38% at 100% 100%,rgba(100,210,255,.11) 0%, transparent 72%),
+    radial-gradient(40% 35% at 50% 100%, rgba(255,214,10,.07) 0%, transparent 78%);
+  --card-fill: rgba(44,44,50,.74);
+  --card-border: 0.5px solid rgba(255,255,255,.09);
+  --card-highlight: inset 0 1px 0 rgba(255,255,255,.06), inset 0 -0.5px 0 rgba(0,0,0,.18);
+  --card-shadow: 0 1px 3px rgba(0,0,0,.18), 0 12px 32px rgba(0,0,0,.28);
+  --card-shadow-hover: 0 2px 6px rgba(0,0,0,.26), 0 20px 48px rgba(0,0,0,.40);
+}
+
+/* ── Reset + base ────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font-sans); font-size: 13px;
+  background: var(--page-bg); background-image: var(--page-gradient);
+  background-attachment: fixed; color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+button, input, textarea, select { font-family: inherit; }
+
+/* ── Glass card ──────────────────────────────────────────── */
+.glass-card {
+  background: var(--card-fill);
+  backdrop-filter: var(--card-blur); -webkit-backdrop-filter: var(--card-blur);
+  border: var(--card-border); border-radius: 20px;
+  box-shadow: var(--card-highlight), var(--card-shadow);
+}
+
+/* ── App Layout ──────────────────────────────────────────── */
+.app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.main-layout { display: flex; flex: 1; overflow: hidden; padding: 8px 12px 12px; gap: 10px; min-height: 0; }
+
+/* ── NavBar ──────────────────────────────────────────────── */
+.navbar-wrapper { padding: 10px 12px 0; flex-shrink: 0; display: flex; justify-content: center; z-index: 100; }
+.navbar {
+  display: flex; align-items: center; gap: 10px; padding: 8px 20px;
+  background: var(--card-fill); backdrop-filter: var(--card-blur); -webkit-backdrop-filter: var(--card-blur);
+  border: var(--card-border); border-radius: 99px;
+  box-shadow: var(--card-highlight), var(--card-shadow);
+  width: 100%; max-width: 1600px;
+}
+.logo { display: flex; align-items: center; gap: 8px; user-select: none; flex-shrink: 0; }
+.logo-mark { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg,#1d1d1f,#3a3a3c); display: flex; align-items: center; justify-content: center; }
+.logo-mark svg { width: 15px; height: 15px; stroke: #fff; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.logo-txt { font-size: 15px; font-weight: 800; letter-spacing: -.4px; line-height: 1.1; }
+.logo-sub { font-size: 9px; font-weight: 600; color: var(--text-3); margin-top: -1px; }
+.live-badge { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: var(--dn); background: var(--dn-soft); padding: 2px 8px; border-radius: 20px; flex-shrink: 0; }
+.live-dot { width: 5px; height: 5px; background: var(--dn); border-radius: 50%; animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.7)} }
+.session-clock { display: flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 20px; background: var(--surface-2); border: 1px solid var(--border-md); flex-shrink: 0; }
+.session-item { display: flex; align-items: center; gap: 4px; }
+.session-dot { width: 6px; height: 6px; border-radius: 50%; animation: spulse 2.5s ease-in-out infinite; }
+@keyframes spulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.75)} }
+.session-label { font-size: 9px; font-weight: 800; color: var(--text-3); letter-spacing:.4px; }
+.session-status { font-size: 10px; font-weight: 700; }
+.session-divider { width: 1px; height: 14px; background: var(--border-md); }
+.session-time { font-size: 10px; color: var(--text-3); font-family: var(--font-mono); }
+.nav-right { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+.ibtn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; background: var(--surface-2); color: var(--text-2); cursor: pointer; font-size: 13px; transition: all .18s; flex-shrink: 0; }
+.ibtn:hover { background: var(--surface); color: var(--text); transform: translateY(-1px); }
+
+/* ── Market Ticker ───────────────────────────────────────── */
+.market-ticker { height: 26px; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; margin: 6px 12px 0; background: var(--surface-2); border: var(--card-border); border-radius: 10px; }
+.ticker-track { display: flex; align-items: center; white-space: nowrap; animation: tscroll 42s linear infinite; }
+.market-ticker:hover .ticker-track { animation-play-state: paused; }
+@keyframes tscroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+.ticker-item { display: inline-flex; align-items: center; gap: 4px; padding: 0 12px; font-size: 10.5px; }
+.ticker-label { color: var(--text-3); font-weight: 600; font-size: 10px; }
+.ticker-price { font-size: 11px; font-weight: 700; font-family: var(--font-mono); }
+.ticker-chg { font-size: 10px; font-weight: 600; }
+.ticker-sep { color: var(--border-md); padding-left: 8px; }
+
+/* ── WatchList ───────────────────────────────────────────── */
+.watchlist { width: 278px; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
+.wl-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 6px; flex-shrink: 0; }
+.wl-title { font-size: 10px; font-weight: 700; color: var(--text-3); letter-spacing:.6px; text-transform: uppercase; }
+.ibtn-sm { width: 22px; height: 22px; border: none; border-radius: 6px; background: var(--surface-2); color: var(--text-2); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; line-height: 1; transition: all .15s; }
+.ibtn-sm:hover { background: var(--surface); color: var(--text); }
+.ibtn-sm.active-sm { background: var(--accent-soft); color: var(--accent); }
+.wl-search-wrap { position: relative; padding: 0 8px 6px; flex-shrink: 0; }
+.wl-search { width: 100%; padding: 6px 24px 6px 12px; border: var(--card-border); border-radius: 20px; background: var(--surface-2); color: var(--text); font-size: 11px; transition: all .2s; outline: none; }
+.wl-search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: var(--surface); }
+.wl-search::placeholder { color: var(--text-3); }
+.wl-search-clear { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 10px; margin-top: -3px; }
+.cat-tabs { display: flex; gap: 3px; padding: 0 8px 6px; flex-wrap: wrap; flex-shrink: 0; }
+.cat-tab { padding: 4px 9px; border: 1.5px solid var(--border-md); border-radius: 20px; font-size: 10.5px; font-weight: 600; background: transparent; color: var(--text-2); cursor: pointer; transition: all .15s; }
+.cat-tab:hover { background: var(--surface-2); }
+.cat-tab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.mkt-breadth { padding: 2px 10px 6px; flex-shrink: 0; }
+.mkt-breadth-bar { height: 4px; border-radius: 4px; background: var(--dn-soft); overflow: hidden; margin-bottom: 4px; }
+.mkt-breadth-fill { height: 100%; background: var(--up); border-radius: 4px; transition: width .6s; }
+.mkt-breadth-labels { display: flex; align-items: center; justify-content: space-between; font-size: 9px; font-weight: 700; }
+.fg-row { display: flex; align-items: center; gap: 4px; flex: 1; margin: 0 8px; }
+.fg-track { flex: 1; height: 3px; background: var(--surface-3); border-radius: 2px; }
+.fg-fill { height: 100%; border-radius: 2px; transition: width .3s; }
+.fg-label { font-size: 8px; font-weight: 800; flex-shrink: 0; }
+.fg-score { font-size: 9px; font-weight: 900; flex-shrink: 0; font-family: var(--font-mono); }
+.wl-list { flex: 1; overflow-y: auto; padding: 0 6px 8px; list-style: none; }
+.wl-list.scroll-soft { mask-image: linear-gradient(to bottom, transparent 0, black 14px, black calc(100% - 14px), transparent 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 14px, black calc(100% - 14px), transparent 100%); }
+.wl-item { display: flex; align-items: center; padding: 6px 8px; border-radius: 10px; cursor: pointer; transition: all .18s; gap: 5px; min-height: 46px; }
+.wl-item:hover { background: var(--surface-2); transform: translateX(2px); }
+.wl-item.active { background: var(--accent-soft); }
+.wl-left { flex: 1; min-width: 0; }
+.wl-name-row { display: flex; align-items: center; gap: 4px; }
+.wl-name { font-size: 12px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wl-symbol { font-size: 9.5px; color: var(--text-3); font-family: var(--font-mono); }
+.wl-right { text-align: right; flex-shrink: 0; }
+.wl-price { font-size: 12px; font-weight: 700; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.wl-chg { font-size: 10px; font-weight: 600; font-family: var(--font-mono); }
+.wl-mover-badge { font-size: 7px; font-weight: 900; padding: 1px 4px; border-radius: 3px; letter-spacing:.5px; flex-shrink: 0; }
+.wl-table-wrap { flex: 1; overflow-y: auto; }
+.wl-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+.wl-table thead th { position: sticky; top: 0; background: var(--surface-2); padding: 5px 6px; font-size: 9px; font-weight: 800; color: var(--text-3); text-align: right; border-bottom: 1px solid var(--border); letter-spacing:.4px; text-transform: uppercase; }
+.wl-table thead th:first-child { text-align: left; padding-left: 10px; }
+.wl-trow { cursor: pointer; border-bottom: 1px solid rgba(0,0,0,.04); transition: background .12s; }
+.wl-trow:hover { background: var(--surface-2); }
+.wl-trow.active { background: var(--accent-soft); }
+.wl-trow td { padding: 6px; vertical-align: middle; text-align: right; }
+.wl-trow td:first-child { text-align: left; padding-left: 10px; }
+.wl-tname { font-weight: 700; }
+.wl-tsym { font-size: 9px; color: var(--text-3); font-family: var(--font-mono); }
+.wl-heatmap { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 6px 8px; overflow-y: auto; align-content: start; }
+.heat-cell { padding: 7px 5px; border-radius: 8px; cursor: pointer; transition: all .18s; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.heat-cell:hover { transform: scale(1.04); }
+.heat-name { font-size: 10px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+.heat-pct { font-size: 12px; font-weight: 800; font-family: var(--font-mono); }
+
+/* ── Center ──────────────────────────────────────────────── */
+.center-col { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow: hidden; }
+
+/* ── Chart Panel ─────────────────────────────────────────── */
+.chart-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.chart-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.chart-header::-webkit-scrollbar { display: none; }
+.chart-name-block { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.chart-title { font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
+.chart-sym { font-size: 11px; color: var(--text-3); }
+.chart-price-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; font-family: var(--font-mono); flex-shrink: 0; }
+.interval-tabs { display: flex; gap: 2px; background: var(--accent-soft); border-radius: 7px; padding: 3px; flex-shrink: 0; }
+.interval-tabs .itab { padding: 3px 10px; border-radius: 5px; font-size: 11px; font-weight: 700; color: var(--text-2); background: transparent; border: none; cursor: pointer; transition: all .15s; }
+.interval-tabs .itab.active { background: var(--accent); color: #fff; }
+.range-tabs { display: flex; gap: 4px; flex-shrink: 0; }
+.range-tab { padding: 3px 9px; border: 1.5px solid var(--border-md); border-radius: 5px; font-size: 11px; font-weight: 700; background: transparent; color: var(--text-2); cursor: pointer; transition: all .15s; }
+.range-tab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.chart-ohlc-bar { display: flex; align-items: center; padding: 4px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; scrollbar-width: none; }
+.chart-ohlc-bar::-webkit-scrollbar { display: none; }
+.ohlc-item { display: flex; align-items: center; gap: 4px; padding: 2px 10px; border-right: 1px solid var(--border); white-space: nowrap; }
+.ohlc-item:last-child { border-right: none; }
+.ohlc-k { font-size: 9px; font-weight: 700; color: var(--text-3); letter-spacing:.4px; }
+.ohlc-v { font-size: 11px; font-weight: 600; font-family: var(--font-mono); }
+.chart-area { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+
+/* ── Tech Signals ────────────────────────────────────────── */
+.tech-panel { display: flex; flex-direction: column; flex-shrink: 0; padding: 10px 12px 12px; overflow-y: auto; max-height: 340px; }
+.tech-top-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.trend-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; flex-shrink: 0; }
+.composite-score { flex: 1; display: flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: 8px; padding: 5px 10px; min-width: 180px; }
+.cs-left { flex-shrink: 0; }
+.cs-label { font-size: 9px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing:.5px; }
+.cs-value { font-size: 11px; font-weight: 800; margin-top: 1px; }
+.cs-bar-wrap { flex: 1; }
+.cs-bar-track { height: 6px; border-radius: 6px; background: var(--border-md); position: relative; overflow: visible; }
+.cs-bar-fill { height: 100%; border-radius: 6px; transition: width .5s; }
+.cs-needle { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--text); border-radius: 2px; transform: translateX(-50%); transition: left .5s; box-shadow: 0 0 4px rgba(0,0,0,.3); }
+.cs-ticks { display: flex; justify-content: space-between; font-size: 8px; color: var(--text-3); margin-top: 3px; }
+.cs-score { font-size: 13px; font-weight: 900; flex-shrink: 0; font-family: var(--font-mono); }
+/* BB banner */
+.bb-banner { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; margin-bottom: 10px; border: 1.5px solid transparent; animation: bb-banner-in .25s ease; }
+@keyframes bb-banner-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+.bb-banner-bull { background: var(--up-soft); border-color: var(--up); }
+.bb-banner-bear { background: var(--dn-soft); border-color: var(--dn); }
+.bb-banner-squeeze { background: rgba(245,158,11,.1); border-color: var(--warn); }
+.bb-banner-neutral { background: var(--surface-2); border-color: var(--border-md); }
+.bb-banner-icon { font-size: 22px; font-weight: 900; flex-shrink: 0; line-height: 1; }
+.bb-banner-body { flex: 1; min-width: 0; }
+.bb-banner-title { font-size: 9px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing:.6px; }
+.bb-banner-sig { font-size: 12px; font-weight: 800; color: var(--text); margin-top: 1px; }
+.bb-banner-hint { font-size: 9.5px; font-weight: 600; color: var(--text-2); margin-top: 2px; opacity:.85; }
+.bb-banner-right { flex-shrink: 0; min-width: 80px; text-align: right; }
+.bb-banner-width-label { font-size: 8px; color: var(--text-3); font-weight: 700; letter-spacing:.5px; }
+.bb-banner-width-val { font-size: 16px; font-weight: 900; font-family: var(--font-mono); line-height: 1.1; }
+.bb-bw-track { position: relative; height: 4px; background: var(--border-md); border-radius: 4px; margin-top: 4px; overflow: visible; }
+.bb-bw-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+.bb-bw-mark { position: absolute; top: -2px; width: 1.5px; height: 8px; background: var(--warn); border-radius: 2px; }
+/* tech grid */
+.tech-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sig-card { display: flex; flex-direction: column; gap: 6px; padding: 10px 11px; background: var(--surface-2); border-radius: 10px; border-left: 3px solid transparent; transition: all .2s; }
+.sig-card:hover { transform: translateY(-2px); }
+.sig-card.bull { border-left-color: var(--up); background: var(--up-soft); }
+.sig-card.bear { border-left-color: var(--dn); background: var(--dn-soft); }
+.sig-card.neutral { border-left-color: var(--text-3); }
+.sig-top { display: flex; align-items: flex-start; gap: 7px; }
+.sig-geo { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; flex-shrink: 0; }
+.sig-geo.bull { background: var(--up-soft); color: var(--up); }
+.sig-geo.bear { background: var(--dn-soft); color: var(--dn); }
+.sig-geo.neutral { background: var(--surface-3); color: var(--text-3); }
+.sig-body { flex: 1; min-width: 0; }
+.tech-label { font-size: 9px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing:.4px; }
+.tech-sig { font-size: 11px; font-weight: 700; margin-top: 2px; line-height: 1.3; }
+.sig-bars { display: flex; flex-direction: column; gap: 4px; }
+.bar-row { display: flex; align-items: center; gap: 5px; }
+.bar-lbl { font-size: 9px; font-weight: 700; color: var(--text-3); width: 24px; flex-shrink: 0; text-transform: uppercase; }
+.prog-track { flex: 1; height: 4px; background: var(--border-md); border-radius: 4px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+.bar-val { font-size: 10px; font-weight: 600; color: var(--text-2); flex-shrink: 0; font-family: var(--font-mono); }
+/* macd bar */
+.macd-track { flex: 1; height: 4px; background: var(--border-md); border-radius: 4px; position: relative; overflow: hidden; }
+.macd-mid { position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background: var(--text-3); transform: translateX(-50%); }
+.macd-bar { position: absolute; top: 0; height: 100%; border-radius: 2px; transition: all .4s; }
+/* rsi gauge */
+.rsi-gauge-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.rsi-gauge-svg { width: 80px; height: 48px; overflow: visible; }
+.rsi-zone-labels { display: flex; justify-content: space-between; width: 72px; margin-top: -4px; }
+/* atr gauge */
+.atr-gauge { display: flex; flex-direction: column; gap: 3px; }
+.atr-track { height: 8px; border-radius: 6px; background: var(--border-md); position: relative; overflow: hidden; }
+.atr-fill { height: 100%; border-radius: 6px; transition: width .4s; }
+.atr-zone-lo { position: absolute; left: 30%; top: 0; width: 1px; height: 100%; background: rgba(255,255,255,.3); }
+.atr-zone-hi { position: absolute; left: 60%; top: 0; width: 1px; height: 100%; background: rgba(255,255,255,.3); }
+.atr-labels { display: flex; justify-content: space-between; font-size: 8px; color: var(--text-3); }
+.atr-val { font-size: 11px; font-weight: 800; text-align: center; }
+/* cci track */
+.cci-track { flex: 1; height: 6px; background: var(--surface-3); border-radius: 3px; position: relative; overflow: visible; }
+.cci-zone-lo { position: absolute; left: 0; width: 33.33%; height: 100%; background: rgba(38,166,154,.15); border-radius: 3px 0 0 3px; }
+.cci-zone-hi { position: absolute; right: 0; width: 33.33%; height: 100%; background: rgba(239,83,80,.15); border-radius: 0 3px 3px 0; }
+.cci-needle { position: absolute; top: -2px; width: 3px; height: 10px; border-radius: 2px; transform: translateX(-50%); transition: left .3s; }
+/* mtf panel */
+.mtf-panel { margin-top: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+.mtf-title { font-size: 9px; font-weight: 800; color: var(--text-3); letter-spacing:.5px; text-transform: uppercase; margin-bottom: 6px; }
+.mtf-grid { display: flex; gap: 6px; }
+.mtf-row { flex: 1; background: var(--surface-3); border-radius: 6px; padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+.mtf-label { font-size: 9px; font-weight: 800; color: var(--text-2); margin-bottom: 2px; }
+.mtf-item { display: flex; align-items: center; justify-content: space-between; }
+.mtf-k { font-size: 8px; color: var(--text-3); font-weight: 600; }
+.mtf-v { font-size: 9px; font-weight: 800; font-family: var(--font-mono); }
+
+/* ── Right Column ────────────────────────────────────────── */
+.right-col { width: 354px; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
+.right-tabs { display: flex; flex-shrink: 0; padding: 8px 10px 0; gap: 0; border-bottom: 1px solid var(--border); }
+.r-tab { flex: 1; padding: 6px 2px; border: none; background: transparent; color: var(--text-3); font-size: 11px; font-weight: 700; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; font-family: inherit; white-space: nowrap; }
+.r-tab:hover { color: var(--text-2); }
+.r-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.right-panel { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+/* ── Sector Panel ────────────────────────────────────────── */
+.sector-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.sc-mkt-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.sc-mkt-btns { display: flex; gap: 4px; }
+.sc-mkt-btn { padding: 4px 12px; border: 1.5px solid var(--border-md); border-radius: 20px; background: transparent; color: var(--text-2); font-size: 11px; font-weight: 700; cursor: pointer; transition: all .15s; }
+.sc-mkt-btn:hover { background: var(--surface-2); }
+.sc-mkt-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.sc-breadth { font-size: 10px; font-weight: 700; display: flex; gap: 5px; align-items: center; }
+.sc-scroll { flex: 1; overflow-y: auto; padding: 8px 10px 12px; }
+.sc-section { margin-bottom: 12px; }
+.sc-section-hdr { display: flex; align-items: center; gap: 5px; margin-bottom: 6px; font-size: 10px; font-weight: 800; color: var(--text-3); letter-spacing:.5px; text-transform: uppercase; }
+.sc-section-arrow { color: var(--text-3); cursor: pointer; user-select: none; font-size: 10px; }
+.sc-section-badge { margin-left: auto; font-size: 9px; font-weight: 700; color: var(--text-3); background: var(--surface-3); border-radius: 10px; padding: 1px 6px; }
+.sc-idx-list { display: flex; flex-direction: column; gap: 3px; }
+.sc-idx-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; background: var(--surface-2); border-radius: 8px; border-left: 3px solid transparent; }
+.sc-idx-label { font-size: 9px; font-weight: 800; color: var(--text-3); letter-spacing:.3px; }
+.sc-idx-name { font-size: 10px; font-weight: 600; }
+.sc-idx-price { font-size: 12px; font-weight: 800; font-family: var(--font-mono); }
+.sc-idx-pct { font-size: 10px; font-weight: 700; }
+.sc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.sc-cell { padding: 6px 5px; border-radius: 8px; border: 1.5px solid transparent; cursor: pointer; transition: all .15s; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.sc-cell:hover { filter: brightness(1.08); transform: scale(1.02); }
+.sc-cell-sel { border-color: var(--accent) !important; }
+.sc-cell-label { font-size: 10px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+.sc-cell-name { font-size: 8px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+.sc-cell-pct { font-size: 11px; font-weight: 800; margin-top: 2px; font-family: var(--font-mono); }
+.sc-rank-mini { margin-top: 8px; display: flex; flex-direction: column; gap: 3px; }
+.sc-rank-mini-row { display: flex; align-items: center; gap: 6px; }
+.sc-rank-mini-lbl { font-size: 9px; font-weight: 700; color: var(--text-2); width: 36px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+.sc-rank-mini-bar { flex: 1; height: 4px; background: var(--border-md); border-radius: 4px; overflow: hidden; }
+.sc-rank-mini-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+.sc-rank-mini-val { font-size: 9px; font-weight: 700; width: 40px; text-align: right; flex-shrink: 0; font-family: var(--font-mono); }
+.sc-themes { display: flex; flex-direction: column; gap: 10px; }
+.sc-theme-name { font-size: 10px; font-weight: 800; color: var(--text-2); margin-bottom: 5px; }
+.sc-theme-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.sc-chip { display: flex; align-items: center; gap: 3px; padding: 3px 8px; border-radius: 20px; cursor: pointer; transition: filter .15s; }
+.sc-chip:hover { filter: brightness(1.1); }
+.sc-chip-label { font-size: 10px; font-weight: 700; }
+.sc-chip-pct { font-size: 9px; font-weight: 700; font-family: var(--font-mono); }
+
+/* ── Screener ────────────────────────────────────────────── */
+.screener-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.screener-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 6px; flex-shrink: 0; }
+.screener-title { font-size: 13px; font-weight: 800; }
+.screener-presets { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 10px 6px; flex-shrink: 0; }
+.screener-preset-btn { font-size: 9px; font-weight: 800; padding: 3px 9px; border-radius: 10px; border: 1px solid rgba(245,158,11,.4); background: rgba(245,158,11,.08); color: rgba(245,158,11,.9); cursor: pointer; transition: all .15s; }
+.screener-preset-btn:hover { background: rgba(245,158,11,.2); }
+.screener-criteria { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 10px 8px; flex-shrink: 0; }
+.screener-crit-btn { font-size: 9px; font-weight: 700; padding: 3px 7px; border-radius: 8px; border: 1px solid var(--border-md); background: var(--surface-2); color: var(--text-2); cursor: pointer; transition: all .15s; }
+.screener-crit-btn:hover { background: var(--surface-3); }
+.screener-run-btn { margin: 0 10px 8px; padding: 9px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), rgba(99,102,241,.75)); color: #fff; font-size: 12px; font-weight: 800; border: none; cursor: pointer; transition: opacity .15s; flex-shrink: 0; box-shadow: 0 4px 12px rgba(37,99,235,.3); }
+.screener-run-btn:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
+.screener-run-btn:disabled { opacity: .4; cursor: not-allowed; }
+.screener-loading-bar { height: 2px; margin: 0 10px 6px; background: var(--surface-3); border-radius: 2px; flex-shrink: 0; }
+.screener-loading-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .25s; }
+.screener-results-header { font-size: 10px; font-weight: 700; color: var(--text-3); padding: 0 12px 4px; flex-shrink: 0; }
+.screener-results { flex: 1; overflow-y: auto; padding: 0 8px 12px; }
+.screener-empty { text-align: center; color: var(--text-3); font-size: 12px; padding: 24px 0; line-height: 1.8; }
+.screener-row { display: flex; align-items: flex-start; gap: 6px; padding: 8px 10px; border-radius: 10px; margin-bottom: 4px; background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; transition: all .15s; }
+.screener-row:hover { background: var(--surface-3); transform: translateX(2px); }
+.screener-row.bull { border-left: 3px solid var(--up); }
+.screener-row.bear { border-left: 3px solid var(--dn); }
+.screener-row-left { min-width: 68px; flex-shrink: 0; }
+.screener-sym { font-size: 11px; font-weight: 800; font-family: var(--font-mono); }
+.screener-name { font-size: 9px; color: var(--text-3); margin-top: 1px; }
+.screener-row-center { flex: 1; display: flex; flex-wrap: wrap; gap: 3px; }
+.screener-hit { font-size: 8px; font-weight: 700; padding: 2px 5px; border-radius: 5px; border: 1px solid; }
+.screener-row-right { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.screener-price { font-size: 10px; font-weight: 800; font-family: var(--font-mono); }
+.screener-score { font-size: 11px; font-weight: 900; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--surface-3); }
+.screener-score.bull { background: var(--up-soft); color: var(--up); }
+.screener-score.bear { background: var(--dn-soft); color: var(--dn); }
+
+/* ── AI Panel ────────────────────────────────────────────── */
+.ai-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.ai-messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.ai-messages.scroll-soft { mask-image: linear-gradient(to bottom, transparent 0, black 14px, black calc(100% - 14px), transparent 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 14px, black calc(100% - 14px), transparent 100%); }
+.ai-msg { display: flex; flex-direction: column; gap: 3px; }
+.ai-msg.user { align-items: flex-end; }
+.ai-msg.ai { align-items: flex-start; }
+.msg-role { font-size: 10px; font-weight: 700; color: var(--text-3); }
+.msg-text { max-width: 92%; padding: 8px 11px; border-radius: 10px; font-size: 12px; line-height: 1.65; white-space: pre-wrap; }
+.ai-msg.user .msg-text { background: var(--accent); color: #fff; border-radius: 10px 10px 2px 10px; }
+.ai-msg.ai .msg-text { background: var(--surface-2); color: var(--text); border-radius: 10px 10px 10px 2px; }
+.ai-actions { padding: 6px 12px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.analyze-btn { width: 100%; padding: 10px; border: none; border-radius: 10px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(99,102,241,.35); transition: all .2s; }
+.analyze-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(99,102,241,.5); }
+.quick-chip { padding: 4px 10px; border: 1.5px solid var(--border-md); border-radius: 20px; background: var(--surface-2); color: var(--text-2); font-size: 10.5px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.quick-chip:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.ai-input-row { display: flex; gap: 6px; padding: 0 12px 10px; flex-shrink: 0; }
+.ai-input { flex: 1; padding: 9px 14px; border: var(--card-border); border-radius: 20px; background: var(--surface-2); color: var(--text); font-size: 12px; transition: all .2s; outline: none; }
+.ai-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ai-input::placeholder { color: var(--text-3); }
+.ai-send-btn { padding: 8px 14px; border: var(--card-border); border-radius: 20px; background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 700; cursor: pointer; transition: all .2s; }
+.ai-send-btn:hover { background: var(--surface); color: var(--text); transform: translateY(-1px); }
+
+/* ── News ────────────────────────────────────────────────── */
+.news-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.news-header { padding: 10px 14px 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
+.news-title { font-size: 12px; font-weight: 800; }
+.news-list { flex: 1; overflow-y: auto; padding: 6px 8px 12px; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.news-item { padding: 9px 10px; border-radius: 10px; background: var(--surface-2); border-left: 3px solid transparent; transition: all .16s; }
+.news-item:hover { background: var(--surface-3); transform: translateX(2px); border-left-color: var(--accent); }
+.news-item.news-bull { border-left-color: rgba(239,68,68,.35); }
+.news-item.news-bear { border-left-color: rgba(34,197,94,.35); }
+.news-headline { display: block; font-size: 11.5px; font-weight: 600; color: var(--text); text-decoration: none; line-height: 1.55; margin-bottom: 5px; }
+.news-meta { display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-3); }
+
+/* ── Portfolio ───────────────────────────────────────────── */
+.portfolio-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.pf-header { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.pf-total { font-size: 22px; font-weight: 800; letter-spacing: -1px; font-family: var(--font-mono); }
+.pf-pnl { font-size: 12px; font-weight: 700; margin-top: 2px; }
+.pf-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--text-3); gap: 6px; }
+
+/* ── Utilities ───────────────────────────────────────────── */
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.up { color: var(--up); } .dn { color: var(--dn); }
+.up-bg { background: var(--up-soft); } .dn-bg { background: var(--dn-soft); }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 4px; }
+::view-transition-old(root) { animation: 150ms ease-out both fade-vt; }
+::view-transition-new(root) { animation: 300ms cubic-bezier(.16,1,.3,1) both springup-vt; }
+@keyframes springup-vt { from { transform: translateY(10px); opacity: 0; } }
+@keyframes fade-vt { to { opacity: 0; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+
+<script>
+/* ── mw-data.js ─────────────────────────────────────────── */
+;(function () {
+  let _s = 42
+  const r = () => { _s = (_s * 9301 + 49297) % 233280; return _s / 233280 }
+  const walk = (start, n, v = 0.02) => { const a = [start]; for (let i = 1; i < n; i++) a.push(+(a[i-1] * (1 + (r()-0.48)*v)).toFixed(2)); return a }
+  const candles = (start, n, v = 0.018) => {
+    const a = []; let p = start; const b = Date.now()
+    for (let i = n; i >= 0; i--) {
+      const o = p, c = +(o*(1+(r()-0.47)*v)).toFixed(2)
+      const hi = +(Math.max(o,c)*(1+r()*v*0.6)).toFixed(2)
+      const lo = +(Math.min(o,c)*(1-r()*v*0.6)).toFixed(2)
+      a.push({ time: Math.floor((b-i*86400000)/1000), open:o, high:hi, low:lo, close:c, volume:Math.floor(12e6+r()*22e6) })
+      p = c
+    }
+    return a
+  }
+
+  window.MW_DATA = {
+    quotes: {
+      TW: [
+        { symbol:'2330.TW', name:'台積電', price:1085.0,  change:25.0,  changePct:2.36,  volume:24800000, spark:walk(980,22) },
+        { symbol:'2317.TW', name:'鴻海',   price:218.5,   change:-3.5,  changePct:-1.58, volume:31200000, spark:walk(230,22) },
+        { symbol:'2454.TW', name:'聯發科', price:1560.0,  change:45.0,  changePct:2.97,  volume:8900000,  spark:walk(1480,22) },
+        { symbol:'2882.TW', name:'國泰金', price:78.3,    change:0.8,   changePct:1.03,  volume:18500000, spark:walk(75,22) },
+        { symbol:'2412.TW', name:'中華電', price:121.5,   change:-0.5,  changePct:-0.41, volume:5200000,  spark:walk(123,22) },
+        { symbol:'2603.TW', name:'長榮',   price:285.0,   change:8.5,   changePct:3.07,  volume:42300000, spark:walk(260,22) },
+        { symbol:'2308.TW', name:'台達電', price:392.0,   change:-6.0,  changePct:-1.51, volume:7800000,  spark:walk(405,22) },
+        { symbol:'3711.TW', name:'日月光', price:185.0,   change:4.5,   changePct:2.49,  volume:15600000, spark:walk(175,22) },
+      ],
+      US: [
+        { symbol:'NVDA', name:'NVIDIA',    price:1245.80, change:32.5,  changePct:2.68,  volume:38200000, spark:walk(1100,22) },
+        { symbol:'AAPL', name:'Apple',     price:211.45,  change:-2.3,  changePct:-1.08, volume:72100000, spark:walk(220,22) },
+        { symbol:'TSLA', name:'特斯拉',    price:178.30,  change:5.8,   changePct:3.36,  volume:82400000, spark:walk(162,22) },
+        { symbol:'META', name:'Meta',      price:512.60,  change:-8.4,  changePct:-1.61, volume:18900000, spark:walk(535,22) },
+        { symbol:'MSFT', name:'Microsoft', price:425.20,  change:3.6,   changePct:0.85,  volume:22300000, spark:walk(412,22) },
+        { symbol:'AMD',  name:'超微',      price:168.45,  change:4.85,  changePct:2.96,  volume:51200000, spark:walk(155,22) },
+      ],
+      ETF: [
+        { symbol:'0050.TW', name:'元大台灣50', price:185.20, change:2.9,  changePct:1.59,  volume:12400000, spark:walk(178,22) },
+        { symbol:'0056.TW', name:'元大高股息', price:43.85,  change:0.45, changePct:1.04,  volume:35600000, spark:walk(42,22) },
+        { symbol:'QQQ',     name:'NASDAQ 100', price:445.80, change:-3.2, changePct:-0.71, volume:43200000, spark:walk(455,22) },
+        { symbol:'SPY',     name:'S&P500 ETF', price:548.30, change:2.1,  changePct:0.38,  volume:68900000, spark:walk(540,22) },
+      ],
+      IDX: [
+        { symbol:'^TWII', name:'台股加權', price:22845.3, change:312.5, changePct:1.39,  volume:0, spark:walk(22000,22) },
+        { symbol:'^GSPC', name:'S&P 500',  price:5480.5,  change:-18.2, changePct:-0.33, volume:0, spark:walk(5400,22) },
+        { symbol:'^IXIC', name:'NASDAQ',   price:17823.4, change:85.3,  changePct:0.48,  volume:0, spark:walk(17500,22) },
+        { symbol:'^VIX',  name:'恐慌指數', price:14.82,   change:-0.58, changePct:-3.77, volume:0, spark:walk(16,22) },
+      ],
+      CRYPTO: [
+        { symbol:'BTC-USD', name:'Bitcoin',  price:68450,  change:1820,  changePct:2.73,  volume:0, spark:walk(64000,22) },
+        { symbol:'ETH-USD', name:'Ethereum', price:3842.5, change:-85.2, changePct:-2.17, volume:0, spark:walk(4000,22) },
+        { symbol:'SOL-USD', name:'Solana',   price:182.4,  change:8.6,   changePct:4.95,  volume:0, spark:walk(168,22) },
+      ],
+    },
+    candles: candles(920, 60),
+    sectors: {
+      TW: {
+        indices: [
+          { label:'TW50', name:'台灣50',   price:185.2,  changePct:1.59 },
+          { label:'DIV',  name:'高股息',   price:43.85,  changePct:1.04 },
+          { label:'FB50', name:'富邦台50', price:128.5,  changePct:1.41 },
+          { label:'ESG',  name:'國泰永續', price:22.8,   changePct:0.88 },
+        ],
+        grid: [
+          { label:'台積電', name:'半導體',   price:1085,  changePct:2.36 },
+          { label:'鴻海',   name:'電子代工', price:218.5, changePct:-1.58 },
+          { label:'聯發科', name:'IC設計',   price:1560,  changePct:2.97 },
+          { label:'國泰金', name:'金融',     price:78.3,  changePct:1.03 },
+          { label:'中華電', name:'電信',     price:121.5, changePct:-0.41 },
+          { label:'長榮',   name:'航運',     price:285,   changePct:3.07 },
+          { label:'中鋼',   name:'鋼鐵',     price:36.8,  changePct:-0.54 },
+          { label:'統一',   name:'食品',     price:82.5,  changePct:0.73 },
+          { label:'台塑',   name:'石化',     price:98.2,  changePct:-1.20 },
+          { label:'台達電', name:'電源',     price:392,   changePct:-1.51 },
+          { label:'和泰車', name:'汽車',     price:778,   changePct:0.26 },
+          { label:'台泥',   name:'水泥',     price:42.1,  changePct:-0.24 },
+        ],
+        themes: [
+          { name:'AI 伺服器', stocks:[{l:'台達電',p:-1.51},{l:'緯創',p:3.28},{l:'緯穎',p:2.84},{l:'奇鋐',p:4.12}] },
+          { name:'半導體',    stocks:[{l:'台積電',p:2.36},{l:'聯電',p:1.82},{l:'聯發科',p:2.97},{l:'日月光',p:2.49}] },
+          { name:'航運',      stocks:[{l:'長榮',p:3.07},{l:'陽明',p:2.45},{l:'萬海',p:1.93}] },
+          { name:'金融',      stocks:[{l:'國泰金',p:1.03},{l:'富邦金',p:0.88},{l:'兆豐金',p:0.62}] },
+        ]
+      },
+      US: {
+        indices: [
+          { label:'SPX', name:'S&P 500',  price:5480.5,  changePct:-0.33 },
+          { label:'NDX', name:'NASDAQ',   price:17823.4, changePct:0.48 },
+          { label:'DJI', name:'道瓊',     price:39285,   changePct:-0.14 },
+          { label:'VIX', name:'恐慌指數', price:14.82,   changePct:-3.77 },
+        ],
+        grid: [
+          { label:'TECH', name:'科技',     price:228.5, changePct:1.24 },
+          { label:'COMM', name:'通訊',     price:82.3,  changePct:0.56 },
+          { label:'DISC', name:'非必需',   price:198.8, changePct:-0.82 },
+          { label:'FIN',  name:'金融',     price:42.5,  changePct:-0.34 },
+          { label:'HLTH', name:'醫療',     price:158.2, changePct:0.18 },
+          { label:'INDS', name:'工業',     price:128.4, changePct:0.72 },
+          { label:'NRG',  name:'能源',     price:94.8,  changePct:-1.38 },
+          { label:'MATL', name:'材料',     price:92.1,  changePct:0.44 },
+          { label:'STPL', name:'必需消費', price:78.5,  changePct:-0.22 },
+          { label:'UTIL', name:'公用',     price:71.2,  changePct:0.85 },
+          { label:'REIT', name:'房地產',   price:42.8,  changePct:0.62 },
+        ],
+        themes: [
+          { name:'AI 概念', stocks:[{l:'NVIDIA',p:2.68},{l:'Microsoft',p:0.85},{l:'Google',p:-0.42},{l:'Meta',p:-1.61}] },
+          { name:'電動車',  stocks:[{l:'Tesla',p:3.36},{l:'Rivian',p:-2.14},{l:'Nio',p:1.82}] },
+          { name:'半導體',  stocks:[{l:'NVIDIA',p:2.68},{l:'AMD',p:2.96},{l:'Intel',p:-0.58}] },
+        ]
+      }
+    },
+    screener: [
+      { symbol:'AMD',     name:'超微',   hits:['rsi_oversold','macd_golden','kd_golden','stoch_oversold'], dir:'bull', price:168.45, changePct:2.96 },
+      { symbol:'2603.TW', name:'長榮',   hits:['macd_golden','above_ma20','kd_golden'],                   dir:'bull', price:285.0,  changePct:3.07 },
+      { symbol:'2330.TW', name:'台積電', hits:['above_ma20','macd_golden'],                               dir:'bull', price:1085,   changePct:2.36 },
+      { symbol:'2317.TW', name:'鴻海',   hits:['macd_death','below_ma20'],                               dir:'bear', price:218.5,  changePct:-1.58 },
+    ],
+    ticker: [
+      {label:'台積電', price:'1,085', pct:'+2.36%', up:true},
+      {label:'S&P 500',price:'5,480', pct:'-0.33%', up:false},
+      {label:'NASDAQ', price:'17,823',pct:'+0.48%', up:true},
+      {label:'Bitcoin',price:'68,450',pct:'+2.73%', up:true},
+      {label:'NVIDIA', price:'1,245', pct:'+2.68%', up:true},
+      {label:'道瓊',   price:'39,285',pct:'-0.14%', up:false},
+      {label:'長榮',   price:'285',   pct:'+3.07%', up:true},
+      {label:'VIX',    price:'14.82', pct:'-3.77%', up:true},
+    ],
+    news: [
+      { h:'台積電 Q2 財報優於預期，法人看好 AI 晶片需求持續擴大', src:'工商時報', time:'3h', bull:true },
+      { h:'Fed 官員暗示年內降息次數或低於市場預期，債市承壓',     src:'Reuters',  time:'5h', bull:false },
+      { h:'NVIDIA 宣布新一代 Blackwell 晶片提前量產，出貨超預期',  src:'Bloomberg', time:'6h', bull:true },
+      { h:'長榮航運看好下半年貨運量回升，目標價上調至 310 元',     src:'聯合報',   time:'8h', bull:true },
+      { h:'聯準會縮表計畫持續，流動性壓力升溫引市場關注',          src:'FT',       time:'10h',bull:false },
+      { h:'超微 AI 加速卡出貨量超預期，本季指引優於市場估計',       src:'WSJ',      time:'12h',bull:true },
+    ]
+  }
+})()
+
+/* Generate mock tech data per symbol */
+;(function() {
+  const techFor = (changePct) => {
+    const up = changePct >= 0
+    const rsi = up ? (55 + changePct * 3).toFixed(1) : (45 + changePct * 3).toFixed(1)
+    const rsiNum = parseFloat(rsi)
+    const k = up ? (65 + changePct * 2).toFixed(1) : (35 + changePct * 1.5).toFixed(1)
+    const d = up ? (55 + changePct).toFixed(1) : (45 + changePct).toFixed(1)
+    const macd = (changePct * 0.8).toFixed(2)
+    const signal = (changePct * 0.5).toFixed(2)
+    const atrPct = (Math.abs(changePct) * 0.6 + 1.2).toFixed(2)
+    const bbWidth = (Math.abs(changePct) * 2 + 5).toFixed(1)
+    const stochK = up ? (72 + changePct).toFixed(1) : (28 + changePct).toFixed(1)
+    const stochD = up ? (60 + changePct).toFixed(1) : (38 + changePct).toFixed(1)
+    const wr = up ? (-25).toFixed(1) : (-78).toFixed(1)
+    const adx = (22 + Math.abs(changePct) * 2).toFixed(1)
+    const plusDI = up ? (26 + changePct).toFixed(1) : (18).toFixed(1)
+    const minusDI = up ? (16).toFixed(1) : (28 + Math.abs(changePct)).toFixed(1)
+    const roc10 = (changePct * 1.5).toFixed(2)
+    const roc21 = (changePct * 2.2).toFixed(2)
+    const cci = up ? (82 + changePct * 5).toFixed(0) : (-90 + changePct * 5).toFixed(0)
+    const cmf = (changePct * 0.05).toFixed(3)
+    const mfi = up ? (62 + changePct).toFixed(1) : (38 + changePct).toFixed(1)
+    const bullPower = (changePct * 0.3).toFixed(2)
+    const bearPower = (changePct * -0.2).toFixed(2)
+    const weeklyRsi = (rsiNum * 0.95).toFixed(1)
+    const monthlyRsi = (rsiNum * 0.88).toFixed(1)
+
+    const bbPatterns = { bull:'bull', bear:'bear', squeeze:'squeeze', neutral:'neutral' }
+    const bbPattern = Math.abs(changePct) < 0.5 ? 'squeeze' : up ? 'bull' : 'bear'
+    const bbSig = bbPattern === 'squeeze' ? 'BB 收縮 · 等待突破'
+      : bbPattern === 'bull' ? (parseFloat(bbWidth) > 12 ? '騎乘上軌 · 偏多' : '突破上軌 · 偏多')
+      : (parseFloat(bbWidth) > 12 ? '騎乘下軌 · 偏空' : '跌破下軌 · 偏空')
+
+    const kdSig = up
+      ? (parseFloat(k) > 80 ? 'K>80 高檔鈍化' : parseFloat(k) > parseFloat(d) ? '金叉 · K>D · 偏多' : '整理待突破')
+      : (parseFloat(k) < 20 ? 'K<20 低檔鈍化 · 偏多' : '死叉 · K<D · 偏空')
+    const macdSig = up
+      ? (parseFloat(macd) > parseFloat(signal) ? '黃金交叉 · 偏多' : 'DIF 趨近 · 觀察')
+      : (parseFloat(macd) < parseFloat(signal) ? '死亡交叉 · 偏空' : '整理中')
+    const maStatus = up ? '多頭排列 · MA5>MA20' : '空頭排列 · MA5<MA20'
+    const rsiSig = rsiNum >= 70 ? '超買區間 · 偏空'
+      : rsiNum <= 30 ? '超賣區間 · 偏多'
+      : rsiNum >= 55 ? '強勢偏多'
+      : rsiNum <= 45 ? '弱勢偏空' : '中性整理'
+    const wrSig = parseFloat(wr) >= -20 ? '超買區間 · 偏空'
+      : parseFloat(wr) <= -80 ? '超賣區間 · 偏多' : '中性區間'
+    const stochSig = parseFloat(stochK) >= 80 ? '超買 · 偏空'
+      : parseFloat(stochK) <= 20 ? '超賣 · 偏多'
+      : parseFloat(stochK) > parseFloat(stochD) ? '金叉 · 偏多' : '死叉 · 偏空'
+    const adxNum = parseFloat(adx)
+    const adxSig = adxNum >= 40 ? (up ? '強趨勢多' : '強趨勢空')
+      : adxNum >= 25 ? (up ? '趨勢偏多' : '趨勢偏空')
+      : '無趨勢 · 震盪'
+    const rocSig = parseFloat(roc10) >= 3 ? '動能強勁 · 偏多'
+      : parseFloat(roc10) <= -3 ? '動能衰退 · 偏空' : '動能平淡 · 中性'
+    const cciNum = parseFloat(cci)
+    const cciSig = cciNum > 100 ? '超買 · 偏弱' : cciNum < -100 ? '超賣 · 偏強' : cciNum > 0 ? '偏強' : '偏弱'
+    const cmfNum = parseFloat(cmf)
+    const cmfSig = cmfNum > 0.1 ? '資金流入 · 買盤強'
+      : cmfNum < -0.1 ? '資金流出 · 賣壓重' : '資金流向中性'
+    const elderSig = parseFloat(bullPower) > 0 && parseFloat(bearPower) < 0 ? '多頭格局'
+      : parseFloat(bullPower) < 0 && parseFloat(bearPower) > 0 ? '空頭格局' : '多空均衡'
+    const mfiNum = parseFloat(mfi)
+    const mfiSig = mfiNum >= 80 ? '超買 · 偏空' : mfiNum <= 20 ? '超賣 · 偏多' : mfiNum >= 60 ? '資金流入' : '資金平穩'
+    const trend = up ? '上升趨勢' : '下降趨勢'
+    const psarBull = up
+    const psarSig = up ? 'SAR 在價下方 · 多頭確認' : 'SAR 在價上方 · 空頭確認'
+    const obvTrend = up ? (changePct > 2 ? 'confirm-up' : 'diverge-up') : (changePct < -2 ? 'confirm-dn' : 'diverge-dn')
+    const atr = (parseFloat(atrPct) * 8).toFixed(2)
+    const volatility = parseFloat(atrPct) > 3 ? '高波動' : parseFloat(atrPct) > 1.5 ? '中波動' : '低波動'
+
+    const candlePatterns = [
+      { name:'大陽線 · 強勢上漲', bull: true,  hint:'收盤接近當日最高，多方力道強勁' },
+      { name:'十字星 · 多空拉鋸', bull: null,  hint:'開收盤接近，待方向確認' },
+      { name:'大陰線 · 壓力沉重', bull: false, hint:'收盤接近當日最低，空方主導' },
+      { name:'錘形線 · 潛在底部', bull: true,  hint:'下影線長，買方在低位承接' },
+      { name:'射擊之星 · 頂部警示', bull: false, hint:'上影線長，高位賣壓出現' },
+    ]
+    const cpIdx = up ? (Math.abs(changePct) > 2 ? 0 : 3) : (Math.abs(changePct) > 2 ? 2 : 4)
+    const candlePattern = changePct === 0 ? candlePatterns[1] : candlePatterns[cpIdx]
+
+    const rsiDivergence = Math.abs(changePct) > 3 ? {
+      bull: !up,
+      desc: up ? '價格創新高但 RSI 未同步 · 潛在頂背離' : '價格創新低但 RSI 未同步 · 潛在底背離'
+    } : null
+
+    const ma5val = 100 + changePct * 0.5
+    const ma20val = 100 + changePct * 0.3
+
+    return {
+      trend, kdSignal:kdSig, macdSignal:macdSig, maStatus,
+      lastK:k, lastD:d, lastMacd:macd, lastSignal:signal,
+      ma5: ma5val.toFixed(2), ma20: ma20val.toFixed(2),
+      lastRsi: rsi, rsiSignal:rsiSig,
+      candlePattern,
+      atr, atrPct, volatility,
+      lastMfi: mfi, mfiSignal:mfiSig,
+      obvTrend,
+      stochRsiK: stochK, stochRsiD: stochD, stochRsiSignal:stochSig,
+      williamsR: wr, wrSignal:wrSig,
+      bbWidth, bbSqueezeSignal:bbSig, bbPattern,
+      psarBull, psarSignal:psarSig,
+      adx, plusDI, minusDI, adxSignal:adxSig,
+      roc10, roc21, rocSignal:rocSig,
+      rsiDivergence,
+      cci20: cci, cciSignal:cciSig,
+      cmf20: cmf, cmfSignal:cmfSig,
+      bullPower, bearPower, elderSignal:elderSig,
+      weeklyRsi, monthlyRsi,
+      weeklyMacd: up ? '多' : '空',
+    }
+  }
+  const techBySymbol = {}
+  Object.values(window.MW_DATA.quotes).flat().forEach(q => {
+    techBySymbol[q.symbol] = techFor(q.changePct)
+  })
+  window.MW_TECH = techBySymbol
+  window.MW_TECH_FOR = (sym) => window.MW_TECH[sym] || techFor(0)
+})()
+</script>
+
+<script type="text/babel">
+/* ── mw-components.jsx ──────────────────────────────────── */
+const { useState, useEffect, useRef, useMemo } = React
+
+function MiniSparkline({ data, up, width = 64, height = 30 }) {
+  if (!data || data.length < 2) return <svg width={width} height={height} />
+  const P = 3, min = Math.min(...data), max = Math.max(...data), rng = max - min || 1
+  const pts = data.map((v, i) => [P + (i/(data.length-1))*(width-P*2), P + (1-(v-min)/rng)*(height-P*2)])
+  const line = pts.map(p => p.join(',')).join(' ')
+  const area = `M${pts[0][0]},${height} ${pts.map(p=>`L${p[0]},${p[1]}`).join(' ')} L${pts[pts.length-1][0]},${height}Z`
+  const col = up ? 'var(--up)' : 'var(--dn)'
+  const fill = up ? 'rgba(239,68,68,.13)' : 'rgba(34,197,94,.13)'
+  const [lx, ly] = pts[pts.length-1]
+  return (
+    <svg width={width} height={height} style={{display:'block',flexShrink:0}}>
+      <path d={area} fill={fill} />
+      <polyline points={line} fill="none" stroke={col} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={lx} cy={ly} r="2.2" fill={col} />
+    </svg>
+  )
+}
+
+function SessionClock() {
+  const [now, setNow] = useState(new Date())
+  useEffect(() => { const id = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(id) }, [])
+  const utcH = now.getUTCHours(), utcM = now.getUTCMinutes()
+  const isDST = (now.getUTCMonth()+1) >= 3 && (now.getUTCMonth()+1) <= 11
+  const etH = (utcH - (isDST ? 4 : 5) + 24) % 24
+  const etTotal = etH*60 + utcM
+  const isWknd = [0,6].includes(now.getUTCDay())
+  const session = isWknd ? '休市' : etTotal>=570&&etTotal<960 ? '正盤' : etTotal>=240&&etTotal<570 ? '盤前' : etTotal>=960&&etTotal<1200 ? '盤後' : '閉市'
+  const sCol = session==='正盤' ? 'var(--dn)' : (session==='盤前'||session==='盤後') ? 'var(--warn)' : 'var(--text-3)'
+  const twH = (utcH*60+utcM+480) % 1440
+  const twOpen = !isWknd && twH>=540 && twH<810
+  return (
+    <div className="session-clock">
+      <div className="session-item">
+        <span className="session-dot" style={{background:sCol}} />
+        <span className="session-label">US</span>
+        <span className="session-status" style={{color:sCol}}>{session}</span>
+      </div>
+      <div className="session-divider" />
+      <div className="session-item">
+        <span className="session-dot" style={{background:twOpen?'var(--dn)':'var(--text-3)'}} />
+        <span className="session-label">TW</span>
+        <span className="session-status" style={{color:twOpen?'var(--dn)':'var(--text-3)'}}>{twOpen?'正盤':'閉市'}</span>
+      </div>
+      <div className="session-divider" />
+      <span className="session-time mono">{String(etH).padStart(2,'0')}:{String(utcM).padStart(2,'0')} ET</span>
+    </div>
+  )
+}
+
+function NavBar({ dark, onToggleDark }) {
+  return (
+    <div className="navbar-wrapper">
+      <nav className="navbar">
+        <div className="logo">
+          <div className="logo-mark">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+          </div>
+          <div>
+            <div className="logo-txt">MarketWatch</div>
+            <div className="logo-sub">自動盯盤 · 投資顧問</div>
+          </div>
+        </div>
+        <div className="live-badge"><span className="live-dot" />LIVE</div>
+        <SessionClock />
+        <div className="nav-right">
+          <button className="ibtn" title="搜尋 ⌘K">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </button>
+          <button className="ibtn" onClick={onToggleDark} title={dark ? '亮色' : '暗色'}>
+            {dark
+              ? <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="0"/><line x1="12" y1="24" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="2.81" y2="2.81"/><line x1="21.19" y1="21.19" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="0" y2="12"/><line x1="24" y1="12" x2="22" y2="12"/></svg>
+              : <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            }
+          </button>
+          <button className="ibtn" title="設定">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+        </div>
+      </nav>
+    </div>
+  )
+}
+
+function MarketTicker() {
+  const items = window.MW_DATA.ticker
+  const doubled = [...items, ...items]
+  return (
+    <div className="market-ticker">
+      <div className="ticker-track">
+        {doubled.map((t, i) => (
+          <span key={i} className="ticker-item">
+            <span className="ticker-label">{t.label}</span>
+            <span className="ticker-price mono">{t.price}</span>
+            <span className={`ticker-chg ${t.up ? 'up' : 'dn'}`}>{t.pct}</span>
+            <span className="ticker-sep">·</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function WatchList({ selected, onSelect }) {
+  const CATS = ['TW','US','ETF','IDX','CRYPTO']
+  const CAT_LABELS = { TW:'台股', US:'美股', ETF:'ETF', IDX:'指數', CRYPTO:'加密' }
+  const [cat, setCat] = useState('TW')
+  const [search, setSearch] = useState('')
+  const [view, setView] = useState('list')
+  const [sort, setSort] = useState('default')
+  const data = window.MW_DATA.quotes
+
+  const allItems = data[cat] || []
+  const q = search.toLowerCase()
+  let items = allItems.filter(s => !q || s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
+  if (sort === 'gain') items = [...items].sort((a, b) => b.changePct - a.changePct)
+  if (sort === 'loss') items = [...items].sort((a, b) => a.changePct - b.changePct)
+
+  const allQ = Object.values(data).flat()
+  const gainers = allQ.filter(x => x.changePct >= 0).length
+  const total = allQ.length
+  const bPct = Math.round(gainers / total * 100)
+  const avgChg = allQ.reduce((s, x) => s + x.changePct, 0) / allQ.length
+  const fgScore = Math.max(0, Math.min(100, 50 + (bPct-50)*0.6 + avgChg*3))
+  const fgLabel = fgScore>=75?'極度貪婪':fgScore>=60?'貪婪':fgScore>=40?'中性':fgScore>=25?'恐懼':'極度恐懼'
+  const fgCol = fgScore>=60?'var(--dn)':fgScore<=40?'var(--up)':'var(--warn)'
+
+  const fmtPrice = p => p >= 1000 ? p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : p.toFixed(2)
+
+  return (
+    <aside className="watchlist glass-card">
+      <div className="wl-header">
+        <span className="wl-title">自選清單</span>
+        <div style={{display:'flex',gap:4}}>
+          <button className={`ibtn-sm ${view==='heat'?'active-sm':''}`} onClick={() => setView(v => v==='heat'?'list':'heat')} title="熱力圖">⬛</button>
+          <button className={`ibtn-sm ${view==='table'?'active-sm':''}`} onClick={() => setView(v => v==='table'?'list':'table')} title="表格">≡</button>
+          <button className="ibtn-sm" title="新增標的">＋</button>
+        </div>
+      </div>
+      <div className="wl-search-wrap">
+        <input className="wl-search" placeholder="搜尋標的" value={search} onChange={e => setSearch(e.target.value)} />
+        {search && <button className="wl-search-clear" onClick={() => setSearch('')}>✕</button>}
+      </div>
+      <div className="cat-tabs">
+        {CATS.map(c => (
+          <button key={c} className={`cat-tab ${cat===c?'active':''}`} onClick={() => setCat(c)}>{CAT_LABELS[c]}</button>
+        ))}
+        <div style={{marginLeft:'auto',display:'flex',gap:2}}>
+          <button className={`cat-tab ${sort==='gain'?'active':''}`} onClick={() => setSort(s => s==='gain'?'default':'gain')}>↑%</button>
+          <button className={`cat-tab ${sort==='loss'?'active':''}`} onClick={() => setSort(s => s==='loss'?'default':'loss')}>↓%</button>
+        </div>
+      </div>
+      <div className="mkt-breadth">
+        <div className="mkt-breadth-bar"><div className="mkt-breadth-fill" style={{width:`${bPct}%`}} /></div>
+        <div className="mkt-breadth-labels">
+          <span className="up" style={{fontSize:9,fontWeight:800}}>▲ {gainers}</span>
+          <div className="fg-row">
+            <div className="fg-track"><div className="fg-fill" style={{width:`${fgScore}%`,background:fgCol}} /></div>
+            <span className="fg-label" style={{color:fgCol}}>{fgLabel}</span>
+            <span className="fg-score mono" style={{color:fgCol}}>{fgScore.toFixed(0)}</span>
+          </div>
+          <span className="dn" style={{fontSize:9,fontWeight:800}}>▼ {total-gainers}</span>
+        </div>
+      </div>
+      {view==='heat' ? (
+        <div className="wl-heatmap">
+          {items.map(item => {
+            const pct = item.changePct, abs = Math.min(Math.abs(pct), 5), intensity = abs/5
+            const isUp = pct >= 0
+            const bg = isUp ? `rgba(239,68,68,${0.1+intensity*0.55})` : `rgba(34,197,94,${0.1+intensity*0.55})`
+            return (
+              <div key={item.symbol} className="heat-cell" style={{background:bg,border:selected===item.symbol?'2px solid var(--accent)':'2px solid transparent'}} onClick={() => onSelect(item.symbol)}>
+                <div className="heat-name">{item.name}</div>
+                <div className={`heat-pct ${isUp?'up':'dn'}`}>{isUp?'+':''}{pct.toFixed(2)}%</div>
+              </div>
+            )
+          })}
+        </div>
+      ) : view==='table' ? (
+        <div className="wl-table-wrap">
+          <table className="wl-table">
+            <thead><tr><th>名稱</th><th>現價</th><th>漲跌%</th><th>量</th></tr></thead>
+            <tbody>
+              {items.map(item => {
+                const up = item.changePct >= 0
+                return (
+                  <tr key={item.symbol} className={`wl-trow ${selected===item.symbol?'active':''}`} onClick={() => onSelect(item.symbol)}>
+                    <td><span className="wl-tname">{item.name}</span><span className="wl-tsym mono"> {item.symbol}</span></td>
+                    <td className={`mono ${up?'up':'dn'}`}>{item.price.toLocaleString()}</td>
+                    <td className={up?'up':'dn'}>{up?'▲':'▼'}{Math.abs(item.changePct).toFixed(2)}%</td>
+                    <td style={{color:'var(--text-3)',fontSize:9}}>{item.volume>0?(item.volume>=1e6?(item.volume/1e6).toFixed(1)+'M':'—'):'—'}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <ul className="wl-list scroll-soft">
+          {items.length === 0 && <li style={{padding:'20px',textAlign:'center',color:'var(--text-3)',fontSize:12}}>找不到結果</li>}
+          {items.map(item => {
+            const up = item.changePct >= 0
+            const isHot = Math.abs(item.changePct) >= 3
+            return (
+              <li key={item.symbol} className={`wl-item ${selected===item.symbol?'active':''}`} onClick={() => onSelect(item.symbol)}>
+                <div className="wl-left">
+                  <div className="wl-name-row">
+                    <div className="wl-name">{item.name}</div>
+                    {isHot && <span className={`wl-mover-badge ${up?'up-bg up':'dn-bg dn'}`}>HOT</span>}
+                  </div>
+                  <div className="wl-symbol mono">{item.symbol}</div>
+                </div>
+                <MiniSparkline data={item.spark} up={up} />
+                <div className="wl-right">
+                  <div className={`wl-price mono ${up?'up':'dn'}`}>{fmtPrice(item.price)}</div>
+                  <div className={`wl-chg ${up?'up':'dn'}`}>{up?'▲':'▼'}{Math.abs(item.changePct).toFixed(2)}%</div>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </aside>
+  )
+}
+
+/* ── mw-panels.jsx ──────────────────────────────────────── */
+function CandleChart({ candles }) {
+  const W = 800, H = 260, PRICE_H = 195, VOL_TOP = 215, VOL_H = 40, PAD = 6
+  const n = candles.length
+  if (n < 2) return null
+  const prices = candles.flatMap(c => [c.high, c.low])
+  const pMin = Math.min(...prices), pMax = Math.max(...prices), pRng = pMax - pMin || 1
+  const volMax = Math.max(...candles.map(c => c.volume))
+  const cW = (W / n) * 0.52
+  const py = p => PAD + (1 - (p - pMin) / pRng) * (PRICE_H - PAD * 2)
+  const px = i => (i + 0.5) * (W / n)
+  const ma20 = candles.map((_, i) => { if (i < 19) return null; return candles.slice(i-19, i+1).reduce((s, c) => s + c.close, 0) / 20 })
+  const ma20pts = ma20.map((v, i) => v != null ? `${px(i)},${py(v)}` : null).filter(Boolean).join(' ')
+  const ma5 = candles.map((_, i) => { if (i < 4) return null; return candles.slice(i-4, i+1).reduce((s, c) => s + c.close, 0) / 5 })
+  const ma5pts = ma5.map((v, i) => v != null ? `${px(i)},${py(v)}` : null).filter(Boolean).join(' ')
+  const gridPrices = [0, 0.25, 0.5, 0.75, 1].map(t => pMin + pRng * t)
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" style={{display:'block'}}>
+      {gridPrices.map((p, i) => (<line key={i} x1={0} y1={py(p)} x2={W} y2={py(p)} stroke="var(--border)" strokeWidth="0.5" />))}
+      {gridPrices.filter((_, i) => i > 0 && i < 4).map((p, i) => (<text key={i} x={W - 2} y={py(p) - 3} fontSize="9" fill="var(--text-3)" textAnchor="end" fontFamily="var(--font-mono)">{p.toFixed(0)}</text>))}
+      {ma20pts && <polyline points={ma20pts} fill="none" stroke="rgba(245,158,11,0.75)" strokeWidth="1.2" strokeLinecap="round" />}
+      {ma5pts && <polyline points={ma5pts} fill="none" stroke="rgba(99,102,241,0.65)" strokeWidth="1.2" strokeLinecap="round" />}
+      {candles.map((c, i) => {
+        const up = c.close >= c.open
+        const col = up ? 'var(--up)' : 'var(--dn)'
+        const x = px(i)
+        const bodyTop = py(Math.max(c.open, c.close))
+        const bodyBot = py(Math.min(c.open, c.close))
+        const bodyH = Math.max(1, bodyBot - bodyTop)
+        const vH = (c.volume / volMax) * VOL_H
+        return (
+          <g key={i}>
+            <rect x={x - cW/2} y={VOL_TOP + VOL_H - vH} width={cW} height={vH} fill={up ? 'rgba(239,68,68,.22)' : 'rgba(34,197,94,.22)'} />
+            <line x1={x} y1={py(c.high)} x2={x} y2={py(c.low)} stroke={col} strokeWidth="1" />
+            <rect x={x - cW/2} y={bodyTop} width={cW} height={bodyH} fill={up ? col : 'none'} stroke={col} strokeWidth="1" />
+          </g>
+        )
+      })}
+      <rect x={8} y={H - 14} width={6} height={6} rx={1} fill="rgba(245,158,11,0.75)" />
+      <text x={17} y={H - 7} fontSize="8.5" fill="var(--text-3)" fontFamily="var(--font-mono)">MA20</text>
+      <rect x={48} y={H - 14} width={6} height={6} rx={1} fill="rgba(99,102,241,0.65)" />
+      <text x={57} y={H - 7} fontSize="8.5" fill="var(--text-3)" fontFamily="var(--font-mono)">MA5</text>
+    </svg>
+  )
+}
+
+function ChartPanel({ symbol }) {
+  const [interval, setInterval] = useState('日K')
+  const [range, setRange] = useState('3M')
+  const INTERVALS = ['分K','時K','日K','週K']
+  const RANGES = ['1M','3M','6M','1Y','3Y']
+  const allQ = Object.values(window.MW_DATA.quotes).flat()
+  const quote = allQ.find(q => q.symbol === symbol) || allQ[0]
+  const up = quote.changePct >= 0
+  const candles = window.MW_DATA.candles
+  const last = candles[candles.length - 1]
+  return (
+    <div className="chart-panel glass-card">
+      <div className="chart-header">
+        <div className="chart-name-block">
+          <span className="chart-title">{quote.name}</span>
+          <span className="chart-sym">{quote.symbol}</span>
+          <span className={`chart-price-pill ${up?'up-bg up':'dn-bg dn'}`}>
+            {quote.price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+            <span style={{fontSize:10,opacity:.85}}>{up?'▲':'▼'}{Math.abs(quote.changePct).toFixed(2)}%</span>
+          </span>
+        </div>
+        <div className="interval-tabs">
+          {INTERVALS.map(iv => (<button key={iv} className={`itab ${interval===iv?'active':''}`} onClick={() => setInterval(iv)}>{iv}</button>))}
+        </div>
+        <div className="range-tabs">
+          {RANGES.map(r => (<button key={r} className={`range-tab ${range===r?'active':''}`} onClick={() => setRange(r)}>{r}</button>))}
+        </div>
+      </div>
+      <div className="chart-ohlc-bar">
+        {[['開', last.open],['高', last.high],['低', last.low],['收', last.close]].map(([k, v]) => (
+          <div key={k} className="ohlc-item"><span className="ohlc-k">{k}</span><span className="ohlc-v">{v.toFixed(2)}</span></div>
+        ))}
+        <div className="ohlc-item"><span className="ohlc-k">量</span><span className="ohlc-v">{(last.volume/1e6).toFixed(1)}M</span></div>
+        <div className="ohlc-item" style={{marginLeft:'auto'}}>
+          <span className="ohlc-k" style={{color:'rgba(245,158,11,.8)'}}>MA20</span>
+          <span className="ohlc-v mono" style={{color:'rgba(245,158,11,.9)'}}>{(candles.slice(-20).reduce((s,c)=>s+c.close,0)/20).toFixed(2)}</span>
+        </div>
+        <div className="ohlc-item">
+          <span className="ohlc-k" style={{color:'rgba(99,102,241,.8)'}}>MA5</span>
+          <span className="ohlc-v mono" style={{color:'rgba(99,102,241,.9)'}}>{(candles.slice(-5).reduce((s,c)=>s+c.close,0)/5).toFixed(2)}</span>
+        </div>
+      </div>
+      <div className="chart-area"><CandleChart candles={candles.slice(-50)} /></div>
+    </div>
+  )
+}
+
+/* ── Tech Signal sub-components ───────────────────────────── */
+function ProgressBar({ value, max = 100, color }) {
+  const pct = Math.min(100, Math.max(0, (value / max) * 100))
+  return <div className="prog-track"><div className="prog-fill" style={{ width: `${pct}%`, background: color }} /></div>
+}
+function MacdBar({ value }) {
+  const abs = Math.min(Math.abs(value || 0), 5), pct = (abs / 5) * 50, bull = value >= 0
+  return (
+    <div className="macd-track">
+      <div className="macd-mid" />
+      <div className="macd-bar" style={{ width:`${pct}%`, left: bull ? '50%' : `calc(50% - ${pct}%)`, background: bull ? 'var(--up)' : 'var(--dn)' }} />
+    </div>
+  )
+}
+function RsiGauge({ value }) {
+  const v = parseFloat(value) || 50, angle = -135 + (v / 100) * 270
+  const zone = v >= 70 ? 'var(--dn)' : v <= 30 ? 'var(--up)' : 'var(--accent)'
+  return (
+    <div className="rsi-gauge-wrap">
+      <svg viewBox="0 0 80 48" className="rsi-gauge-svg">
+        <path d="M 8 44 A 34 34 0 1 1 72 44" fill="none" stroke="var(--border-md)" strokeWidth="5" strokeLinecap="round" />
+        <path d="M 8 44 A 34 34 0 0 1 22 17" fill="none" stroke="rgba(38,166,154,.4)" strokeWidth="5" strokeLinecap="round" />
+        <path d="M 58 17 A 34 34 0 0 1 72 44" fill="none" stroke="rgba(239,83,80,.4)" strokeWidth="5" strokeLinecap="round" />
+        <line x1="40" y1="44" x2={40+26*Math.cos((angle-90)*Math.PI/180)} y2={44+26*Math.sin((angle-90)*Math.PI/180)} stroke={zone} strokeWidth="2" strokeLinecap="round" />
+        <circle cx="40" cy="44" r="3" fill={zone} />
+        <text x="40" y="38" textAnchor="middle" fontSize="10" fontWeight="800" fill={zone}>{value}</text>
+      </svg>
+      <div className="rsi-zone-labels"><span style={{color:'var(--up)',fontSize:8}}>30</span><span style={{color:'var(--dn)',fontSize:8}}>70</span></div>
+    </div>
+  )
+}
+function AtrGauge({ atrPct }) {
+  const v = parseFloat(atrPct) || 0, pct = Math.min(v / 5, 1) * 100
+  const color = v > 3 ? 'var(--dn)' : v > 1.5 ? 'var(--warn)' : 'var(--up)'
+  return (
+    <div className="atr-gauge">
+      <div className="atr-track"><div className="atr-fill" style={{width:`${pct}%`,background:color}} /><div className="atr-zone-lo" /><div className="atr-zone-hi" /></div>
+      <div className="atr-labels"><span>低</span><span>中</span><span>高</span></div>
+      <div className="atr-val mono" style={{color}}>{atrPct}%</div>
+    </div>
+  )
+}
+function MfiGauge({ value }) {
+  const v = parseFloat(value) || 50
+  const zone = v >= 80 ? 'var(--dn)' : v <= 20 ? 'var(--up)' : v >= 60 ? 'rgba(249,115,22,.9)' : 'var(--accent)'
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:3}}>
+      <div className="prog-track"><div className="prog-fill" style={{width:`${v}%`,background:zone}} /></div>
+      <div style={{display:'flex',justifyContent:'space-between',fontSize:8,color:'var(--text-3)'}}>
+        <span style={{color:'var(--up)'}}>超賣20</span>
+        <span style={{color:zone,fontWeight:800}}>{value}</span>
+        <span style={{color:'var(--dn)'}}>超買80</span>
+      </div>
+    </div>
+  )
+}
+function SigCard({ label, sig, children }) {
+  const isBull = /多|金叉|支撐|上升|偏強|超賣|流入|確認|強勢/.test(sig)
+  const isBear = /空|死叉|壓力|下降|偏弱|超買|流出|衰退/.test(sig)
+  const cls = isBull ? 'bull' : isBear ? 'bear' : 'neutral'
+  return (
+    <div className={`sig-card ${cls}`}>
+      <div className="sig-top">
+        <div className={`sig-geo ${cls}`}>{isBull ? '▲' : isBear ? '▼' : '─'}</div>
+        <div className="sig-body">
+          <div className="tech-label">{label}</div>
+          <div className={`tech-sig ${isBull?'up':isBear?'dn':''}`}>{sig}</div>
+        </div>
+      </div>
+      <div className="sig-bars">{children}</div>
+    </div>
+  )
+}
+
+/* ── CompositeScore ── */
+function CompositeScore({ tech }) {
+  const { kdSignal, macdSignal, maStatus, lastRsi, trend, candlePattern, psarBull, stochRsiK, williamsR, roc10, rsiDivergence } = tech
+  let score = 0
+  if (/偏多|金叉/.test(kdSignal)) score += 15; else if (/偏空|死叉/.test(kdSignal)) score -= 15
+  if (/黃金交叉/.test(macdSignal)) score += 20; else if (/死亡交叉/.test(macdSignal)) score -= 20
+  if (/多頭/.test(maStatus)) score += 15; else if (/空頭/.test(maStatus)) score -= 15
+  const rsiNum = parseFloat(lastRsi) || 50
+  if (rsiNum > 55 && rsiNum < 70) score += 10; else if (rsiNum < 45 && rsiNum > 30) score -= 10
+  if (/上升/.test(trend)) score += 10; else score -= 10
+  if (candlePattern?.bull === true) score += 8; else if (candlePattern?.bull === false) score -= 8
+  if (psarBull === true) score += 7; else if (psarBull === false) score -= 7
+  const stK = parseFloat(stochRsiK) || 50
+  if (stK < 20) score += 6; else if (stK > 80) score -= 6
+  const wr = parseFloat(williamsR) || -50
+  if (wr <= -80) score += 5; else if (wr >= -20) score -= 5
+  const roc = parseFloat(roc10) || 0
+  if (roc >= 3) score += 4; else if (roc <= -3) score -= 4
+  if (rsiDivergence?.bull === true) score += 10; else if (rsiDivergence?.bull === false) score -= 10
+  const clamped = Math.max(-100, Math.min(100, score))
+  const pct = ((clamped + 100) / 200) * 100
+  const color = clamped > 30 ? 'var(--up)' : clamped < -30 ? 'var(--dn)' : 'var(--warn)'
+  const label = clamped > 55 ? '強烈看多' : clamped > 20 ? '偏多' : clamped < -55 ? '強烈看空' : clamped < -20 ? '偏空' : '中性觀望'
+  return (
+    <div className="composite-score">
+      <div className="cs-left">
+        <div className="cs-label">綜合訊號</div>
+        <div className="cs-value" style={{color}}>{label}</div>
+      </div>
+      <div className="cs-bar-wrap">
+        <div className="cs-bar-track">
+          <div className="cs-bar-fill" style={{width:`${pct}%`,background:`linear-gradient(90deg,var(--dn) 0%,var(--warn) 50%,var(--up) 100%)`}} />
+          <div className="cs-needle" style={{left:`${pct}%`}} />
+        </div>
+        <div className="cs-ticks"><span>空</span><span>中</span><span>多</span></div>
+      </div>
+      <div className="cs-score mono" style={{color}}>{clamped > 0 ? '+' : ''}{clamped}</div>
+    </div>
+  )
+}
+
+function TechSignals({ symbol }) {
+  const tech = window.MW_TECH_FOR(symbol)
+  const { trend, kdSignal, macdSignal, maStatus, lastK, lastD, lastMacd, lastSignal,
+    ma5, ma20, lastRsi, rsiSignal, candlePattern, atr, atrPct, volatility,
+    lastMfi, mfiSignal, obvTrend, stochRsiK, stochRsiD, stochRsiSignal,
+    williamsR, wrSignal, bbWidth, bbSqueezeSignal, bbPattern,
+    psarBull, psarSignal, adx, plusDI, minusDI, adxSignal,
+    roc10, roc21, rocSignal, rsiDivergence,
+    cci20, cciSignal, cmf20, cmfSignal, bullPower, bearPower, elderSignal,
+    weeklyRsi, monthlyRsi, weeklyMacd } = tech
+
+  const BB_META = { bull:{icon:'▲',cls:'bull',color:'var(--up)'}, bear:{icon:'▼',cls:'bear',color:'var(--dn)'}, squeeze:{icon:'⊙',cls:'neutral',color:'var(--warn)'}, neutral:{icon:'═',cls:'neutral',color:'var(--accent)'} }
+  const bbMeta = BB_META[bbPattern] ?? BB_META.neutral
+  const bbV = parseFloat(bbWidth) || 0
+  const bbHint = /突破/.test(bbSqueezeSignal) ? '⚡ 突破訊號，注意假突破風險'
+    : /騎乘/.test(bbSqueezeSignal) ? '🏄 趨勢強勁，跟隨但設好停損'
+    : '🔋 能量蓄積，突破方向決定多空'
+
+  const OBV_CFG = {
+    'confirm-up':  { label:'量價齊升（看多）', cls:'bull', icon:'▲', hint:'量能配合上漲，趨勢健康' },
+    'confirm-dn':  { label:'量價齊跌（看空）', cls:'bear', icon:'▼', hint:'量能配合下跌，賣壓沉重' },
+    'diverge-up':  { label:'量能背離（看漲）', cls:'bull', icon:'⬍', hint:'價跌量增，潛在反轉訊號' },
+    'diverge-dn':  { label:'量能背離（看跌）', cls:'bear', icon:'⬍', hint:'價漲量縮，上升動能不足' },
+  }
+  const obvCfg = OBV_CFG[obvTrend]
+
+  return (
+    <div className="tech-panel glass-card">
+      <div className="tech-top-row">
+        <div className={`trend-badge ${/上升/.test(trend)?'up-bg up':'dn-bg dn'}`}>
+          <span>{/上升/.test(trend)?'↑':'↓'}</span>{trend}
+        </div>
+        <CompositeScore tech={tech} />
+      </div>
+
+      {bbWidth && (
+        <div className={`bb-banner bb-banner-${bbPattern ?? 'neutral'}`}>
+          <div className="bb-banner-icon">{bbMeta.icon}</div>
+          <div className="bb-banner-body">
+            <div className="bb-banner-title">布林通道訊號</div>
+            <div className="bb-banner-sig">{bbSqueezeSignal}</div>
+            <div className="bb-banner-hint">{bbHint}</div>
+          </div>
+          <div className="bb-banner-right">
+            <div className="bb-banner-width-label">帶寬</div>
+            <div className="bb-banner-width-val" style={{color:bbMeta.color}}>{bbV.toFixed(1)}%</div>
+            <div className="bb-bw-track">
+              <div className="bb-bw-fill" style={{width:`${Math.min(bbV/25,1)*100}%`,background:bbMeta.color}} />
+              <div className="bb-bw-mark" style={{left:'16%'}} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="tech-grid">
+        <SigCard label="KD 隨機指標" sig={kdSignal}>
+          <div className="bar-row"><span className="bar-lbl">K</span><ProgressBar value={lastK} color="var(--accent)" /><span className="bar-val mono">{lastK}</span></div>
+          <div className="bar-row"><span className="bar-lbl">D</span><ProgressBar value={lastD} color="rgba(6,182,212,.7)" /><span className="bar-val mono">{lastD}</span></div>
+        </SigCard>
+
+        <SigCard label="MACD" sig={macdSignal}>
+          <div className="bar-row"><span className="bar-lbl">DIF</span><MacdBar value={lastMacd} /><span className="bar-val mono">{lastMacd}</span></div>
+          <div className="bar-row"><span className="bar-lbl">DEA</span><MacdBar value={lastSignal} /><span className="bar-val mono">{lastSignal}</span></div>
+        </SigCard>
+
+        <SigCard label="均線 MA" sig={maStatus}>
+          <div className="bar-row"><span className="bar-lbl">MA5</span><span className="bar-val mono up">{ma5}</span></div>
+          <div className="bar-row"><span className="bar-lbl">MA20</span><span className="bar-val mono">{ma20}</span></div>
+        </SigCard>
+
+        <SigCard label="RSI 14" sig={rsiSignal}>
+          <RsiGauge value={lastRsi} />
+        </SigCard>
+
+        {candlePattern && (
+          <div className={`sig-card ${candlePattern.bull===true?'bull':candlePattern.bull===false?'bear':'neutral'}`}>
+            <div className="sig-top">
+              <div className={`sig-geo ${candlePattern.bull===true?'bull':candlePattern.bull===false?'bear':'neutral'}`} style={{fontSize:15}}>🕯</div>
+              <div className="sig-body">
+                <div className="tech-label">K 線形態</div>
+                <div className={`tech-sig ${candlePattern.bull===true?'up':candlePattern.bull===false?'dn':''}`}>{candlePattern.name}</div>
+              </div>
+            </div>
+            <div className="sig-bars"><div style={{fontSize:10,color:'var(--text-3)',lineHeight:1.5}}>{candlePattern.hint}</div></div>
+          </div>
+        )}
+
+        {atrPct && (
+          <SigCard label="ATR 波動率" sig={volatility}>
+            <AtrGauge atrPct={atrPct} />
+            <div className="bar-row" style={{marginTop:4}}><span className="bar-lbl">ATR</span><span className="bar-val mono">{atr}</span></div>
+          </SigCard>
+        )}
+
+        <SigCard label="MFI 資金流向" sig={mfiSignal}>
+          <MfiGauge value={lastMfi} />
+        </SigCard>
+
+        {obvCfg && (
+          <div className={`sig-card ${obvCfg.cls}`}>
+            <div className="sig-top">
+              <div className={`sig-geo ${obvCfg.cls}`}>{obvCfg.icon}</div>
+              <div className="sig-body"><div className="tech-label">OBV 量能</div><div className={`tech-sig ${obvCfg.cls==='bull'?'up':'dn'}`}>{obvCfg.label}</div></div>
+            </div>
+            <div className="sig-bars"><div style={{fontSize:10,color:'var(--text-3)',lineHeight:1.5}}>{obvCfg.hint}</div></div>
+          </div>
+        )}
+
+        <SigCard label="Stoch RSI" sig={stochRsiSignal}>
+          <div className="bar-row">
+            <span className="bar-lbl">%K</span>
+            <ProgressBar value={stochRsiK} color={parseFloat(stochRsiK)>=80?'var(--dn)':parseFloat(stochRsiK)<=20?'var(--up)':'var(--accent)'} />
+            <span className="bar-val mono">{stochRsiK}</span>
+          </div>
+          <div className="bar-row">
+            <span className="bar-lbl">%D</span>
+            <ProgressBar value={stochRsiD} color="rgba(99,102,241,.7)" />
+            <span className="bar-val mono">{stochRsiD}</span>
+          </div>
+        </SigCard>
+
+        <SigCard label="Williams %R" sig={wrSignal}>
+          <div className="bar-row">
+            <span className="bar-lbl">%R</span>
+            <ProgressBar value={((parseFloat(williamsR)+100)/100)*100} color={parseFloat(williamsR)>=-20?'var(--dn)':parseFloat(williamsR)<=-80?'var(--up)':'var(--accent)'} />
+            <span className="bar-val mono">{williamsR}</span>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:7.5,color:'var(--text-3)',marginTop:2}}>
+            <span style={{color:'var(--up)'}}>超賣-80</span><span style={{color:'var(--dn)'}}>超買-20</span>
+          </div>
+        </SigCard>
+
+        <SigCard label="拋物線 SAR" sig={psarSignal}>
+          <div style={{fontSize:20,textAlign:'center',padding:'4px 0'}}>{psarBull ? '⬆' : '⬇'}</div>
+        </SigCard>
+
+        <SigCard label="ADX 趨勢強度" sig={adxSignal}>
+          <div className="bar-row">
+            <span className="bar-lbl">ADX</span>
+            <ProgressBar value={Math.min(parseFloat(adx)/50,1)*100} color={parseFloat(adx)>=40?'var(--accent)':parseFloat(adx)>=25?'var(--warn)':'var(--text-3)'} />
+            <span className="bar-val mono">{adx}</span>
+          </div>
+          <div className="bar-row" style={{gap:8,marginTop:3}}>
+            <span className="bar-lbl up" style={{fontSize:8}}>+DI</span><span className="bar-val mono up">{plusDI}</span>
+            <span className="bar-lbl dn" style={{fontSize:8}}>-DI</span><span className="bar-val mono dn">{minusDI}</span>
+          </div>
+        </SigCard>
+
+        <SigCard label="動能 ROC" sig={rocSignal}>
+          <div className="bar-row"><span className="bar-lbl" style={{fontSize:8}}>10D</span><span className="bar-val mono" style={{color:parseFloat(roc10)>=0?'var(--up)':'var(--dn)'}}>{parseFloat(roc10)>=0?'+':''}{roc10}%</span></div>
+          <div className="bar-row"><span className="bar-lbl" style={{fontSize:8}}>21D</span><span className="bar-val mono" style={{color:parseFloat(roc21)>=0?'var(--up)':'var(--dn)'}}>{parseFloat(roc21)>=0?'+':''}{roc21}%</span></div>
+        </SigCard>
+
+        <SigCard label="CCI(20)" sig={cciSignal}>
+          {(() => {
+            const v = parseFloat(cci20) || 0
+            const pct = Math.min(Math.max((v+300)/600*100,0),100)
+            const color = v > 100 ? 'var(--dn)' : v < -100 ? 'var(--up)' : v > 0 ? 'rgba(38,166,154,.8)' : 'rgba(239,83,80,.8)'
+            return (
+              <>
+                <div className="bar-row">
+                  <span className="bar-lbl">CCI</span>
+                  <div className="cci-track">
+                    <div className="cci-zone-lo" /><div className="cci-zone-hi" />
+                    <div className="cci-needle" style={{left:`${pct}%`,background:color}} />
+                  </div>
+                  <span className="bar-val mono" style={{color}}>{v>=0?'+':''}{cci20}</span>
+                </div>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:7.5,color:'var(--text-3)',marginTop:2}}>
+                  <span style={{color:'var(--up)'}}>-300</span><span>-100</span><span>0</span><span>+100</span><span style={{color:'var(--dn)'}}>+300</span>
+                </div>
+              </>
+            )
+          })()}
+        </SigCard>
+
+        <SigCard label="CMF(20) 柴金資金流" sig={cmfSignal}>
+          {(() => {
+            const v = parseFloat(cmf20) || 0
+            const color = v > 0.1 ? 'var(--up)' : v < -0.1 ? 'var(--dn)' : 'var(--text-2)'
+            return (
+              <div className="bar-row">
+                <span className="bar-lbl">CMF</span>
+                <div className="macd-track">
+                  <div className="macd-mid" />
+                  <div className="macd-bar" style={{width:`${Math.min(Math.abs(v)/0.5,1)*50}%`,left:v>=0?'50%':`calc(50% - ${Math.min(Math.abs(v)/0.5,1)*50}%)`,background:v>=0?'var(--up)':'var(--dn)'}} />
+                </div>
+                <span className="bar-val mono" style={{color}}>{v>=0?'+':''}{cmf20}</span>
+              </div>
+            )
+          })()}
+        </SigCard>
+
+        <SigCard label="Elder Ray 多空力道" sig={elderSignal}>
+          {(() => {
+            const bv = parseFloat(bullPower)||0, brv = parseFloat(bearPower)||0
+            const ext = Math.max(Math.abs(bv),Math.abs(brv),0.1)
+            const bPct = Math.min(Math.abs(bv)/ext,1)*50, brPct = Math.min(Math.abs(brv)/ext,1)*50
+            return (
+              <>
+                <div className="bar-row">
+                  <span className="bar-lbl" style={{color:'var(--up)',fontSize:8}}>牛力</span>
+                  <div className="macd-track"><div className="macd-mid" /><div className="macd-bar" style={{width:`${bPct}%`,left:bv>=0?'50%':`calc(50% - ${bPct}%)`,background:bv>=0?'var(--up)':'var(--dn)'}} /></div>
+                  <span className="bar-val mono" style={{color:bv>=0?'var(--up)':'var(--dn)'}}>{bv>=0?'+':''}{bullPower}</span>
+                </div>
+                <div className="bar-row">
+                  <span className="bar-lbl" style={{color:'var(--dn)',fontSize:8}}>熊力</span>
+                  <div className="macd-track"><div className="macd-mid" /><div className="macd-bar" style={{width:`${brPct}%`,left:brv>=0?'50%':`calc(50% - ${brPct}%)`,background:brv>=0?'var(--up)':'var(--dn)'}} /></div>
+                  <span className="bar-val mono" style={{color:brv>=0?'var(--up)':'var(--dn)'}}>{brv>=0?'+':''}{bearPower}</span>
+                </div>
+              </>
+            )
+          })()}
+        </SigCard>
+
+        {rsiDivergence && (
+          <div className={`sig-card ${rsiDivergence.bull?'bull':'bear'}`} style={{gridColumn:'span 2'}}>
+            <div className="sig-top">
+              <div className={`sig-geo ${rsiDivergence.bull?'bull':'bear'}`} style={{fontSize:16}}>{rsiDivergence.bull?'🔵':'🔴'}</div>
+              <div className="sig-body"><div className="tech-label">RSI 背離訊號</div><div className={`tech-sig ${rsiDivergence.bull?'up':'dn'}`}>{rsiDivergence.desc}</div></div>
+            </div>
+            <div className="sig-bars">
+              <div style={{fontSize:10,color:'var(--text-3)',lineHeight:1.5}}>
+                {rsiDivergence.bull ? '價格創新低但 RSI 未同步，潛在多頭反轉訊號，建議搭配其他指標確認' : '價格創新高但 RSI 未同步，潛在空頭回落訊號，建議設定止損保護獲利'}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {(weeklyRsi || monthlyRsi) && (
+        <div className="mtf-panel">
+          <div className="mtf-title">多週期分析</div>
+          <div className="mtf-grid">
+            {[
+              { label:'日線', rsi: lastRsi, macd: parseFloat(lastMacd) > parseFloat(lastSignal) ? '多' : '空' },
+              { label:'週線', rsi: weeklyRsi, macd: weeklyMacd },
+              { label:'月線', rsi: monthlyRsi, macd: null },
+            ].filter(row => row.rsi).map(row => {
+              const rv = parseFloat(row.rsi) || 50
+              const rsiColor = rv >= 70 ? 'var(--dn)' : rv <= 30 ? 'var(--up)' : rv >= 55 ? 'rgba(38,166,154,.8)' : rv <= 45 ? 'rgba(239,83,80,.8)' : 'var(--text-2)'
+              return (
+                <div key={row.label} className="mtf-row">
+                  <span className="mtf-label">{row.label}</span>
+                  <span className="mtf-item"><span className="mtf-k">RSI</span><span className="mtf-v mono" style={{color:rsiColor}}>{row.rsi}</span></span>
+                  {row.macd && <span className="mtf-item"><span className="mtf-k">MACD</span><span className={`mtf-v ${row.macd==='多'?'up':'dn'}`}>{row.macd}</span></span>}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SectorPanel({ onSelect }) {
+  const [mkt, setMkt] = useState('TW')
+  const [selSector, setSelSector] = useState(null)
+  const [openSections, setOpenSections] = useState({indices:true, grid:true, themes:true})
+  const d = window.MW_DATA.sectors[mkt]
+  const toggle = k => setOpenSections(s => ({...s, [k]: !s[k]}))
+  const pctBg = pct => { if (pct == null) return 'var(--surface-2)'; const abs = Math.min(Math.abs(pct), 5) / 5; return pct >= 0 ? `rgba(239,68,68,${0.07+abs*0.48})` : `rgba(34,197,94,${0.07+abs*0.48})` }
+  const pctCol = pct => pct == null ? 'var(--text-3)' : pct >= 0 ? 'var(--up)' : 'var(--dn)'
+  const upCount = d.grid.filter(s => s.changePct >= 0).length
+  const dnCount = d.grid.length - upCount
+  const sortedGrid = [...d.grid].sort((a, b) => b.changePct - a.changePct)
+  return (
+    <div className="sector-panel">
+      <div className="sc-mkt-bar">
+        <div className="sc-mkt-btns">
+          <button className={`sc-mkt-btn ${mkt==='TW'?'active':''}`} onClick={() => setMkt('TW')}>🇹🇼 台股</button>
+          <button className={`sc-mkt-btn ${mkt==='US'?'active':''}`} onClick={() => setMkt('US')}>🇺🇸 美股</button>
+        </div>
+        <span className="sc-breadth"><span className="up">▲{upCount}</span><span style={{color:'var(--text-3)'}}>/</span><span className="dn">▼{dnCount}</span></span>
+      </div>
+      <div className="sc-scroll">
+        <div className="sc-section">
+          <div className="sc-section-hdr">
+            <span className="sc-section-arrow" onClick={() => toggle('indices')}>{openSections.indices?'▾':'▸'}</span>
+            <span>大盤指數</span>
+          </div>
+          {openSections.indices && (
+            <div className="sc-idx-list">
+              {d.indices.map(idx => (
+                <div key={idx.label} className="sc-idx-row" style={{borderLeftColor: pctCol(idx.changePct)}}>
+                  <div><div className="sc-idx-label">{idx.label}</div><div className="sc-idx-name">{idx.name}</div></div>
+                  <div style={{textAlign:'right'}}>
+                    <div className={`sc-idx-price mono ${idx.changePct>=0?'up':'dn'}`}>{idx.price >= 1000 ? idx.price.toLocaleString() : idx.price.toFixed(2)}</div>
+                    <div className={`sc-idx-pct ${idx.changePct>=0?'up':'dn'}`}>{idx.changePct>=0?'▲':'▼'}{Math.abs(idx.changePct).toFixed(2)}%</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="sc-section">
+          <div className="sc-section-hdr">
+            <span className="sc-section-arrow" onClick={() => toggle('grid')}>{openSections.grid?'▾':'▸'}</span>
+            <span>板塊</span>
+            <span className="sc-section-badge">{upCount}漲 {dnCount}跌</span>
+          </div>
+          {openSections.grid && (
+            <>
+              <div className="sc-grid">
+                {d.grid.map(s => (
+                  <div key={s.label} className={`sc-cell ${selSector===s.label?'sc-cell-sel':''}`}
+                    style={{background:pctBg(s.changePct)}}
+                    onClick={() => { setSelSector(v => v===s.label?null:s.label) }}>
+                    <div className="sc-cell-label">{s.label}</div>
+                    <div className="sc-cell-name">{s.name}</div>
+                    <div className={`sc-cell-pct ${s.changePct>=0?'up':'dn'}`}>{s.changePct>=0?'+':''}{s.changePct.toFixed(2)}%</div>
+                  </div>
+                ))}
+              </div>
+              <div className="sc-rank-mini">
+                {sortedGrid.slice(0,5).map(s => (
+                  <div key={s.label} className="sc-rank-mini-row">
+                    <span className="sc-rank-mini-lbl">{s.label}</span>
+                    <div className="sc-rank-mini-bar"><div className="sc-rank-mini-fill" style={{width:`${Math.min(Math.abs(s.changePct)/4*100,100)}%`, background:s.changePct>=0?'var(--up)':'var(--dn)'}} /></div>
+                    <span className={`sc-rank-mini-val ${s.changePct>=0?'up':'dn'}`}>{s.changePct>=0?'+':''}{s.changePct.toFixed(2)}%</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+        <div className="sc-section">
+          <div className="sc-section-hdr">
+            <span className="sc-section-arrow" onClick={() => toggle('themes')}>{openSections.themes?'▾':'▸'}</span>
+            <span>題材股</span>
+          </div>
+          {openSections.themes && (
+            <div className="sc-themes">
+              {d.themes.map(theme => (
+                <div key={theme.name}>
+                  <div className="sc-theme-name">{theme.name}</div>
+                  <div className="sc-theme-chips">
+                    {theme.stocks.map(stock => {
+                      const bg = stock.p >= 0 ? `rgba(239,68,68,${0.08+Math.min(stock.p,5)/5*0.35})` : `rgba(34,197,94,${0.08+Math.min(Math.abs(stock.p),5)/5*0.35})`
+                      return (
+                        <div key={stock.l} className="sc-chip" style={{background:bg}}>
+                          <span className="sc-chip-label" style={{color:'var(--text)'}}>{stock.l}</span>
+                          <span className={`sc-chip-pct ${stock.p>=0?'up':'dn'}`}>{stock.p>=0?'+':''}{stock.p.toFixed(1)}%</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const CRITERIA = [
+  { id:'rsi_oversold',   label:'RSI 超賣 <30',   col:'var(--up)' },
+  { id:'rsi_overbought', label:'RSI 超買 >70',   col:'var(--dn)' },
+  { id:'macd_golden',    label:'MACD 金叉',       col:'var(--up)' },
+  { id:'macd_death',     label:'MACD 死叉',       col:'var(--dn)' },
+  { id:'above_ma20',     label:'站上 MA20',       col:'var(--up)' },
+  { id:'below_ma20',     label:'跌破 MA20',       col:'var(--dn)' },
+  { id:'kd_golden',      label:'KD 金叉低檔',     col:'var(--up)' },
+  { id:'kd_death',       label:'KD 死叉高檔',     col:'var(--dn)' },
+  { id:'bb_squeeze',     label:'BB 帶寬收縮',     col:'var(--warn)' },
+  { id:'stoch_oversold', label:'StochRSI 超賣',   col:'var(--up)' },
+  { id:'wr_oversold',    label:'W%R 超賣',         col:'var(--up)' },
+]
+const PRESETS = [
+  { label:'金叉反彈', criteria:['rsi_oversold','macd_golden','kd_golden'] },
+  { label:'超強多頭', criteria:['above_ma20','macd_golden','rsi_overbought'] },
+  { label:'超賣機會', criteria:['rsi_oversold','wr_oversold','kd_golden'] },
+  { label:'空頭警示', criteria:['macd_death','kd_death','below_ma20'] },
+]
+
+function ScreenerPanel({ onSelect }) {
+  const [sel, setSel] = useState(['rsi_oversold','macd_golden','kd_golden'])
+  const [hasScanned, setHasScanned] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [range, setRange] = useState('3mo')
+  const runScan = () => {
+    setLoading(true); setHasScanned(false); setProgress(0)
+    let p = 0
+    const id = setInterval(() => {
+      p += Math.random() * 18; setProgress(Math.min(p, 95))
+      if (p >= 95) { clearInterval(id); setLoading(false); setHasScanned(true); setProgress(100) }
+    }, 120)
+  }
+  const results = hasScanned ? window.MW_DATA.screener.filter(r => r.hits.some(h => sel.includes(h))) : []
+  return (
+    <div className="screener-panel">
+      <div className="screener-header">
+        <div className="screener-title">選股篩選器</div>
+        <div style={{display:'flex',gap:4}}>
+          {['1mo','3mo','6mo'].map(r => (<button key={r} className={`range-tab ${range===r?'active':''}`} onClick={() => setRange(r)}>{r}</button>))}
+        </div>
+      </div>
+      <div className="screener-presets">
+        {PRESETS.map(p => (<button key={p.label} className="screener-preset-btn" onClick={() => setSel(p.criteria)}>{p.label}</button>))}
+      </div>
+      <div className="screener-criteria">
+        {CRITERIA.map(c => (
+          <button key={c.id} className={`screener-crit-btn ${sel.includes(c.id)?'active':''}`}
+            style={sel.includes(c.id) ? {borderColor:c.col, color:c.col, background:'transparent'} : {}}
+            onClick={() => setSel(v => v.includes(c.id) ? v.filter(x=>x!==c.id) : [...v,c.id])}
+          >{c.label}</button>
+        ))}
+      </div>
+      <button className="screener-run-btn" onClick={runScan} disabled={loading || sel.length === 0}>
+        {loading ? `掃描中 ${Math.round(progress)}%…` : '▶ 開始掃描'}
+      </button>
+      {loading && <div className="screener-loading-bar"><div className="screener-loading-fill" style={{width:`${progress}%`}} /></div>}
+      {hasScanned && !loading && <div className="screener-results-header">找到 {results.length} 個符合標的</div>}
+      <div className="screener-results">
+        {hasScanned && !loading && results.length === 0 && <div className="screener-empty">無符合條件標的<br /><span style={{fontSize:11}}>嘗試調整篩選條件</span></div>}
+        {results.map(r => {
+          const bullHits = r.hits.filter(id => CRITERIA.find(c=>c.id===id)?.col==='var(--up)').length
+          const bearHits = r.hits.filter(id => CRITERIA.find(c=>c.id===id)?.col==='var(--dn)').length
+          const sig = bullHits > bearHits ? 'bull' : bearHits > bullHits ? 'bear' : 'neutral'
+          return (
+            <div key={r.symbol} className={`screener-row ${sig}`} onClick={() => onSelect && onSelect(r.symbol)}>
+              <div className="screener-row-left">
+                <div className="screener-sym mono">{r.symbol}</div>
+                <div className="screener-name">{r.name}</div>
+              </div>
+              <div className="screener-row-center">
+                {r.hits.filter(id => sel.includes(id)).map(id => {
+                  const c = CRITERIA.find(x => x.id===id)
+                  return c ? <span key={id} className="screener-hit" style={{color:c.col,borderColor:c.col}}>{c.label}</span> : null
+                })}
+              </div>
+              <div className="screener-row-right">
+                <span className={`screener-price ${r.changePct>=0?'up':'dn'}`}>{r.price.toFixed(2)} <span style={{fontSize:9}}>{r.changePct>=0?'▲':'▼'}{Math.abs(r.changePct).toFixed(2)}%</span></span>
+                <span className={`screener-score ${sig}`}>{r.hits.length}</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function AIPanel({ symbol }) {
+  const [msgs, setMsgs] = useState([{ role:'ai', text:`您好！我是 AI 投資顧問。\n\n目前已載入 ${symbol} 的技術分析數據。請問有什麼想分析的？` }])
+  const [input, setInput] = useState('')
+  const send = (txt) => {
+    const userMsg = (txt || input).trim()
+    if (!userMsg) return
+    setInput('')
+    setMsgs(v => [...v, {role:'user', text:userMsg}, {role:'ai', text:'…', typing:true}])
+    setTimeout(() => {
+      setMsgs(v => v.map((m, i) => i===v.length-1 ? {role:'ai', text:`根據 ${symbol} 近期技術走勢分析：\n\nMACD 出現黃金交叉，短期動能偏強；RSI 維持在 55 附近，未進入超買區間。\n\n建議：持有，設停損在近期低點下方 3%。\n\n※ 本內容僅供參考，非投資建議`} : m))
+    }, 1200)
+  }
+  const quickPrompts = ['📈 技術分析', '🛡 風險評估', '⚖️ 多空訊號', '🎯 進出場點']
+  return (
+    <div className="ai-panel">
+      <div className="ai-messages scroll-soft">
+        {msgs.map((m, i) => (
+          <div key={i} className={`ai-msg ${m.role}`}>
+            <div className="msg-role">{m.role==='user'?'你':'AI 顧問'}</div>
+            <div className="msg-text">{m.text==='…' ? <span style={{letterSpacing:4}}>···</span> : m.text}</div>
+          </div>
+        ))}
+      </div>
+      <div className="ai-actions">
+        <button className="analyze-btn" onClick={() => send(`全面分析 ${symbol}`)}>全面分析 {symbol}</button>
+        <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+          {quickPrompts.map(p => (<button key={p} className="quick-chip" onClick={() => send(p)}>{p}</button>))}
+        </div>
+      </div>
+      <div className="ai-input-row">
+        <input className="ai-input" placeholder="輸入問題…" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} />
+        <button className="ai-send-btn" onClick={() => send()}>送出</button>
+      </div>
+    </div>
+  )
+}
+
+function NewsPanel() {
+  return (
+    <div className="news-panel">
+      <div className="news-header">
+        <span className="news-title">市場新聞</span>
+        <button className="ibtn-sm" title="重新整理">↻</button>
+      </div>
+      <ul className="news-list scroll-soft">
+        {window.MW_DATA.news.map((n, i) => (
+          <li key={i} className={`news-item ${n.bull?'news-bull':'news-bear'}`}>
+            <span className="news-headline">{n.h}</span>
+            <div className="news-meta"><span>{n.src}</span><span>{n.time} 前</span></div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function PortfolioPanel() {
+  return (
+    <div className="portfolio-panel">
+      <div className="pf-header">
+        <div className="pf-total mono">NT$ 1,248,600</div>
+        <div className="pf-pnl up">▲ +48,600 (+4.05%) 本月</div>
+      </div>
+      <div className="pf-empty">
+        <span style={{fontSize:28}}>◷</span>
+        <span>持倉追蹤功能</span>
+        <span style={{fontSize:11,color:'var(--text-3)'}}>點擊「＋」新增持倉</span>
+      </div>
+    </div>
+  )
+}
+
+/* ── mw-app.jsx ─────────────────────────────────────────── */
+const TABS = [
+  { id:'sector',    label:'板塊' },
+  { id:'screener',  label:'選股' },
+  { id:'ai',        label:'AI' },
+  { id:'portfolio', label:'持倉' },
+  { id:'news',      label:'新聞' },
+  { id:'alert',     label:'警示' },
+]
+
+function AlertPanel() {
+  return (
+    <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:8,color:'var(--text-3)'}}>
+      <span style={{fontSize:28}}>🔔</span>
+      <span style={{fontSize:13,fontWeight:600}}>警示管理</span>
+      <span style={{fontSize:11}}>設定目標價與停損</span>
+    </div>
+  )
+}
+
+function App() {
+  const saved = localStorage.getItem('mw-dark')
+  const [dark, setDark] = useState(saved === '1')
+  const [selected, setSelected] = useState('2330.TW')
+  const [rightTab, setRightTab] = useState('sector')
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-appearance', dark ? 'dark' : 'light')
+    localStorage.setItem('mw-dark', dark ? '1' : '0')
+  }, [dark])
+
+  const handleTabChange = (tab) => {
+    if (document.startViewTransition) {
+      document.startViewTransition(() => setRightTab(tab))
+    } else {
+      setRightTab(tab)
+    }
+  }
+
+  return (
+    <div className={`app${dark?' dark':''}`}>
+      <NavBar dark={dark} onToggleDark={() => setDark(d => !d)} />
+      <MarketTicker />
+      <div className="main-layout">
+        <WatchList selected={selected} onSelect={setSelected} />
+        <div className="center-col">
+          <ChartPanel symbol={selected} />
+          <TechSignals symbol={selected} />
+        </div>
+        <div className="right-col glass-card">
+          <div className="right-tabs">
+            {TABS.map(t => (<button key={t.id} className={`r-tab ${rightTab===t.id?'active':''}`} onClick={() => handleTabChange(t.id)}>{t.label}</button>))}
+          </div>
+          <div className="right-panel">
+            {rightTab === 'sector'    && <SectorPanel    onSelect={setSelected} />}
+            {rightTab === 'screener'  && <ScreenerPanel  onSelect={setSelected} />}
+            {rightTab === 'ai'        && <AIPanel        symbol={selected} />}
+            {rightTab === 'portfolio' && <PortfolioPanel />}
+            {rightTab === 'news'      && <NewsPanel />}
+            {rightTab === 'alert'     && <AlertPanel />}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App />)
+</script>
+</body>
+</html>
