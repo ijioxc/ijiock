@@ -202,7 +202,7 @@ button, input, textarea, select { font-family: inherit; }
 .ohlc-item:last-child { border-right: none; }
 .ohlc-k { font-size: 9px; font-weight: 700; color: var(--text-3); letter-spacing:.4px; }
 .ohlc-v { font-size: 11px; font-weight: 600; font-family: var(--font-mono); }
-.chart-area { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+.chart-area { flex: 1; min-height: 0; position: relative; overflow: hidden; display: flex; flex-direction: column; }
 .fullscreen-panel { position: fixed !important; inset: 0; z-index: 200; border-radius: 0 !important; }
 .chart-overlay-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: var(--text-3); z-index: 10; pointer-events: none; }
 .chart-spinner { width: 14px; height: 14px; border: 2px solid var(--border-md); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
@@ -1093,47 +1093,299 @@ function WatchList({ selected, onSelect, quotes }) {
 }
 
 /* ── mw-panels.jsx ──────────────────────────────────────── */
-function CandleChart({ candles }) {
-  const W = 800, H = 260, PRICE_H = 195, VOL_TOP = 215, VOL_H = 40, PAD = 6
+function CandleChart({
+  candles,
+  showMA, showBB, showFib, showLinReg, showKC, showVwap, showIchimoku, showPivots,
+  showRsiSub, showMacdSub, showObvSub
+}) {
+  const W = 800, PAD = 5
   const n = candles.length
   if (n < 2) return null
+
+  // ── Layout ────────────────────────────────────────────────
+  const subCount = [showRsiSub, showMacdSub, showObvSub].filter(Boolean).length
+  const SUB_H = 54
+  const CHART_H = Math.max(90, 185 - subCount * 18)
+  const VOL_H   = 28
+  const VOL_TOP = CHART_H + 6
+  const SUB_START = VOL_TOP + VOL_H + 5
+  const H = SUB_START + subCount * (SUB_H + 2) + 4
+
+  // ── Price scales ─────────────────────────────────────────
   const prices = candles.flatMap(c => [c.high, c.low])
   const pMin = Math.min(...prices), pMax = Math.max(...prices), pRng = pMax - pMin || 1
+  const py  = p => PAD + (1 - (p - pMin) / pRng) * (CHART_H - PAD * 2)
+  const px  = i => (i + 0.5) * (W / n)
+  const cW  = (W / n) * 0.52
   const volMax = Math.max(...candles.map(c => c.volume))
-  const cW = (W / n) * 0.52
-  const py = p => PAD + (1 - (p - pMin) / pRng) * (PRICE_H - PAD * 2)
-  const px = i => (i + 0.5) * (W / n)
-  const ma20 = candles.map((_, i) => { if (i < 19) return null; return candles.slice(i-19, i+1).reduce((s, c) => s + c.close, 0) / 20 })
-  const ma20pts = ma20.map((v, i) => v != null ? `${px(i)},${py(v)}` : null).filter(Boolean).join(' ')
-  const ma5 = candles.map((_, i) => { if (i < 4) return null; return candles.slice(i-4, i+1).reduce((s, c) => s + c.close, 0) / 5 })
-  const ma5pts = ma5.map((v, i) => v != null ? `${px(i)},${py(v)}` : null).filter(Boolean).join(' ')
-  const gridPrices = [0, 0.25, 0.5, 0.75, 1].map(t => pMin + pRng * t)
+  const closes = candles.map(c => c.close)
+  function pts(arr, yFn) {
+    return arr.map((v, i) => v != null ? `${px(i).toFixed(1)},${yFn(v).toFixed(1)}` : null).filter(Boolean).join(' ')
+  }
+
+  // ── Moving Averages ───────────────────────────────────────
+  function calcMA(p) {
+    return candles.map((_, i) => i < p-1 ? null : candles.slice(i-p+1,i+1).reduce((s,c)=>s+c.close,0)/p)
+  }
+  const ma5 = calcMA(5), ma20 = calcMA(20), ma60 = calcMA(60)
+
+  // ── Bollinger Bands (MA20 ± 2σ) ──────────────────────────
+  const bb = candles.map((_, i) => {
+    if (i < 19) return null
+    const sl = candles.slice(i-19, i+1).map(c => c.close)
+    const avg = sl.reduce((s,v)=>s+v,0)/20
+    const std = Math.sqrt(sl.reduce((s,v)=>s+(v-avg)**2,0)/20)
+    return { upper: avg+2*std, mid: avg, lower: avg-2*std }
+  })
+
+  // ── Linear Regression ─────────────────────────────────────
+  const lrLine = (() => {
+    let sx=0, sy=0, sxy=0, sx2=0
+    closes.forEach((y,x)=>{ sx+=x; sy+=y; sxy+=x*y; sx2+=x*x })
+    const slope = (n*sxy - sx*sy) / (n*sx2 - sx*sx)
+    const intercept = (sy - slope*sx) / n
+    return closes.map((_, i) => slope*i + intercept)
+  })()
+
+  // ── VWAP ──────────────────────────────────────────────────
+  const vwap = (() => {
+    let cumPV = 0, cumV = 0
+    return candles.map(c => {
+      cumPV += ((c.high+c.low+c.close)/3) * c.volume
+      cumV  += c.volume
+      return cumV > 0 ? cumPV / cumV : null
+    })
+  })()
+
+  // ── Keltner Channel (EMA20 ± 1.5×ATR14) ──────────────────
+  const kc = (() => {
+    const k = 2/21; let ema = candles[0].close
+    const emas = candles.map(c => { ema = c.close*k + ema*(1-k); return ema })
+    const atrs = candles.map((c,i) => {
+      if (i===0) return c.high - c.low
+      const pc = candles[i-1].close
+      return Math.max(c.high-c.low, Math.abs(c.high-pc), Math.abs(c.low-pc))
+    })
+    const atrSma = atrs.map((_,i) => i<13 ? null : atrs.slice(i-13,i+1).reduce((s,v)=>s+v,0)/14)
+    return candles.map((_,i) => atrSma[i]==null ? null : ({
+      upper: emas[i]+1.5*atrSma[i], mid: emas[i], lower: emas[i]-1.5*atrSma[i]
+    }))
+  })()
+
+  // ── Ichimoku ──────────────────────────────────────────────
+  const ichi = (() => {
+    const hl = (a, b) => candles.slice(a, b+1)
+    const tenkan = candles.map((_,i) => {
+      if (i<8) return null
+      const s = candles.slice(i-8,i+1)
+      return (Math.max(...s.map(c=>c.high)) + Math.min(...s.map(c=>c.low)))/2
+    })
+    const kijun = candles.map((_,i) => {
+      if (i<25) return null
+      const s = candles.slice(i-25,i+1)
+      return (Math.max(...s.map(c=>c.high)) + Math.min(...s.map(c=>c.low)))/2
+    })
+    const sA = candles.map((_,i) => tenkan[i]!=null&&kijun[i]!=null ? (tenkan[i]+kijun[i])/2 : null)
+    const sB = candles.map((_,i) => {
+      if (i<51) return null
+      const s = candles.slice(i-51,i+1)
+      return (Math.max(...s.map(c=>c.high)) + Math.min(...s.map(c=>c.low)))/2
+    })
+    return { tenkan, kijun, sA, sB }
+  })()
+
+  // ── Pivot Points (last candle) ────────────────────────────
+  const last = candles[n-1]
+  const PP = (last.high+last.low+last.close)/3
+  const pivots = [
+    { p: PP,                        l:'PP', col:'rgba(99,102,241,.75)' },
+    { p: 2*PP-last.low,             l:'R1', col:'rgba(239,68,68,.65)'  },
+    { p: PP+(last.high-last.low),   l:'R2', col:'rgba(239,68,68,.45)'  },
+    { p: 2*PP-last.high,            l:'S1', col:'rgba(34,197,94,.65)'  },
+    { p: PP-(last.high-last.low),   l:'S2', col:'rgba(34,197,94,.45)'  },
+  ]
+
+  // ── Fibonacci (visible range) ─────────────────────────────
+  const fibH = pMax, fibL = pMin
+  const fibLevels = [0,.236,.382,.5,.618,1]
+  const fibColors = ['rgba(156,163,175,.45)','rgba(245,158,11,.5)','rgba(34,197,94,.5)','rgba(99,102,241,.5)','rgba(239,68,68,.5)','rgba(156,163,175,.45)']
+
+  // ── RSI(14) ───────────────────────────────────────────────
+  const rsiVals = (() => {
+    const out = Array(n).fill(null)
+    if (n<15) return out
+    const gains = [], losses = []
+    for (let i=1; i<n; i++) {
+      const d = closes[i]-closes[i-1]
+      gains.push(Math.max(0,d)); losses.push(Math.max(0,-d))
+    }
+    let ag = gains.slice(0,14).reduce((s,v)=>s+v,0)/14
+    let al = losses.slice(0,14).reduce((s,v)=>s+v,0)/14
+    out[14] = al===0 ? 100 : 100-100/(1+ag/al)
+    for (let i=14; i<gains.length; i++) {
+      ag = (ag*13+gains[i])/14; al = (al*13+losses[i])/14
+      out[i+1] = al===0 ? 100 : 100-100/(1+ag/al)
+    }
+    return out
+  })()
+
+  // ── MACD(12,26,9) ─────────────────────────────────────────
+  const macdVals = (() => {
+    const k12=2/13, k26=2/27, k9=2/10
+    let e12=closes[0], e26=closes[0], sig=closes[0]
+    return closes.map((c,i) => {
+      e12 = i===0 ? c : c*k12+e12*(1-k12)
+      e26 = i===0 ? c : c*k26+e26*(1-k26)
+      const dif = e12-e26
+      sig = i===0 ? dif : dif*k9+sig*(1-k9)
+      return { dif, dea: sig, hist: dif-sig }
+    })
+  })()
+
+  // ── OBV ───────────────────────────────────────────────────
+  const obvVals = (() => {
+    let v=0
+    return candles.map((c,i) => {
+      if (i>0) v += c.close>candles[i-1].close ? c.volume : c.close<candles[i-1].close ? -c.volume : 0
+      return v
+    })
+  })()
+
+  // ── Sub-chart y-scale factory ─────────────────────────────
+  function subScale(values, topY) {
+    const valid = values.filter(v => v!=null && isFinite(v))
+    const mn = Math.min(...valid), mx = Math.max(...valid), r = mx-mn||1
+    return v => v!=null ? topY+PAD + (1-(v-mn)/r)*(SUB_H-PAD*2) : null
+  }
+  let si=0
+  const rsiY0   = showRsiSub  ? SUB_START + si++ * (SUB_H+2) : null
+  const macdY0  = showMacdSub ? SUB_START + si++ * (SUB_H+2) : null
+  const obvY0   = showObvSub  ? SUB_START + si++ * (SUB_H+2) : null
+  const pyRsi   = rsiY0  != null ? subScale(rsiVals, rsiY0)  : null
+  const pyMacd  = macdY0 != null ? subScale(macdVals.map(m=>m.dif), macdY0) : null
+  const macdZ   = macdY0 != null ? subScale(macdVals.map(m=>m.dif), macdY0)(0) : null
+  const pyObv   = obvY0  != null ? subScale(obvVals, obvY0)  : null
+
+  const gridPrices = [0,.25,.5,.75,1].map(t => pMin+pRng*t)
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" style={{display:'block'}}>
-      {gridPrices.map((p, i) => (<line key={i} x1={0} y1={py(p)} x2={W} y2={py(p)} stroke="var(--border)" strokeWidth="0.5" />))}
-      {gridPrices.filter((_, i) => i > 0 && i < 4).map((p, i) => (<text key={i} x={W - 2} y={py(p) - 3} fontSize="9" fill="var(--text-3)" textAnchor="end" fontFamily="var(--font-mono)">{p.toFixed(0)}</text>))}
-      {ma20pts && <polyline points={ma20pts} fill="none" stroke="rgba(245,158,11,0.75)" strokeWidth="1.2" strokeLinecap="round" />}
-      {ma5pts && <polyline points={ma5pts} fill="none" stroke="rgba(99,102,241,0.65)" strokeWidth="1.2" strokeLinecap="round" />}
-      {candles.map((c, i) => {
-        const up = c.close >= c.open
-        const col = up ? 'var(--up)' : 'var(--dn)'
-        const x = px(i)
-        const bodyTop = py(Math.max(c.open, c.close))
-        const bodyBot = py(Math.min(c.open, c.close))
-        const bodyH = Math.max(1, bodyBot - bodyTop)
-        const vH = (c.volume / volMax) * VOL_H
-        return (
-          <g key={i}>
-            <rect x={x - cW/2} y={VOL_TOP + VOL_H - vH} width={cW} height={vH} fill={up ? 'rgba(239,68,68,.22)' : 'rgba(34,197,94,.22)'} />
-            <line x1={x} y1={py(c.high)} x2={x} y2={py(c.low)} stroke={col} strokeWidth="1" />
-            <rect x={x - cW/2} y={bodyTop} width={cW} height={bodyH} fill={up ? col : 'none'} stroke={col} strokeWidth="1" />
-          </g>
-        )
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" style={{display:'block'}} preserveAspectRatio="xMidYMid meet">
+      {/* Price grid */}
+      {gridPrices.map((p,i) => <line key={i} x1={0} y1={py(p)} x2={W} y2={py(p)} stroke="var(--border)" strokeWidth="0.5" />)}
+      {gridPrices.filter((_,i)=>i>0&&i<4).map((p,i) =>
+        <text key={i} x={W-2} y={py(p)-2} fontSize="9" fill="var(--text-3)" textAnchor="end" fontFamily="var(--font-mono)">{p.toFixed(0)}</text>
+      )}
+
+      {/* Ichimoku cloud */}
+      {showIchimoku && candles.map((_,i) => {
+        const a=ichi.sA[i], b=ichi.sB[i], pa=ichi.sA[i-1], pb=ichi.sB[i-1]
+        if (i===0||a==null||b==null||pa==null||pb==null) return null
+        return <polygon key={i} points={`${px(i-1)},${py(pa)} ${px(i)},${py(a)} ${px(i)},${py(b)} ${px(i-1)},${py(pb)}`}
+          fill={a>=b?'rgba(34,197,94,.07)':'rgba(239,68,68,.07)'} />
       })}
-      <rect x={8} y={H - 14} width={6} height={6} rx={1} fill="rgba(245,158,11,0.75)" />
-      <text x={17} y={H - 7} fontSize="8.5" fill="var(--text-3)" fontFamily="var(--font-mono)">MA20</text>
-      <rect x={48} y={H - 14} width={6} height={6} rx={1} fill="rgba(99,102,241,0.65)" />
-      <text x={57} y={H - 7} fontSize="8.5" fill="var(--text-3)" fontFamily="var(--font-mono)">MA5</text>
+      {showIchimoku && <polyline points={pts(ichi.tenkan,py)} fill="none" stroke="rgba(239,68,68,.6)" strokeWidth="1" />}
+      {showIchimoku && <polyline points={pts(ichi.kijun, py)} fill="none" stroke="rgba(99,102,241,.6)" strokeWidth="1" />}
+      {showIchimoku && <polyline points={pts(ichi.sA, py)} fill="none" stroke="rgba(34,197,94,.4)" strokeWidth="0.8" />}
+      {showIchimoku && <polyline points={pts(ichi.sB, py)} fill="none" stroke="rgba(239,68,68,.4)" strokeWidth="0.8" />}
+
+      {/* KC */}
+      {showKC && <polyline points={pts(kc.map(k=>k?.upper),py)} fill="none" stroke="rgba(168,85,247,.5)" strokeWidth="1" strokeDasharray="3,2" />}
+      {showKC && <polyline points={pts(kc.map(k=>k?.mid),  py)} fill="none" stroke="rgba(168,85,247,.7)" strokeWidth="1" />}
+      {showKC && <polyline points={pts(kc.map(k=>k?.lower),py)} fill="none" stroke="rgba(168,85,247,.5)" strokeWidth="1" strokeDasharray="3,2" />}
+
+      {/* BB */}
+      {showBB && <polyline points={pts(bb.map(b=>b?.upper),py)} fill="none" stroke="rgba(6,182,212,.5)" strokeWidth="1" strokeDasharray="3,2" />}
+      {showBB && <polyline points={pts(bb.map(b=>b?.mid),  py)} fill="none" stroke="rgba(6,182,212,.7)" strokeWidth="1" />}
+      {showBB && <polyline points={pts(bb.map(b=>b?.lower),py)} fill="none" stroke="rgba(6,182,212,.5)" strokeWidth="1" strokeDasharray="3,2" />}
+
+      {/* Fib */}
+      {showFib && fibLevels.map((lv,i) => {
+        const p = fibL + (fibH-fibL)*lv, y = py(p)
+        if (y<0||y>CHART_H) return null
+        return <g key={i}>
+          <line x1={0} y1={y} x2={W} y2={y} stroke={fibColors[i]} strokeWidth="0.8" strokeDasharray="4,3" />
+          <text x={5} y={y-2} fontSize="7.5" fill={fibColors[i]} fontFamily="var(--font-mono)">{(lv*100).toFixed(1)}%</text>
+        </g>
+      })}
+
+      {/* Pivots */}
+      {showPivots && pivots.map(({p,l,col}) => {
+        const y = py(p)
+        if (y<0||y>CHART_H) return null
+        return <g key={l}>
+          <line x1={0} y1={y} x2={W} y2={y} stroke={col} strokeWidth="0.8" strokeDasharray="2,3" />
+          <text x={5} y={y-2} fontSize="7.5" fill={col} fontFamily="var(--font-mono)">{l}</text>
+        </g>
+      })}
+
+      {/* VWAP */}
+      {showVwap && <polyline points={pts(vwap,py)} fill="none" stroke="rgba(249,115,22,.85)" strokeWidth="1.4" />}
+
+      {/* MA */}
+      {showMA && <polyline points={pts(ma20,py)} fill="none" stroke="rgba(245,158,11,.8)"  strokeWidth="1.2" />}
+      {showMA && <polyline points={pts(ma5, py)} fill="none" stroke="rgba(99,102,241,.8)"  strokeWidth="1.2" />}
+      {showMA && n>=60 && <polyline points={pts(ma60,py)} fill="none" stroke="rgba(239,68,68,.7)"  strokeWidth="1.2" />}
+
+      {/* LR */}
+      {showLinReg && <polyline points={pts(lrLine,py)} fill="none" stroke="rgba(16,185,129,.85)" strokeWidth="1.5" strokeDasharray="5,3" />}
+
+      {/* Candles */}
+      {candles.map((c,i) => {
+        const up = c.close>=c.open, col = up?'var(--up)':'var(--dn)', x=px(i)
+        const bt=py(Math.max(c.open,c.close)), bb2=py(Math.min(c.open,c.close)), bh=Math.max(1,bb2-bt)
+        return <g key={i}>
+          <line x1={x} y1={py(c.high)} x2={x} y2={py(c.low)} stroke={col} strokeWidth="1" />
+          <rect x={x-cW/2} y={bt} width={cW} height={bh} fill={up?col:'none'} stroke={col} strokeWidth="1" />
+        </g>
+      })}
+
+      {/* Volume */}
+      {candles.map((c,i) => {
+        const up=c.close>=c.open, vH=volMax>0?(c.volume/volMax)*VOL_H:0
+        return <rect key={i} x={px(i)-cW/2} y={VOL_TOP+VOL_H-vH} width={cW} height={vH}
+          fill={up?'rgba(239,68,68,.2)':'rgba(34,197,94,.2)'} />
+      })}
+
+      {/* MA legend */}
+      {showMA && <>
+        <rect x={8} y={H-14} width={6} height={6} rx={1} fill="rgba(245,158,11,.8)" />
+        <text x={17} y={H-7} fontSize="8.5" fill="var(--text-3)" fontFamily="var(--font-mono)">MA20</text>
+        <rect x={52} y={H-14} width={6} height={6} rx={1} fill="rgba(99,102,241,.8)" />
+        <text x={61} y={H-7} fontSize="8.5" fill="var(--text-3)" fontFamily="var(--font-mono)">MA5</text>
+        {n>=60 && <><rect x={95} y={H-14} width={6} height={6} rx={1} fill="rgba(239,68,68,.7)" />
+          <text x={104} y={H-7} fontSize="8.5" fill="var(--text-3)" fontFamily="var(--font-mono)">MA60</text></>}
+      </>}
+
+      {/* ── RSI sub-chart ─────────────────────────────────── */}
+      {rsiY0!=null && <>
+        <line x1={0} y1={rsiY0} x2={W} y2={rsiY0} stroke="var(--border-md)" strokeWidth="0.8" />
+        <text x={4} y={rsiY0+10} fontSize="8.5" fill="var(--text-3)" fontFamily="var(--font-mono)">RSI 14</text>
+        {[30,70].map(v => <line key={v} x1={0} y1={pyRsi(v)} x2={W} y2={pyRsi(v)}
+          stroke={v===30?'rgba(239,68,68,.3)':'rgba(34,197,94,.3)'} strokeWidth="0.5" strokeDasharray="2,2" />)}
+        <polyline points={pts(rsiVals, pyRsi)} fill="none" stroke="rgba(99,102,241,.8)" strokeWidth="1.2" />
+      </>}
+
+      {/* ── MACD sub-chart ────────────────────────────────── */}
+      {macdY0!=null && <>
+        <line x1={0} y1={macdY0} x2={W} y2={macdY0} stroke="var(--border-md)" strokeWidth="0.8" />
+        <text x={4} y={macdY0+10} fontSize="8.5" fill="var(--text-3)" fontFamily="var(--font-mono)">MACD</text>
+        {macdZ!=null && <line x1={0} y1={macdZ} x2={W} y2={macdZ} stroke="var(--border)" strokeWidth="0.5" />}
+        {macdVals.map((m,i) => {
+          const y1=pyMacd(m.dif)
+          if (y1==null||macdZ==null) return null
+          return <rect key={i} x={px(i)-cW/2} y={Math.min(macdZ,y1)} width={cW} height={Math.max(1,Math.abs(y1-macdZ))}
+            fill={m.hist>=0?'rgba(239,68,68,.38)':'rgba(34,197,94,.38)'} />
+        })}
+        <polyline points={pts(macdVals.map(m=>m.dif), pyMacd)} fill="none" stroke="rgba(239,68,68,.8)" strokeWidth="1" />
+        <polyline points={pts(macdVals.map(m=>m.dea), pyMacd)} fill="none" stroke="rgba(99,102,241,.8)" strokeWidth="1" />
+      </>}
+
+      {/* ── OBV sub-chart ─────────────────────────────────── */}
+      {obvY0!=null && <>
+        <line x1={0} y1={obvY0} x2={W} y2={obvY0} stroke="var(--border-md)" strokeWidth="0.8" />
+        <text x={4} y={obvY0+10} fontSize="8.5" fill="var(--text-3)" fontFamily="var(--font-mono)">OBV</text>
+        <polyline points={pts(obvVals, pyObv)} fill="none" stroke="rgba(6,182,212,.85)" strokeWidth="1.2" />
+      </>}
     </svg>
   )
 }
@@ -1312,7 +1564,13 @@ function ChartPanel({ symbol }) {
             ⚠ {candleError}
           </div>
         )}
-        <CandleChart candles={candles.slice(-120)} />
+        <CandleChart
+          candles={candles.slice(-120)}
+          showMA={showMA} showBB={showBB} showFib={showFib}
+          showLinReg={showLinReg} showKC={showKC} showVwap={showVwap}
+          showIchimoku={showIchimoku} showPivots={showPivots}
+          showRsiSub={showRsiSub} showMacdSub={showMacdSub} showObvSub={showObvSub}
+        />
       </div>
     </div>
   )
