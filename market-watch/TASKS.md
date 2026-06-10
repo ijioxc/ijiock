@@ -4,7 +4,7 @@
 
 - [ ] **接真實技術指標** — 從真實 OHLC 資料計算 RSI/KD/MACD，取代目前假資料估算
 - [ ] **⌘K 命令列** — 從 CommandPalette.jsx 搬入 MarketWatch.html
-- [ ] **總經日曆** — 從 EventCalendar.jsx 搬入（純靜態，快）
+- [x] ~~**總經日曆**~~ (2026-06-10) — 移植 EventCalendar.jsx，12 個事件，篩選器，右側日曆 tab（commit 860785d）
 - [ ] **AI 顧問接 Claude API** — 串接 claude.js 邏輯，需 API key
 
 ## Waiting On
