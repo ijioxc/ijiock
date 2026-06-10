@@ -1,0 +1,14 @@
+/* ============================================================
+   MarketWatch — Fonts
+   Plus Jakarta Sans (Latin UI) + Noto Sans TC (Traditional
+   Chinese) are loaded from Google Fonts, exactly as the
+   product's index.html does.
+
+   Mono numerics use the system SF Mono on Apple platforms.
+   ⚠ SUBSTITUTION: SF Mono is a system font (no webfont). The
+   --font-mono stack falls back to ui-monospace / JetBrains
+   Mono / Fira Code off-platform. Supply SF Mono binaries if
+   exact parity is required.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;600;700;900&display=swap');

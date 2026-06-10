@@ -1,6 +1,6 @@
 /* ============================================================
-   MarketWatch — Global Styles
-   Imports all design tokens from tokens/ directory
+   MarketWatch — Global Styles Entry Point
+   Imports the design system (tokens + base styles)
    ============================================================ */
 
-@import url('./tokens/tokens.css');
+@import url('./styles.css');

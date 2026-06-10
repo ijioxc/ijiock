@@ -1,0 +1,65 @@
+<!-- @dsCard group="Components" viewport="700x260" name="Core" subtitle="Button · IconButton · Badge · Tag · Card" -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin:0; padding:22px; background:var(--bg); font-family:var(--font-sans); }
+  .grid { display:flex; flex-direction:column; gap:16px; }
+  .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .gl { font-size:9px; font-weight:800; color:var(--text-3); letter-spacing:.5px; text-transform:uppercase; width:74px; flex-shrink:0; }
+</style></head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="../../_ds_bundle.js"></script>
+  <script type="text/babel">
+    const { Button, IconButton, Badge, Tag, Card } = window.MarketWatchDesignSystem_c2bad0;
+    function Demo() {
+      return (
+        <div className="grid">
+          <div className="row">
+            <span className="gl">Button</span>
+            <Button>全面分析</Button>
+            <Button variant="secondary">取消</Button>
+            <Button variant="ghost" icon={<span>＋</span>}>新增</Button>
+            <Button size="sm">小</Button>
+            <Button disabled>處理中…</Button>
+          </div>
+          <div className="row">
+            <span className="gl">IconButton</span>
+            <IconButton title="搜尋">🔍</IconButton>
+            <IconButton title="設定">⚙</IconButton>
+            <IconButton active title="暗色">🌙</IconButton>
+            <IconButton size="sm" title="新增">＋</IconButton>
+          </div>
+          <div className="row">
+            <span className="gl">Badge</span>
+            <Badge tone="dn" dot pulse>LIVE</Badge>
+            <Badge tone="up" dot>正盤</Badge>
+            <Badge tone="warn">⚠ 3 個警示</Badge>
+            <Badge tone="accent">盤前</Badge>
+            <Badge>休市</Badge>
+          </div>
+          <div className="row">
+            <span className="gl">Tag</span>
+            <Tag active>ALL</Tag>
+            <Tag>台股</Tag>
+            <Tag>美股</Tag>
+            <Tag accent active>日</Tag>
+            <Tag dot color="var(--tag-red)" />
+            <Tag dot color="var(--tag-green)" />
+            <Tag dot color="var(--tag-blue)" />
+          </div>
+          <div className="row">
+            <span className="gl">Card</span>
+            <Card style={{width:130}}><b style={{fontSize:12}}>面板</b><div style={{fontSize:10,color:'var(--text-3)',marginTop:4}}>resting</div></Card>
+            <Card inset style={{width:130}}><b style={{fontSize:12}}>子面板</b><div style={{fontSize:10,color:'var(--text-3)',marginTop:4}}>inset</div></Card>
+            <Card interactive style={{width:130}}><b style={{fontSize:12}}>可點擊列</b><div style={{fontSize:10,color:'var(--text-3)',marginTop:4}}>hover me</div></Card>
+          </div>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+  </script>
+</body></html>

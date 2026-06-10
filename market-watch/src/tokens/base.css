@@ -1,90 +1,41 @@
 /* ============================================================
-   MarketWatch Base Styles & Global Resets
+   MarketWatch — Base / reset
+   Minimal, opt-in foundations. Sets the body type, tabular
+   numerics, and the thin Apple-style scrollbars.
    ============================================================ */
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+*, *::before, *::after { box-sizing: border-box; }
 
 html, body {
-  height: 100%;
   font-family: var(--font-sans);
   background: var(--bg);
   color: var(--text);
   font-size: var(--fs-13);
   line-height: var(--lh-normal);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Numerics align in columns everywhere */
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
 }
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
+/* Monospace numerics helper */
+.mono { font-family: var(--font-mono); }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* Directional color helpers (RED = up, GREEN = down) */
+.up    { color: var(--up); }
+.dn    { color: var(--dn); }
+.up-bg { background: var(--up-soft); }
+.dn-bg { background: var(--dn-soft); }
 
-::-webkit-scrollbar-thumb {
-  background: var(--border-md);
-  border-radius: 4px;
-}
+/* Thin scrollbars — match the in-app feel */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-3);
-}
-
-/* ── Utility classes ── */
-.mono {
-  font-family: var(--font-mono);
-}
-
-.up {
-  color: var(--up);
-}
-
-.dn {
-  color: var(--dn);
-}
-
-.up-bg {
-  background: var(--up-soft);
-}
-
-.dn-bg {
-  background: var(--dn-soft);
-}
-
-/* ── Flash animations (price ticks) ── */
-@keyframes flash-up {
-  0% {
-    background: var(--up-soft);
-    border-radius: 4px;
-  }
-  100% {
-    background: transparent;
-  }
-}
-
-@keyframes flash-dn {
-  0% {
-    background: var(--dn-soft);
-    border-radius: 4px;
-  }
-  100% {
-    background: transparent;
-  }
-}
-
-.flash-up {
-  animation: flash-up 0.65s ease-out forwards;
-}
-
-.flash-dn {
-  animation: flash-dn 0.65s ease-out forwards;
-}
+/* Price-flash keyframes — fire when a quote ticks up/down */
+@keyframes flash-up { 0% { background: var(--up-soft); border-radius: 4px; } 100% { background: transparent; } }
+@keyframes flash-dn { 0% { background: var(--dn-soft); border-radius: 4px; } 100% { background: transparent; } }
+.flash-up { animation: flash-up .65s ease-out forwards; }
+.flash-dn { animation: flash-dn .65s ease-out forwards; }

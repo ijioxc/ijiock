@@ -1,90 +1,68 @@
 import React from 'react';
 
 /**
- * MarketWatch SignalCard — technical-indicator readout.
- * Uses the .tcard glass system: backdrop-filter + card-fill + card-highlight.
- * dir=bull tints up-soft; dir=bear tints dn-soft; neutral stays pure glass.
- * Remember: bull = RED (漲), bear = GREEN (跌).
+ * MarketWatch SignalCard — a technical-indicator readout (`.sig-card`).
+ * `dir` of bull/bear/neutral sets the left accent, geometric glyph and tint.
+ * Remember: bull = RED, bear = GREEN.
  */
 export function SignalCard({
   label,
   signal,
-  dir = 'neutral',
+  dir = 'neutral', // 'bull' | 'bear' | 'neutral'
   children,
   style = {},
 }) {
-  const [hover, setHover] = React.useState(false);
-
   const map = {
-    bull:    { color: 'var(--up)',     bg: 'var(--up-soft)',  border: 'rgba(239,68,68,.30)',   glyph: '▲' },
-    bear:    { color: 'var(--dn)',     bg: 'var(--dn-soft)',  border: 'rgba(34,197,94,.30)',   glyph: '▼' },
-    neutral: { color: 'var(--text-3)', bg: 'var(--card-fill)',border: null,                    glyph: '─' },
+    bull: { color: 'var(--up)', soft: 'var(--up-soft)', glyph: '▲' },
+    bear: { color: 'var(--dn)', soft: 'var(--dn-soft)', glyph: '▼' },
+    neutral: { color: 'var(--text-3)', soft: 'var(--surface-3)', glyph: '─' },
   };
   const t = map[dir] || map.neutral;
 
-  const geoStyle = {
-    bull:    { background: 'rgba(239,68,68,.15)',  color: 'var(--up)' },
-    bear:    { background: 'rgba(34,197,94,.15)',  color: 'var(--dn)' },
-    neutral: { background: 'var(--surface-3)',      color: 'var(--text-3)' },
-  }[dir];
-
   return (
     <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       style={{
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
-        padding: '12px 14px',
-        /* glass card base */
-        background: dir === 'neutral' ? 'var(--card-fill)' : t.bg,
-        backdropFilter: 'var(--card-blur)',
-        WebkitBackdropFilter: 'var(--card-blur)',
-        border: t.border ? `0.5px solid ${t.border}` : 'var(--card-border)',
-        borderRadius: 'var(--radius-card)',
-        /* highlight + shadow — card-highlight stacks above shadow */
-        boxShadow: hover
-          ? 'var(--card-highlight), var(--card-shadow-hover)'
-          : 'var(--card-highlight), var(--card-shadow)',
-        transform: hover ? 'translateY(var(--hover-lift))' : 'translateY(0)',
-        transition: 'transform .42s var(--ease-back), box-shadow .3s var(--ease-out)',
+        padding: '10px 11px',
+        background: dir === 'neutral' ? 'var(--surface-2)' : t.soft,
+        borderRadius: 'var(--r-sm)',
+        borderLeft: `3px solid ${dir === 'neutral' ? 'var(--text-3)' : t.color}`,
+        boxShadow: 'var(--sh)',
         fontFamily: 'var(--font-sans)',
         ...style,
       }}
     >
-      {/* top row: geo glyph + label + signal */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-        <div style={{
-          width: 24, height: 24, borderRadius: 6, flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, fontWeight: 900,
-          ...geoStyle,
-        }}>
+        <div
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 13,
+            fontWeight: 900,
+            flexShrink: 0,
+            color: t.color,
+            background: dir === 'neutral' ? 'var(--surface-3)' : t.soft,
+            boxShadow: dir === 'neutral' ? 'none' : `0 0 10px ${t.soft}`,
+          }}
+        >
           {t.glyph}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: 10, fontWeight: 700, color: 'var(--text-3)',
-            textTransform: 'uppercase', letterSpacing: '.4px',
-          }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.4px' }}>
             {label}
           </div>
-          <div style={{
-            fontSize: 11, fontWeight: 700, marginTop: 2,
-            color: dir === 'bull' ? 'var(--up)' : dir === 'bear' ? 'var(--dn)' : 'var(--text)',
-          }}>
+          <div style={{ fontSize: 11, fontWeight: 700, marginTop: 2, color: dir === 'bull' ? 'var(--up)' : dir === 'bear' ? 'var(--dn)' : 'var(--text)' }}>
             {signal}
           </div>
         </div>
       </div>
-
-      {/* optional meter children */}
-      {children && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          {children}
-        </div>
-      )}
+      {children && <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>{children}</div>}
     </div>
   );
 }

@@ -1,0 +1,60 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Market" subtitle="QuoteChange · Sparkline · SignalCard · MeterBar" -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin:0; padding:22px; background:var(--bg); font-family:var(--font-sans); }
+  .grid { display:flex; flex-direction:column; gap:16px; }
+  .row { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+  .gl { font-size:9px; font-weight:800; color:var(--text-3); letter-spacing:.5px; text-transform:uppercase; width:74px; flex-shrink:0; }
+  .wlrow { display:flex; align-items:center; gap:10px; background:var(--surface); border-radius:var(--r-sm); padding:8px 12px; box-shadow:var(--sh); width:300px; }
+  .wlname { flex:1; }
+  .wlname b { font-size:12px; font-weight:600; }
+  .wlname .s { font-size:10px; color:var(--text-3); font-family:var(--font-mono); }
+  .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; flex:1; }
+</style></head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="../../_ds_bundle.js"></script>
+  <script type="text/babel">
+    const { QuoteChange, Sparkline, SignalCard, MeterBar } = window.MarketWatchDesignSystem_c2bad0;
+    const up = [100,101,100.5,103,102.5,105,107,106,109];
+    const dn = [109,108,108.5,106,107,104,103,103.5,101];
+    function Demo() {
+      return (
+        <div className="grid">
+          <div className="row">
+            <span className="gl">Watchlist row</span>
+            <div className="wlrow">
+              <div className="wlname"><b>台積電</b><div className="s">2330.TW</div></div>
+              <Sparkline data={up} up />
+              <QuoteChange price={1085.0} changePct={2.36} />
+            </div>
+            <div className="wlrow">
+              <div className="wlname"><b>輝達</b><div className="s">NVDA</div></div>
+              <Sparkline data={dn} up={false} />
+              <QuoteChange price={178.42} changePct={-1.14} />
+            </div>
+          </div>
+          <div className="row">
+            <span className="gl">SignalCard</span>
+            <div className="cards">
+              <SignalCard label="MACD" signal="黃金交叉 · 偏多" dir="bull">
+                <MeterBar label="DIF" value={68} display="+1.2" tone="up" />
+              </SignalCard>
+              <SignalCard label="RSI(14)" signal="超買 · 偏空" dir="bear">
+                <MeterBar label="RSI" value={74} display="74.2" oscillator />
+              </SignalCard>
+              <SignalCard label="均線" signal="多空交戰 · 觀望" dir="neutral">
+                <MeterBar label="MA20" value={50} display="持平" tone="warn" />
+              </SignalCard>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+  </script>
+</body></html>
