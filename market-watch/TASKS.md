@@ -2,8 +2,6 @@
 
 ## Active
 
-- [x] ~~**改網頁名稱為 ijiock**~~ (2026-06-10) — title 和 logo 文字
-- [ ] **接即時報價** — 用 corsproxy.io 打 Yahoo Finance，讓自選清單即時跳動（每 30s 輪詢）
 - [ ] **接真實技術指標** — 從真實 OHLC 資料計算 RSI/KD/MACD，取代目前假資料估算
 - [ ] **⌘K 命令列** — 從 CommandPalette.jsx 搬入 MarketWatch.html
 - [ ] **總經日曆** — 從 EventCalendar.jsx 搬入（純靜態，快）
@@ -24,4 +22,5 @@
 
 - [x] ~~**設計稿轉 MarketWatch.html**~~ (2026-06-10) — 玻璃風格 dashboard，dark/light，自選清單、K線圖、技術訊號
 - [x] ~~**技術訊號補齊 15+ 卡片**~~ (2026-06-10) — KD/MACD/RSI gauge/ATR/MFI/OBV/StochRSI/Williams %R/PSAR/ADX/ROC/CCI/CMF/Elder Ray/多週期
+- [x] ~~**接即時報價**~~ (2026-06-10) — useLiveQuotes hook，corsproxy.io + Yahoo Finance v7 batch，每 30s 輪詢（commit 50ec74a）
 - [x] ~~**push 到 git**~~ (2026-06-10) — commit dcdcc9c
