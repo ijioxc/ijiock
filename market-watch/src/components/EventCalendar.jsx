@@ -1,18 +1,15 @@
 import { useState } from 'react'
 
-// Hardcoded upcoming macro events — simulated for demo
-// In a real app this would come from an economic calendar API
+// ⚠️ 示意資料，非即時經濟日曆
 const BASE_EVENTS = [
-  { date: '2026-05-20', time: '08:30', name: 'CPI 年增率', region: 'US', impact: 'high', forecast: '2.4%', prev: '2.6%' },
-  { date: '2026-05-21', time: '14:00', name: 'FOMC 議事紀錄', region: 'US', impact: 'high', forecast: null, prev: null },
-  { date: '2026-05-22', time: '08:30', name: '初請失業金', region: 'US', impact: 'med', forecast: '228K', prev: '231K' },
-  { date: '2026-05-23', time: '08:30', name: 'PCE 物價指數', region: 'US', impact: 'high', forecast: '2.2%', prev: '2.3%' },
-  { date: '2026-05-27', time: '09:00', name: '台灣出口訂單', region: 'TW', impact: 'med', forecast: null, prev: '+5.2%' },
-  { date: '2026-05-28', time: '20:00', name: '標普 500 財報季結束', region: 'US', impact: 'low', forecast: null, prev: null },
-  { date: '2026-06-04', time: '14:30', name: '非農就業人數', region: 'US', impact: 'high', forecast: '185K', prev: '177K' },
-  { date: '2026-06-11', time: '14:00', name: 'FOMC 利率決議', region: 'US', impact: 'high', forecast: '4.25%', prev: '4.50%' },
-  { date: '2026-06-12', time: '08:30', name: 'CPI 核心年增率', region: 'US', impact: 'high', forecast: '2.8%', prev: '2.9%' },
-  { date: '2026-06-18', time: '09:00', name: '台灣 GDP 初值', region: 'TW', impact: 'high', forecast: '+2.8%', prev: '+2.6%' },
+  { date: '2026-06-11', time: '14:00', name: 'FOMC 利率決議', region: 'US', impact: 'high' },
+  { date: '2026-06-12', time: '08:30', name: 'CPI 核心年增率', region: 'US', impact: 'high' },
+  { date: '2026-06-18', time: '09:00', name: '台灣 GDP 初值', region: 'TW', impact: 'high' },
+  { date: '2026-06-25', time: '08:30', name: '初請失業金', region: 'US', impact: 'med' },
+  { date: '2026-07-02', time: '14:30', name: '非農就業人數', region: 'US', impact: 'high' },
+  { date: '2026-07-09', time: '14:00', name: 'FOMC 議事紀錄', region: 'US', impact: 'high' },
+  { date: '2026-07-15', time: '08:30', name: 'CPI 年增率', region: 'US', impact: 'high' },
+  { date: '2026-07-22', time: '09:00', name: '台灣出口訂單', region: 'TW', impact: 'med' },
 ]
 
 const IMPACT_STYLES = {
@@ -25,11 +22,10 @@ const REGION_FLAGS = { US: '🇺🇸', TW: '🇹🇼', EU: '🇪🇺', JP: '🇯
 
 export default function EventCalendar() {
   const [filter, setFilter] = useState('ALL')
-  const [expanded, setExpanded] = useState(null)
 
   const today = new Date().toISOString().slice(0, 10)
-  const filtered = BASE_EVENTS
-    .filter(e => e.date >= today)
+  const upcoming = BASE_EVENTS.filter(e => e.date >= today)
+  const filtered = upcoming
     .filter(e => filter === 'ALL' || e.region === filter || (filter === 'HIGH' && e.impact === 'high'))
     .slice(0, 20)
 
@@ -59,9 +55,13 @@ export default function EventCalendar() {
         </div>
       </div>
 
+      <div className="ec-notice">⚠ 示意資料，非即時經濟日曆</div>
+
       <div className="ec-list">
         {filtered.length === 0 && (
-          <div className="ec-empty">近期無符合事件</div>
+          <div className="ec-empty">
+            {upcoming.length === 0 ? '示意事件已全部過期，請更新資料' : '近期無符合事件'}
+          </div>
         )}
         {filtered.map((ev, i) => {
           const imp = IMPACT_STYLES[ev.impact]
@@ -76,10 +76,7 @@ export default function EventCalendar() {
                   <span className="ec-date-str">{ev.date.slice(5)}</span>
                 </div>
               )}
-              <div
-                className={`ec-item ${expanded === i ? 'expanded' : ''}`}
-                onClick={() => setExpanded(v => v === i ? null : i)}
-              >
+              <div className="ec-item">
                 <div className="ec-item-left">
                   <span className="ec-flag">{REGION_FLAGS[ev.region] ?? ev.region}</span>
                   <div>
@@ -91,19 +88,8 @@ export default function EventCalendar() {
                   <span className="ec-impact-badge" style={{ background: imp.bg, color: imp.color }}>
                     {imp.label}
                   </span>
-                  {ev.forecast && <span className="ec-forecast">預: {ev.forecast}</span>}
                 </div>
               </div>
-              {expanded === i && ev.prev && (
-                <div className="ec-detail">
-                  <span className="ec-detail-k">前值</span>
-                  <span className="ec-detail-v">{ev.prev}</span>
-                  {ev.forecast && <>
-                    <span className="ec-detail-k">預測</span>
-                    <span className="ec-detail-v">{ev.forecast}</span>
-                  </>}
-                </div>
-              )}
             </div>
           )
         })}

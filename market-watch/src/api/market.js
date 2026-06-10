@@ -1,14 +1,25 @@
 // 所有資料統一走 Yahoo Finance（透過 CF Worker 解決 CORS）
 // 支援：台股、美股、ETF、指數、外匯、加密貨幣
 
+import { WORKER_URL } from './config'
+
 const IS_PROD = import.meta.env.PROD
-const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'https://market-proxy.ijioxc.workers.dev'
 const YAHOO_DIRECT = 'https://query1.finance.yahoo.com'
 const YAHOO_DEV = '/api/yahoo'
 
 function yahooUrl(path) {
   if (!IS_PROD) return `${YAHOO_DEV}${path}`
   return `${WORKER_URL}/proxy?url=${encodeURIComponent(`${YAHOO_DIRECT}${path}`)}`
+}
+
+async function fetchWithRetry(url, maxRetries = 2) {
+  let res
+  for (let i = 0; i <= maxRetries; i++) {
+    if (i > 0) await new Promise(r => setTimeout(r, 1500 * i))
+    res = await fetch(url)
+    if (res.status !== 429) return res
+  }
+  return res
 }
 
 // ── Quote cache ──
@@ -20,7 +31,7 @@ export async function fetchQuote(symbol) {
   if (cached && Date.now() - cached.ts < QUOTE_TTL) return cached.data
 
   const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`
-  const r = await fetch(yahooUrl(path))
+  const r = await fetchWithRetry(yahooUrl(path))
   if (!r.ok) throw new Error(`Yahoo ${r.status}`)
   const json = await r.json()
   const meta = json?.chart?.result?.[0]?.meta
@@ -65,7 +76,7 @@ export async function fetchOHLC(symbol, range = '3mo') {
 
   const { interval, range: r } = RANGE_MAP[range] ?? RANGE_MAP['3mo']
   const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${interval}&range=${r}`
-  const res = await fetch(yahooUrl(path))
+  const res = await fetchWithRetry(yahooUrl(path))
   if (!res.ok) throw new Error(`Yahoo OHLC ${res.status}`)
   const json = await res.json()
   const result = json?.chart?.result?.[0]
@@ -104,7 +115,7 @@ export async function fetchIntraday(symbol, interval = '15m', days = 5) {
   if (cached && Date.now() - cached.ts < INTRADAY_TTL) return cached.data
 
   const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${interval}&range=${days}d&includePrePost=false`
-  const r = await fetch(yahooUrl(path))
+  const r = await fetchWithRetry(yahooUrl(path))
   if (!r.ok) throw new Error(`盤中資料錯誤 ${r.status}`)
   const json = await r.json()
   const result = json.chart?.result?.[0]
