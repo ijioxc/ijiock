@@ -1,37 +1,31 @@
 // Symbol type detection & mapping
 // Yahoo Finance format → Stooq / TWSE
 
-// In production (GitHub Pages), use CORS proxy since there's no server-side proxy
 const IS_PROD = import.meta.env.PROD
-const CORS_PROXY = 'https://corsproxy.io/?'
+const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'https://market-proxy.ijioxc.workers.dev'
 
-function px(url) {
-  return IS_PROD ? CORS_PROXY + encodeURIComponent(url) : url
-}
-
-const STOOQ_DIRECT = 'https://stooq.com'
-const TWSE_DIRECT  = 'https://openapi.twse.com.tw'
+const STOOQ_DIRECT     = 'https://stooq.com'
+const TWSE_DIRECT      = 'https://openapi.twse.com.tw'
 const TWSE_HIST_DIRECT = 'https://www.twse.com.tw'
-const MKTDATA_DIRECT = 'https://api.marketdata.app'
+const MKTDATA_DIRECT   = 'https://api.marketdata.app'
+const YAHOO_DIRECT     = 'https://query1.finance.yahoo.com'
 
 // Dev mode paths (Vite proxy)
-const STOOQ_DEV  = '/api/stooq'
-const TWSE_DEV   = '/api/twse'
+const STOOQ_DEV     = '/api/stooq'
+const TWSE_DEV      = '/api/twse'
 const TWSE_HIST_DEV = '/api/twse-hist'
-const MKTDATA_DEV = '/api/mktdata'
+const MKTDATA_DEV   = '/api/mktdata'
+const YAHOO_DEV     = '/api/yahoo'
 
-function stooqUrl(path) {
-  return IS_PROD ? px(`${STOOQ_DIRECT}${path}`) : `${STOOQ_DEV}${path}`
+function px(fullUrl) {
+  return `${WORKER_URL}/proxy?url=${encodeURIComponent(fullUrl)}`
 }
-function twseUrl(path) {
-  return IS_PROD ? px(`${TWSE_DIRECT}${path}`) : `${TWSE_DEV}${path}`
-}
-function twseHistUrl(path) {
-  return IS_PROD ? px(`${TWSE_HIST_DIRECT}${path}`) : `${TWSE_HIST_DEV}${path}`
-}
-function mktdataUrl(path) {
-  return IS_PROD ? px(`${MKTDATA_DIRECT}${path}`) : `${MKTDATA_DEV}${path}`
-}
+
+function stooqUrl(path)    { return IS_PROD ? px(`${STOOQ_DIRECT}${path}`)     : `${STOOQ_DEV}${path}` }
+function twseUrl(path)     { return IS_PROD ? px(`${TWSE_DIRECT}${path}`)      : `${TWSE_DEV}${path}` }
+function twseHistUrl(path) { return IS_PROD ? px(`${TWSE_HIST_DIRECT}${path}`) : `${TWSE_HIST_DEV}${path}` }
+function mktdataUrl(path)  { return IS_PROD ? px(`${MKTDATA_DIRECT}${path}`)   : `${MKTDATA_DEV}${path}` }
+function yahooUrl(path)    { return IS_PROD ? px(`${YAHOO_DIRECT}${path}`)     : `${YAHOO_DEV}${path}` }
 
 // Map Yahoo Finance index symbols → Stooq
 const INDEX_MAP = {
@@ -59,6 +53,7 @@ function detectType(symbol) {
   if (/^\d{4,5}\.TW$/i.test(symbol)) return 'twse'
   if (INDEX_MAP[symbol]) return 'index'
   if (FX_MAP[symbol]) return 'fx'
+  if (/^[A-Z]+-[A-Z]+$/.test(symbol) && symbol.includes('-')) return 'crypto'
   return 'us'
 }
 
@@ -94,6 +89,55 @@ async function fetchStooqQuote(stooqSym) {
   return { date, open: +open, high: +high, low: +low, close: +close, volume: +volume || 0 }
 }
 
+// ── Yahoo Finance quote (for crypto) ──
+async function fetchYahooQuote(symbol) {
+  const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`
+  const r = await fetch(yahooUrl(path))
+  if (!r.ok) throw new Error(`Yahoo error ${r.status}`)
+  const json = await r.json()
+  const meta = json?.chart?.result?.[0]?.meta
+  if (!meta) throw new Error('No Yahoo data')
+  const prev = meta.chartPreviousClose ?? meta.previousClose ?? meta.regularMarketPrice
+  const price = meta.regularMarketPrice
+  const change = price - prev
+  const changePct = prev ? (change / prev) * 100 : 0
+  return {
+    price, change, changePct,
+    open: meta.regularMarketOpen,
+    high: meta.regularMarketDayHigh,
+    low: meta.regularMarketDayLow,
+    prev,
+    volume: meta.regularMarketVolume,
+    currency: meta.currency,
+    ts: meta.regularMarketTime,
+  }
+}
+
+// ── Yahoo Finance OHLC (for crypto) ──
+async function fetchYahooOHLC(symbol, range = '3mo') {
+  const RI = {
+    '1mo': { interval: '1d',  range: '1mo' },
+    '3mo': { interval: '1d',  range: '3mo' },
+    '6mo': { interval: '1d',  range: '6mo' },
+    '1y':  { interval: '1wk', range: '1y' },
+    '2y':  { interval: '1wk', range: '2y' },
+    '5y':  { interval: '1mo', range: '5y' },
+  }
+  const { interval, range: r } = RI[range] ?? RI['3mo']
+  const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${interval}&range=${r}`
+  const res = await fetch(yahooUrl(path))
+  if (!res.ok) throw new Error(`Yahoo OHLC error ${res.status}`)
+  const json = await res.json()
+  const result = json?.chart?.result?.[0]
+  if (!result?.timestamp?.length) throw new Error('No Yahoo OHLC data')
+  const { timestamp, indicators } = result
+  const q = indicators.quote[0]
+  return timestamp.map((t, i) => ({
+    time: t,
+    open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i], volume: q.volume[i],
+  })).filter(c => c.open != null && c.close != null)
+}
+
 // ── OHLC history cache ──
 const ohlcCache = new Map()
 const OHLC_TTL = 5 * 60 * 1000
@@ -104,6 +148,12 @@ export async function fetchOHLC(symbol, range = '3mo') {
   if (cached && Date.now() - cached.ts < OHLC_TTL) return cached.data
 
   const type = detectType(symbol)
+
+  if (type === 'crypto') {
+    const data = await fetchYahooOHLC(symbol, range)
+    ohlcCache.set(cacheKey, { data, ts: Date.now() })
+    return data
+  }
 
   if (type === 'twse') {
     const code = symbol.split('.')[0]
@@ -155,7 +205,7 @@ export async function fetchOHLC(symbol, range = '3mo') {
     return data
   }
 
-  // index / fx: use Stooq CSV history
+  // index / fx: Stooq CSV history
   const stooqSym = toStooqSym(symbol)
   const from = rangeToFromDate(range)
   const to = todayStr()
@@ -181,6 +231,10 @@ export async function fetchOHLC(symbol, range = '3mo') {
 // ── Main quote fetcher ──
 export async function fetchQuote(symbol) {
   const type = detectType(symbol)
+
+  if (type === 'crypto') {
+    return fetchYahooQuote(symbol)
+  }
 
   if (type === 'twse') {
     const code = symbol.split('.')[0]
@@ -253,10 +307,8 @@ export async function fetchIntraday(symbol, interval = '15m', days = 5) {
   const cached = intradayCache.get(key)
   if (cached && Date.now() - cached.ts < INTRADAY_TTL) return cached.data
 
-  // Yahoo Finance v8 chart endpoint — works for TW, US, indices, FX
-  const yhSym = encodeURIComponent(symbol)
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yhSym}?interval=${interval}&range=${days}d&includePrePost=false`
-  const r = await fetch(px(url))
+  const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${interval}&range=${days}d&includePrePost=false`
+  const r = await fetch(yahooUrl(path))
   if (!r.ok) throw new Error(`盤中資料錯誤 ${r.status}`)
   const json = await r.json()
   const result = json.chart?.result?.[0]

@@ -62,6 +62,20 @@ function marketProxyPlugin() {
         }
       })
 
+      // Yahoo Finance proxy — quotes, OHLC, intraday (all asset types incl. crypto)
+      server.middlewares.use('/api/yahoo', async (req, res) => {
+        const url = `https://query1.finance.yahoo.com${req.url.replace(/^\/api\/yahoo/, '')}`
+        try {
+          const r = await fetch(url, { headers: { 'User-Agent': UA } })
+          res.statusCode = r.status
+          res.setHeader('Content-Type', 'application/json')
+          res.setHeader('Access-Control-Allow-Origin', '*')
+          res.end(await r.text())
+        } catch (e) {
+          res.statusCode = 502; res.end(e.message)
+        }
+      })
+
       // News RSS proxy — Google News RSS → JSON (no auth needed)
       server.middlewares.use('/api/news', async (req, res) => {
         const tail = req.url

@@ -771,56 +771,17 @@ button, input, textarea, select { font-family: inherit; }
 /* ── mw-components.jsx ──────────────────────────────────── */
 const { useState, useEffect, useRef, useMemo, useCallback } = React
 
-/* ── Multi-proxy fetch (allorigins → corsproxy fallback) ──── */
-const PROXY_LIST = [
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-]
+/* ── Live Quotes via Yahoo Finance + corsproxy.io ─────────── */
+const CORS_PROXY = 'https://corsproxy.io/?'
 
-async function proxyFetch(url, timeout = 9000) {
-  let lastErr
-  for (const makeProxy of PROXY_LIST) {
-    try {
-      const ctrl = new AbortController()
-      const tid = setTimeout(() => ctrl.abort(), timeout)
-      const res = await fetch(makeProxy(url), { signal: ctrl.signal })
-      clearTimeout(tid)
-      if (res.ok) return res
-      lastErr = new Error(`HTTP ${res.status}`)
-    } catch(e) { lastErr = e }
-  }
-  throw lastErr || new Error('所有 proxy 失敗')
-}
-
-/* ── Live Quotes via Yahoo Finance (v7 batch → v8 meta fallback) */
 async function fetchYahooBatch(symbols) {
-  // Try v7 batch first (one request for all symbols)
-  try {
-    const joined = symbols.join(',')
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(joined)}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketVolume`
-    const res = await proxyFetch(url)
-    const json = await res.json()
-    const results = json?.quoteResponse?.result ?? []
-    if (results.length) return results
-  } catch(_) {}
-
-  // Fallback: v8 chart meta per-symbol (parallel)
-  const settled = await Promise.allSettled(symbols.map(async sym => {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=1d&interval=1d`
-    const res = await proxyFetch(url)
-    const json = await res.json()
-    const meta = json?.chart?.result?.[0]?.meta
-    if (!meta?.regularMarketPrice) return null
-    const prev = meta.chartPreviousClose ?? meta.previousClose ?? meta.regularMarketPrice
-    return {
-      symbol: sym,
-      regularMarketPrice:         meta.regularMarketPrice,
-      regularMarketChange:        meta.regularMarketPrice - prev,
-      regularMarketChangePercent: ((meta.regularMarketPrice - prev) / prev) * 100,
-      regularMarketVolume:        meta.regularMarketVolume ?? 0,
-    }
-  }))
-  return settled.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value)
+  const joined = symbols.join(',')
+  const baseUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(joined)}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketVolume`
+  const proxyUrl = CORS_PROXY + encodeURIComponent(baseUrl)
+  const res = await fetch(proxyUrl)
+  if (!res.ok) throw new Error(`Yahoo ${res.status}`)
+  const json = await res.json()
+  return json?.quoteResponse?.result ?? []
 }
 
 function buildTickerFromQuotes(quotes) {
@@ -1429,7 +1390,7 @@ function CandleChart({
   )
 }
 
-/* ── useCandles: Yahoo Finance v8 OHLCV (multi-proxy) ────────
+/* ── useCandles: Yahoo Finance v8 OHLCV via corsproxy.io ─────
    Fetches real OHLC candle data; cancels in-flight requests on
    symbol / interval / range change.  Falls back to mock data
    on error so the chart is never blank.
@@ -1455,11 +1416,12 @@ function useCandles(symbol, interval, range) {
     let cancelled = false
     const { yInterval, yRange } = intervalToYahoo(interval, range)
     const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${yRange}&interval=${yInterval}&includePrePost=false`
+    const url = 'https://corsproxy.io/?' + encodeURIComponent(baseUrl)
 
     setLoading(true); setError(null)
 
-    proxyFetch(baseUrl)
-      .then(r => r.json())
+    fetch(url)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then(json => {
         const res = json?.chart?.result?.[0]
         if (!res) throw new Error('回應無資料')
