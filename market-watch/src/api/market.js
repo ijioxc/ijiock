@@ -73,10 +73,22 @@ export async function fetchOHLC(symbol, range = '3mo') {
 
   const { timestamp, indicators } = result
   const q = indicators.quote[0]
-  const data = timestamp.map((t, i) => ({
-    time: t,
-    open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i], volume: q.volume[i],
-  })).filter(c => c.open != null && c.close != null)
+  const adj = indicators.adjclose?.[0]?.adjclose
+
+  const data = timestamp.map((t, i) => {
+    const raw = q.close[i]
+    if (raw == null || q.open[i] == null) return null
+    // 用 adjclose 等比例縮放，修正股票分割造成的歷史價格跳空
+    const factor = (adj && adj[i] != null && raw !== 0) ? adj[i] / raw : 1
+    return {
+      time: t,
+      open:   q.open[i]   * factor,
+      high:   q.high[i]   * factor,
+      low:    q.low[i]    * factor,
+      close:  raw         * factor,
+      volume: q.volume[i],
+    }
+  }).filter(Boolean)
 
   ohlcCache.set(cacheKey, { data, ts: Date.now() })
   return data
