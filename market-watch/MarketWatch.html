@@ -204,6 +204,9 @@ button, input, textarea, select { font-family: inherit; }
 .ohlc-v { font-size: 11px; font-weight: 600; font-family: var(--font-mono); }
 .chart-area { flex: 1; min-height: 0; position: relative; overflow: hidden; }
 .fullscreen-panel { position: fixed !important; inset: 0; z-index: 200; border-radius: 0 !important; }
+.chart-overlay-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: var(--text-3); z-index: 10; pointer-events: none; }
+.chart-spinner { width: 14px; height: 14px; border: 2px solid var(--border-md); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg) } }
 /* ── Overlay bar (疊加選項, second row) ───────────────────── */
 .overlay-bar { display: flex; align-items: center; gap: 4px; padding: 5px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; background: var(--surface-2); animation: fadeIn .15s ease; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(-4px) } to { opacity:1; transform:none } }
@@ -1135,6 +1138,62 @@ function CandleChart({ candles }) {
   )
 }
 
+/* ── useCandles: Yahoo Finance v8 OHLCV via corsproxy.io ─────
+   Fetches real OHLC candle data; cancels in-flight requests on
+   symbol / interval / range change.  Falls back to mock data
+   on error so the chart is never blank.
+─────────────────────────────────────────────────────────────── */
+function intervalToYahoo(interval, range) {
+  const rm = { '1M':'1mo','3M':'3mo','6M':'6mo','1Y':'1y','3Y':'5y' }
+  if (interval === '分K') return { yInterval:'5m',  yRange:'5d' }
+  if (interval === '時K') return { yInterval:'1h',  yRange: rm[range] || '1mo' }
+  if (interval === '週K') {
+    const wr = { '1M':'6mo','3M':'1y','6M':'2y','1Y':'5y','3Y':'max' }
+    return { yInterval:'1wk', yRange: wr[range] || '1y' }
+  }
+  return { yInterval:'1d', yRange: rm[range] || '3mo' }  // 日K default
+}
+
+function useCandles(symbol, interval, range) {
+  const [candles, setCandles] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState(null)
+
+  useEffect(() => {
+    if (!symbol) return
+    let cancelled = false
+    const { yInterval, yRange } = intervalToYahoo(interval, range)
+    const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${yRange}&interval=${yInterval}&includePrePost=false`
+    const url = 'https://corsproxy.io/?' + encodeURIComponent(baseUrl)
+
+    setLoading(true); setError(null)
+
+    fetch(url)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
+      .then(json => {
+        const res = json?.chart?.result?.[0]
+        if (!res) throw new Error('回應無資料')
+        const { timestamp, indicators } = res
+        const q = indicators.quote[0]
+        const data = timestamp
+          .map((t, i) => ({
+            time: t,
+            open: q.open[i], high: q.high[i],
+            low:  q.low[i],  close: q.close[i],
+            volume: q.volume[i] || 0
+          }))
+          .filter(c => c.open != null && c.close != null)
+        if (!cancelled) setCandles(data)
+      })
+      .catch(e => { if (!cancelled) setError(e.message) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+
+    return () => { cancelled = true }
+  }, [symbol, interval, range])
+
+  return { candles, loading, error }
+}
+
 function ChartPanel({ symbol }) {
   const [interval, setInterval] = useState('日K')
   const [range, setRange] = useState('3M')
@@ -1164,7 +1223,10 @@ function ChartPanel({ symbol }) {
   const allQ = Object.values(window.MW_DATA.quotes).flat()
   const quote = allQ.find(q => q.symbol === symbol) || allQ[0]
   const up = quote.changePct >= 0
-  const candles = window.MW_DATA.candles
+
+  // Live OHLCV candle data — falls back to mock on error
+  const { candles: fetchedCandles, loading: candleLoading, error: candleError } = useCandles(symbol, interval, range)
+  const candles = fetchedCandles || window.MW_DATA.candles
   const last = candles[candles.length - 1]
 
   // Count active overlays for badge
@@ -1239,7 +1301,19 @@ function ChartPanel({ symbol }) {
           <span className="ohlc-v mono" style={{color:'rgba(99,102,241,.9)'}}>{(candles.slice(-5).reduce((s,c)=>s+c.close,0)/5).toFixed(2)}</span>
         </div>
       </div>
-      <div className="chart-area"><CandleChart candles={candles.slice(-50)} /></div>
+      <div className="chart-area">
+        {candleLoading && (
+          <div className="chart-overlay-msg">
+            <span className="chart-spinner" />載入中…
+          </div>
+        )}
+        {!candleLoading && candleError && (
+          <div className="chart-overlay-msg" style={{color:'var(--warn)'}}>
+            ⚠ {candleError}
+          </div>
+        )}
+        <CandleChart candles={candles.slice(-120)} />
+      </div>
     </div>
   )
 }
