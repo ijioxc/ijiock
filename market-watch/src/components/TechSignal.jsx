@@ -603,6 +603,7 @@ export default function TechSignal({ tech }) {
         <CompositeScore tech={tech} />
       </div>
 
+      <div className="tech-scroll">
       {bbWidth && (
         <div className={`bb-banner bb-banner-${bbPattern ?? 'neutral'}`}>
           <div className="bb-banner-icon">{bbMeta.icon}</div>
@@ -742,6 +743,7 @@ export default function TechSignal({ tech }) {
           </div>
         </div>
       )}
+      </div>{/* end tech-scroll */}
     </div>
   )
 }
