@@ -83,6 +83,7 @@ export default function NavBar({ darkMode, onToggleDark }) {
 
   return (
     <>
+    <div className="navbar-wrapper">
     <nav className="navbar">
       <div className="logo">
         <div className="logo-mark">
@@ -134,6 +135,7 @@ export default function NavBar({ darkMode, onToggleDark }) {
       </div>
 
     </nav>
+    </div>
 
       {showKey && createPortal(
         <div className="key-modal" onClick={() => setShowKey(false)}>

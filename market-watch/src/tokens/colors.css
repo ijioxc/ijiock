@@ -72,7 +72,7 @@
 }
 
 /* ── Dark theme ── */
-[data-theme="dark"], .dark {
+:root[data-appearance="dark"], [data-appearance="dark"], [data-theme="dark"], .dark {
   --bg:          #141417;
   --page-bg:     #141417;
   --page-gradient:

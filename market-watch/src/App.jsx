@@ -25,10 +25,17 @@ function QuotesRunner() {
 }
 
 export default function App() {
-  const [darkMode, setDarkMode] = useState(false)
+  const savedDark = typeof localStorage !== 'undefined' ? localStorage.getItem('mw-dark') === '1' : false
+  const [darkMode, setDarkMode] = useState(savedDark)
   const [rightTab, setRightTab] = useState('advisor')
   const triggeredAlerts = useWatchlistStore(s => s.triggeredAlerts)
   const forceRefresh = useWatchlistStore(s => s.forceRefresh)
+
+  // Sync dark mode — set both class and data-appearance attr
+  useEffect(() => {
+    document.documentElement.setAttribute('data-appearance', darkMode ? 'dark' : 'light')
+    localStorage.setItem('mw-dark', darkMode ? '1' : '0')
+  }, [darkMode])
 
   // Number keys 1-4 switch right tabs
   useEffect(() => {
