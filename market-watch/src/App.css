@@ -13,7 +13,7 @@
   --text-2: #98989D;
   --text-3: #636366;
 }
-.app.dark { background: var(--bg); color: var(--text); }
+.app.dark { background: transparent; color: var(--text); }
 .main-layout { display: flex; flex: 1; overflow: hidden; }
 
 /* ── ALERT BANNER ── */
@@ -132,10 +132,12 @@
 /* ── WATCHLIST ── */
 .watchlist {
   width: 240px; flex-shrink: 0;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+  background: var(--card-fill);
+  backdrop-filter: var(--card-blur);
+  -webkit-backdrop-filter: var(--card-blur);
+  border-right: var(--card-border);
   display: flex; flex-direction: column; overflow: hidden;
-  box-shadow: 2px 0 12px rgba(0,0,0,.04);
+  box-shadow: var(--card-highlight), var(--card-shadow);
 }
 .wl-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 6px; }
 .wl-title { font-size: 11px; font-weight: 700; color: var(--text-3); letter-spacing: .5px; text-transform: uppercase; }
@@ -430,9 +432,13 @@
 
 /* ── RIGHT COLUMN ── */
 .right-col {
-  width: 300px; flex-shrink: 0; border-left: 1px solid var(--border);
-  display: flex; flex-direction: column; overflow: hidden; background: var(--surface);
-  box-shadow: -2px 0 12px rgba(0,0,0,.04);
+  width: 300px; flex-shrink: 0;
+  border-left: var(--card-border);
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--card-fill);
+  backdrop-filter: var(--card-blur);
+  -webkit-backdrop-filter: var(--card-blur);
+  box-shadow: var(--card-highlight), var(--card-shadow);
 }
 .right-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .r-tab {
