@@ -831,120 +831,61 @@ export default function ChartPanel({ darkMode = false }) {
             </span>
           )}
         </div>
+        {/* Interval + Range tabs — primary controls, left of toggles */}
+        <div className="interval-tabs">
+          {INTERVALS.map(iv => (
+            <button
+              key={iv}
+              className={`range-tab ${interval === iv ? 'active' : ''}`}
+              onClick={() => {
+                setInterval(iv)
+                const ranges = RANGES_BY_INTERVAL[iv]
+                if (!ranges.includes(range)) setRange(ranges[1] ?? ranges[0])
+              }}
+            >{iv}</button>
+          ))}
+        </div>
+        <div className="range-tabs">
+          {RANGES_BY_INTERVAL[interval].map(r => (
+            <button key={r} className={`range-tab ${range === r ? 'active' : ''}`} onClick={() => setRange(r)}>{r}</button>
+          ))}
+        </div>
+
+        {/* Indicator toggles — grouped with separators */}
         <div className="chart-header-right">
-          <button
-            className={`bb-toggle ${showLinReg ? 'on' : ''}`}
-            onClick={() => setShowLinReg(v => !v)}
-            title="線性迴歸趨勢線 (含預測延伸)"
-          >LR</button>
-          <button
-            className={`bb-toggle ${showIchimoku ? 'on' : ''}`}
-            onClick={() => setShowIchimoku(v => !v)}
-            title="一目均衡表 Ichimoku Cloud"
-          >ICH</button>
-          <button
-            className={`bb-toggle ${showKC ? 'on' : ''}`}
-            onClick={() => setShowKC(v => !v)}
-            title="Keltner Channel EMA(20) ± 1.5×ATR(10)"
-          >KC</button>
-          <button
-            className={`bb-toggle ${showVwap ? 'on' : ''}`}
-            onClick={() => setShowVwap(v => !v)}
-            title="VWAP 成交量加權均價"
-          >VWAP</button>
-          <button
-            className={`bb-toggle ${showMA ? 'on' : ''}`}
-            onClick={() => setShowMA(v => !v)}
-            title="切換均線 MA5/20/60"
-          >MA</button>
-          <button
-            className={`bb-toggle ${showBB ? 'on' : ''}`}
-            onClick={() => setShowBB(v => !v)}
-            title="切換布林通道"
-          >BB</button>
-          <button
-            className={`bb-toggle ${showFib ? 'on' : ''}`}
-            onClick={() => setShowFib(v => !v)}
-            title="切換費波那契回調"
-          >Fib</button>
-          <button
-            className={`bb-toggle ${showPivots ? 'on' : ''}`}
-            onClick={() => setShowPivots(v => !v)}
-            title="樞紐點 PP/R1/R2/S1/S2"
-          >PP</button>
+          {/* 疊加指標 */}
+          <button className={`bb-toggle ${showMA ? 'on' : ''}`} onClick={() => setShowMA(v => !v)} title="均線 MA5/20/60">MA</button>
+          <button className={`bb-toggle ${showBB ? 'on' : ''}`} onClick={() => setShowBB(v => !v)} title="布林通道">BB</button>
+          <button className={`bb-toggle ${showVwap ? 'on' : ''}`} onClick={() => setShowVwap(v => !v)} title="VWAP 成交量加權均價">VWAP</button>
+          <button className={`bb-toggle ${showKC ? 'on' : ''}`} onClick={() => setShowKC(v => !v)} title="Keltner Channel">KC</button>
+          <button className={`bb-toggle ${showLinReg ? 'on' : ''}`} onClick={() => setShowLinReg(v => !v)} title="線性迴歸趨勢線">LR</button>
+          <button className={`bb-toggle ${showIchimoku ? 'on' : ''}`} onClick={() => setShowIchimoku(v => !v)} title="一目均衡表">ICH</button>
+          <button className={`bb-toggle ${showFib ? 'on' : ''}`} onClick={() => setShowFib(v => !v)} title="費波那契回調">Fib</button>
+          <button className={`bb-toggle ${showPivots ? 'on' : ''}`} onClick={() => setShowPivots(v => !v)} title="樞紐點 PP/R1/R2/S1/S2">PP</button>
+
+          <span className="toggle-sep" />
+
+          {/* 副圖 */}
+          <button className={`bb-toggle ${showRsiSub ? 'on' : ''}`} onClick={() => setShowRsiSub(v => !v)} title="RSI 子圖">RSI</button>
+          <button className={`bb-toggle ${showMacdSub ? 'on' : ''}`} onClick={() => setShowMacdSub(v => !v)} title="MACD 子圖">MACD</button>
+          <button className={`bb-toggle ${showObvSub ? 'on' : ''}`} onClick={() => setShowObvSub(v => !v)} title="OBV 量能子圖">OBV</button>
+          <button className={`bb-toggle ${showRetDist ? 'on' : ''}`} onClick={() => setShowRetDist(v => !v)} title="報酬分布直方圖">RD</button>
+          <button className={`bb-toggle ${showVolProfile ? 'on' : ''}`} onClick={() => setShowVolProfile(v => !v)} title="Volume Profile">VP</button>
+
+          <span className="toggle-sep" />
+
+          {/* 工具 */}
           <button
             className={`bb-toggle ${drawMode ? 'on draw-active' : ''}`}
             onClick={() => setDrawMode(v => !v)}
-            title={drawMode ? '點擊圖表畫水平線 (再按關閉)' : '開啟畫線模式'}
-            style={{ fontFamily: 'inherit' }}
+            title={drawMode ? '點擊圖表畫水平線' : '畫線模式'}
           >✏{drawnCount > 0 ? ` ${drawnCount}` : ''}</button>
           {drawnCount > 0 && (
-            <button
-              className="bb-toggle"
-              onClick={clearDrawnLines}
-              title="清除全部畫線"
-              style={{ color: 'var(--dn)' }}
-            >⊘</button>
+            <button className="bb-toggle" onClick={clearDrawnLines} title="清除畫線" style={{ color: 'var(--dn)' }}>⊘</button>
           )}
-          <button
-            className="bb-toggle"
-            onClick={copyStats}
-            title="複製報告"
-            style={{ fontSize: copied ? 11 : 12 }}
-          >{copied ? '✓' : '⎘'}</button>
-          <button
-            className={`bb-toggle ${compareMode ? 'on' : ''}`}
-            onClick={() => { setCompareMode(v => !v); if (compareMode) setCompareSymbol(null) }}
-            title="比較模式"
-          >vs</button>
-          <button
-            className={`bb-toggle ${showRsiSub ? 'on' : ''}`}
-            onClick={() => setShowRsiSub(v => !v)}
-            title="RSI 子圖"
-          >RSI</button>
-          <button
-            className={`bb-toggle ${showMacdSub ? 'on' : ''}`}
-            onClick={() => setShowMacdSub(v => !v)}
-            title="MACD 子圖"
-          >MCD</button>
-          <button
-            className={`bb-toggle ${showObvSub ? 'on' : ''}`}
-            onClick={() => setShowObvSub(v => !v)}
-            title="OBV 量能子圖"
-          >OBV</button>
-          <button
-            className={`bb-toggle ${showRetDist ? 'on' : ''}`}
-            onClick={() => setShowRetDist(v => !v)}
-            title="報酬分布直方圖"
-          >RD</button>
-          <button
-            className={`bb-toggle ${showVolProfile ? 'on' : ''}`}
-            onClick={() => setShowVolProfile(v => !v)}
-            title="成交量分布 Volume Profile"
-          >VP</button>
-          <button
-            className={`bb-toggle ${fullscreen ? 'on' : ''}`}
-            onClick={() => setFullscreen(v => !v)}
-            title="全螢幕 (Esc 退出)"
-          >⛶</button>
-          <div className="interval-tabs">
-            {INTERVALS.map(iv => (
-              <button
-                key={iv}
-                className={`range-tab ${interval === iv ? 'active' : ''}`}
-                onClick={() => {
-                  setInterval(iv)
-                  const ranges = RANGES_BY_INTERVAL[iv]
-                  if (!ranges.includes(range)) setRange(ranges[1] ?? ranges[0])
-                }}
-              >{iv}</button>
-            ))}
-          </div>
-          <div className="range-tabs">
-            {RANGES_BY_INTERVAL[interval].map(r => (
-              <button key={r} className={`range-tab ${range === r ? 'active' : ''}`} onClick={() => setRange(r)}>{r}</button>
-            ))}
-          </div>
+          <button className={`bb-toggle ${compareMode ? 'on' : ''}`} onClick={() => { setCompareMode(v => !v); if (compareMode) setCompareSymbol(null) }} title="比較模式">vs</button>
+          <button className="bb-toggle" onClick={copyStats} title="複製報告">{copied ? '✓' : '⎘'}</button>
+          <button className={`bb-toggle ${fullscreen ? 'on' : ''}`} onClick={() => setFullscreen(v => !v)} title="全螢幕">⛶</button>
         </div>
       </div>
       {q && (

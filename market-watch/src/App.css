@@ -247,9 +247,11 @@
   box-shadow: var(--card-highlight), var(--card-shadow);
 }
 .chart-header {
-  display: flex; align-items: center; gap: 8px; padding: 10px 14px 8px;
-  border-bottom: 1px solid var(--border); flex-shrink: 0; min-width: 0;
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+  overflow-x: auto; scrollbar-width: none;
 }
+.chart-header::-webkit-scrollbar { display: none; }
 .chart-name-block { flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
 .chart-title { font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
 .chart-symbol { font-size: 11px; color: var(--text-3); }
@@ -859,11 +861,16 @@
 
 /* ── CHART HEADER RIGHT ── */
 .chart-header-right {
-  display: flex; align-items: center; gap: 6px;
-  flex: 1; min-width: 0; overflow-x: auto; flex-wrap: nowrap;
+  display: flex; align-items: center; gap: 4px;
+  overflow-x: auto; flex-wrap: nowrap; flex-shrink: 0;
   scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  margin-left: auto;
 }
 .chart-header-right::-webkit-scrollbar { display: none; }
+.toggle-sep {
+  width: 1px; height: 14px; background: var(--border-md);
+  flex-shrink: 0; margin: 0 2px;
+}
 .bb-toggle {
   padding: 4px 10px; border: 1.5px solid var(--border-md); border-radius: var(--r-xs);
   background: var(--surface-2); color: var(--text-3); font-size: 10px; font-weight: 800;
