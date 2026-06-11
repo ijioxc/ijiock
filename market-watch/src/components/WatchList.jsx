@@ -441,9 +441,10 @@ export default function WatchList() {
             const abs = Math.min(Math.abs(pct), 10)
             const intensity = abs / 10
             const isUp = pct >= 0
+            // TW convention: RED = up (漲), GREEN = down (跌)
             const bg = isUp
-              ? `rgba(38,166,154,${0.12 + intensity * 0.55})`
-              : `rgba(239,83,80,${0.12 + intensity * 0.55})`
+              ? `rgba(239,83,80,${0.12 + intensity * 0.55})`
+              : `rgba(38,166,154,${0.12 + intensity * 0.55})`
             const border = selected === symbol ? '2px solid var(--accent)' : '2px solid transparent'
             return (
               <div
