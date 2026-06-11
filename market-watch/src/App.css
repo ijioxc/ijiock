@@ -304,7 +304,12 @@
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   padding: 8px 12px 6px; flex-shrink: 0;
 }
-.tech-scroll { flex: 1; overflow-y: auto; padding: 0 12px 10px; }
+.tech-scroll {
+  flex: 1; overflow-y: auto; padding: 0 12px 10px;
+  /* fade-out right edge to hint horizontal scroll */
+  -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+}
 .tech-scroll::-webkit-scrollbar { width: 3px; }
 .tech-scroll::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
 .trend-badge {
@@ -384,24 +389,73 @@
   background: var(--warn); border-radius: 2px;
 }
 
+/* ── TECH CAROUSEL ── */
 .tech-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-direction: row;
   gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px;
 }
+.tech-grid::-webkit-scrollbar { display: none; }
 
 /* ── SIGNAL CARD ── */
+@keyframes sig-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
 .sig-card {
+  flex: 0 0 180px;
+  scroll-snap-align: start;
   display: flex; flex-direction: column; gap: 6px; padding: 10px 12px;
   background: var(--card-fill);
   backdrop-filter: var(--card-blur); -webkit-backdrop-filter: var(--card-blur);
   border: var(--card-border); border-radius: 14px;
   box-shadow: var(--card-highlight), var(--card-shadow);
-  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  transition: transform .28s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .28s cubic-bezier(.34,1.56,.64,1);
+  animation: sig-in .38s cubic-bezier(.34,1.56,.64,1) both;
 }
-.sig-card:hover { transform: translateY(-2px); box-shadow: var(--card-highlight), var(--card-shadow-hover); }
-.sig-card.bull  { background: var(--up-soft); border-color: rgba(239,68,68,.22); }
-.sig-card.bear  { background: var(--dn-soft); border-color: rgba(34,197,94,.22); }
+/* Staggered entrance: up to 15 cards */
+.sig-card:nth-child(1)  { animation-delay: .03s; }
+.sig-card:nth-child(2)  { animation-delay: .07s; }
+.sig-card:nth-child(3)  { animation-delay: .11s; }
+.sig-card:nth-child(4)  { animation-delay: .15s; }
+.sig-card:nth-child(5)  { animation-delay: .19s; }
+.sig-card:nth-child(6)  { animation-delay: .23s; }
+.sig-card:nth-child(7)  { animation-delay: .27s; }
+.sig-card:nth-child(8)  { animation-delay: .31s; }
+.sig-card:nth-child(9)  { animation-delay: .35s; }
+.sig-card:nth-child(10) { animation-delay: .39s; }
+.sig-card:nth-child(11) { animation-delay: .43s; }
+.sig-card:nth-child(12) { animation-delay: .47s; }
+.sig-card:nth-child(13) { animation-delay: .51s; }
+.sig-card:nth-child(14) { animation-delay: .55s; }
+.sig-card:nth-child(15) { animation-delay: .59s; }
+
+.sig-card:hover {
+  transform: translateY(-3px) scale(1.015);
+  box-shadow: var(--card-highlight), var(--card-shadow-hover);
+}
+.sig-card.bull {
+  background: var(--up-soft);
+  border-color: rgba(239,68,68,.22);
+}
+.sig-card.bull:hover {
+  box-shadow: var(--card-highlight), var(--card-shadow-hover),
+              0 0 22px rgba(239,68,68,.28), 0 0 6px rgba(239,68,68,.18);
+}
+.sig-card.bear {
+  background: var(--dn-soft);
+  border-color: rgba(34,197,94,.22);
+}
+.sig-card.bear:hover {
+  box-shadow: var(--card-highlight), var(--card-shadow-hover),
+              0 0 22px rgba(34,197,94,.28), 0 0 6px rgba(34,197,94,.18);
+}
 .sig-card.neutral { }
 
 .sig-top { display: flex; align-items: flex-start; gap: 8px; }

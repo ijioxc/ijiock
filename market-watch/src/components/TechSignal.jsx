@@ -433,7 +433,7 @@ function RsiDivergenceCard({ div }) {
   if (!div) return null
   const cls = div.bull ? 'bull' : 'bear'
   return (
-    <div className={`sig-card ${cls}`} style={{ gridColumn: 'span 2' }}>
+    <div className={`sig-card ${cls}`} style={{ flexBasis: 280, minWidth: 280 }}>
       <div className="sig-top">
         <div className={`sig-geo ${cls}`} style={{ fontSize: 16 }}>{div.bull ? '🔵' : '🔴'}</div>
         <div className="sig-body">
