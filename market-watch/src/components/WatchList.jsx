@@ -308,10 +308,6 @@ export default function WatchList() {
       </div>
 
       <div className="wl-search-wrap">
-        <svg className="wl-search-icon" viewBox="0 0 20 20" fill="none">
-          <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.8" />
-          <line x1="13.5" y1="13.5" x2="17" y2="17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
         <input
           ref={searchRef}
           className="wl-search"
