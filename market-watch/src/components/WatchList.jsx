@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useWatchlistStore } from '../store/watchlistStore'
+import { IconButton } from '../design-system/components/core/IconButton'
+import { Button } from '../design-system/components/core/Button'
+import { Sparkline } from '../design-system/components/market/Sparkline'
 
 function HoverTip({ children, tip }) {
   const [show, setShow] = useState(false)
@@ -16,30 +19,7 @@ function HoverTip({ children, tip }) {
 
 const CATS = ['ALL', 'TW', 'US', 'IDX', 'FX']
 const CAT_LABELS = { TW: '台股', US: '美股', IDX: '指數', FX: '外匯' }
-
-function MiniSparkline({ data, up }) {
-  const W = 68, H = 36, P = 3
-  if (!data || data.length < 2) return <svg width={W} height={H} className="sparkline" />
-  const min = Math.min(...data)
-  const max = Math.max(...data)
-  const range = max - min || 1
-  const pts = data.map((v, i) => [
-    P + (i / (data.length - 1)) * (W - P * 2),
-    P + (1 - (v - min) / range) * (H - P * 2),
-  ])
-  const polyPts = pts.map(([x, y]) => `${x},${y}`).join(' ')
-  const areaD = `M ${pts[0][0]},${H} ${pts.map(([x, y]) => `L ${x},${y}`).join(' ')} L ${pts[pts.length - 1][0]},${H} Z`
-  const color = up ? 'var(--up)' : 'var(--dn)'
-  const fillRgba = up ? 'rgba(239,83,80,.13)' : 'rgba(38,166,154,.13)'
-  const [lx, ly] = pts[pts.length - 1]
-  return (
-    <svg width={W} height={H} className="sparkline">
-      <path d={areaD} fill={fillRgba} />
-      <polyline points={polyPts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={lx} cy={ly} r="2.5" fill={color} />
-    </svg>
-  )
-}
+const TAG_COLORS = { red: '#ef5350', yellow: '#f59e0b', green: '#26a69a', blue: '#6366f1' }
 
 function LoadingDots() {
   return (
@@ -66,6 +46,7 @@ export default function WatchList() {
   const symbolNotes = useWatchlistStore(s => s.symbolNotes)
   const setNote = useWatchlistStore(s => s.setNote)
   const alerts = useWatchlistStore(s => s.alerts)
+
   const [tagMenu, setTagMenu] = useState(null)
   const [noteEdit, setNoteEdit] = useState(null)
   const [importError, setImportError] = useState('')
@@ -73,11 +54,13 @@ export default function WatchList() {
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('default')
   const [addDraft, setAddDraft] = useState({ symbol: '', name: '', category: 'TW' })
+  const [addError, setAddError] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [flashMap, setFlashMap] = useState({})
   const [viewMode, setViewMode] = useState('list')
   const prevPricesRef = useRef({})
   const searchRef = useRef(null)
+  const symbolInputRef = useRef(null)
 
   useEffect(() => {
     Object.entries(quotes).forEach(([sym, q]) => {
@@ -92,7 +75,12 @@ export default function WatchList() {
     })
   }, [quotes])
 
-  // Build sorted/filtered list first so keyboard nav follows the same order
+  // Focus symbol input when add form opens
+  useEffect(() => {
+    if (showAdd) setTimeout(() => symbolInputRef.current?.focus(), 50)
+    else setAddError('')
+  }, [showAdd])
+
   const flatSymbols = cat === 'ALL' ? symbols : symbols.filter(s => s.category === cat)
   const q = search.toLowerCase()
   let filtered = flatSymbols.filter(s =>
@@ -110,7 +98,6 @@ export default function WatchList() {
     })
   }
 
-  // Keyboard navigation uses the sorted filtered list so J/K matches what's on screen
   const filteredRef = useRef(filtered)
   filteredRef.current = filtered
   const navigate = useCallback((dir) => {
@@ -138,6 +125,7 @@ export default function WatchList() {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [navigate])
+
   const groups = cat === 'ALL' && !q && sortBy === 'default'
     ? Object.entries(filtered.reduce((acc, s) => {
         const g = s.category
@@ -147,7 +135,51 @@ export default function WatchList() {
       }, {}))
     : null
 
-  const TAG_COLORS = { red: '#ef5350', yellow: '#f59e0b', green: '#26a69a', blue: '#6366f1' }
+  function handleAdd() {
+    const sym = addDraft.symbol.trim().toUpperCase()
+    if (!sym) {
+      setAddError('請輸入代號')
+      symbolInputRef.current?.focus()
+      return
+    }
+    // Name is optional — fall back to the symbol code itself
+    const name = addDraft.name.trim() || sym
+    addSymbol(sym, name, addDraft.category)
+    setAddDraft({ symbol: '', name: '', category: 'TW' })
+    setAddError('')
+    setShowAdd(false)
+  }
+
+  function handleExport() {
+    const data = JSON.stringify(
+      { symbols, notes: Object.fromEntries(Object.entries(useWatchlistStore.getState().symbolNotes)), tags: Object.fromEntries(Object.entries(useWatchlistStore.getState().symbolTags)) },
+      null, 2
+    )
+    const blob = new Blob([data], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `watchlist-${new Date().toISOString().slice(0, 10)}.json`; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleImport(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result)
+        if (Array.isArray(data.symbols)) {
+          data.symbols.forEach(s => {
+            if (s.symbol) addSymbol(s.symbol, s.name || s.symbol, s.category || 'US')
+          })
+        }
+        setImportError('')
+      } catch { setImportError('JSON 格式錯誤') }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
 
   function renderItem({ symbol, name }) {
     const q = quotes[symbol]
@@ -171,7 +203,7 @@ export default function WatchList() {
           </div>
           <div className="wl-symbol mono">{symbol}</div>
         </div>
-        <MiniSparkline data={priceHistory[symbol]} up={up} />
+        <Sparkline data={priceHistory[symbol]} up={up} width={68} height={36} />
         <div className="wl-right">
           {q ? (
             <>
@@ -243,55 +275,43 @@ export default function WatchList() {
       <div className="wl-header">
         <span className="wl-title">自選清單</span>
         <div style={{ display: 'flex', gap: 4 }}>
-          <button
-            className={`ibtn-sm ${viewMode === 'heat' ? 'active-sm' : ''}`}
-            onClick={() => setViewMode(v => v === 'heat' ? 'list' : 'heat')}
+          <IconButton
+            size="sm"
+            active={viewMode === 'heat'}
             title="熱力圖視圖"
-            style={{ fontSize: 10, fontWeight: 800 }}
-          >⬛</button>
-          <button
-            className={`ibtn-sm ${viewMode === 'table' ? 'active-sm' : ''}`}
-            onClick={() => setViewMode(v => v === 'table' ? 'list' : 'table')}
+            onClick={() => setViewMode(v => v === 'heat' ? 'list' : 'heat')}
+          >⬛</IconButton>
+          <IconButton
+            size="sm"
+            active={viewMode === 'table'}
             title="表格視圖"
-            style={{ fontSize: 10, fontWeight: 800 }}
-          >≡</button>
-          <button
-            className="ibtn-sm"
-            title="匯出自選清單 JSON"
-            onClick={() => {
-              const data = JSON.stringify({ symbols, notes: Object.fromEntries(Object.entries(useWatchlistStore.getState().symbolNotes)), tags: Object.fromEntries(Object.entries(useWatchlistStore.getState().symbolTags)) }, null, 2)
-              const blob = new Blob([data], { type: 'application/json' })
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a'); a.href = url; a.download = `watchlist-${new Date().toISOString().slice(0,10)}.json`; a.click()
-              URL.revokeObjectURL(url)
-            }}
-          >↓</button>
-          <label className="ibtn-sm" title="匯入自選清單 JSON" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0 6px' }}>
-            ↑
-            <input type="file" accept=".json" style={{ display: 'none' }} onChange={e => {
-              const file = e.target.files?.[0]
-              if (!file) return
-              const reader = new FileReader()
-              reader.onload = ev => {
-                try {
-                  const data = JSON.parse(ev.target.result)
-                  if (Array.isArray(data.symbols)) {
-                    data.symbols.forEach(s => {
-                      if (s.symbol && s.name) addSymbol(s.symbol, s.name, s.category || 'US')
-                    })
-                  }
-                  setImportError('')
-                } catch { setImportError('JSON 格式錯誤') }
-              }
-              reader.readAsText(file)
-              e.target.value = ''
-            }} />
-          </label>
-          <button className="ibtn-sm" onClick={() => setShowAdd(v => !v)}>＋</button>
+            onClick={() => setViewMode(v => v === 'table' ? 'list' : 'table')}
+          >≡</IconButton>
+          <IconButton size="sm" title="匯出自選清單 JSON" onClick={handleExport}>↓</IconButton>
+          {/* file input overlaid on the import button */}
+          <div style={{ position: 'relative', display: 'inline-flex' }}>
+            <IconButton size="sm" title="匯入自選清單 JSON">↑</IconButton>
+            <input
+              type="file"
+              accept=".json"
+              style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+              onChange={handleImport}
+            />
+          </div>
+          <IconButton
+            size="sm"
+            active={showAdd}
+            title="新增標的"
+            onClick={() => setShowAdd(v => !v)}
+          >＋</IconButton>
         </div>
       </div>
 
       <div className="wl-search-wrap">
+        <svg className="wl-search-icon" viewBox="0 0 20 20" fill="none">
+          <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.8" />
+          <line x1="13.5" y1="13.5" x2="17" y2="17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
         <input
           ref={searchRef}
           className="wl-search"
@@ -332,7 +352,6 @@ export default function WatchList() {
         const gainers = allQ.filter(q => q.change >= 0).length
         const losers = allQ.length - gainers
         const pct = Math.round((gainers / allQ.length) * 100)
-        // Simple Fear/Greed from breadth + avg change
         const avgChg = allQ.reduce((s, q) => s + (q.changePct ?? 0), 0) / allQ.length
         let fgScore = 50 + (pct - 50) * 0.6 + avgChg * 3
         fgScore = Math.max(0, Math.min(100, fgScore))
@@ -371,21 +390,40 @@ export default function WatchList() {
 
       {showAdd && (
         <div className="add-form">
-          <input placeholder="代號 e.g. 0050.TW" value={addDraft.symbol} onChange={e => setAddDraft(d => ({ ...d, symbol: e.target.value }))} />
-          <input placeholder="名稱 e.g. 元大50" value={addDraft.name} onChange={e => setAddDraft(d => ({ ...d, name: e.target.value }))} />
-          <select value={addDraft.category} onChange={e => setAddDraft(d => ({ ...d, category: e.target.value }))}>
-            <option value="TW">台股</option>
-            <option value="US">美股</option>
-            <option value="IDX">指數</option>
-            <option value="FX">外匯</option>
-          </select>
-          <button onClick={() => {
-            if (addDraft.symbol && addDraft.name) {
-              addSymbol(addDraft.symbol.trim().toUpperCase(), addDraft.name, addDraft.category)
-              setAddDraft({ symbol: '', name: '', category: 'TW' })
-              setShowAdd(false)
-            }
-          }}>新增</button>
+          <div className="add-form-title">新增標的</div>
+          <div className="add-form-field">
+            <label className="add-form-label">代號 <span className="add-form-required">*</span></label>
+            <input
+              ref={symbolInputRef}
+              placeholder="e.g. 0050.TW 或 AAPL"
+              value={addDraft.symbol}
+              onChange={e => { setAddDraft(d => ({ ...d, symbol: e.target.value })); setAddError('') }}
+              onKeyDown={e => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setShowAdd(false) }}
+            />
+          </div>
+          <div className="add-form-field">
+            <label className="add-form-label">名稱 <span className="add-form-optional">（選填）</span></label>
+            <input
+              placeholder="e.g. 元大50（留空自動填入）"
+              value={addDraft.name}
+              onChange={e => setAddDraft(d => ({ ...d, name: e.target.value }))}
+              onKeyDown={e => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setShowAdd(false) }}
+            />
+          </div>
+          <div className="add-form-field">
+            <label className="add-form-label">類別</label>
+            <select value={addDraft.category} onChange={e => setAddDraft(d => ({ ...d, category: e.target.value }))}>
+              <option value="TW">台股</option>
+              <option value="US">美股</option>
+              <option value="IDX">指數</option>
+              <option value="FX">外匯</option>
+            </select>
+          </div>
+          {addError && <div className="add-form-error">{addError}</div>}
+          <div className="add-form-actions">
+            <Button variant="primary" size="sm" full onClick={handleAdd}>新增</Button>
+            <Button variant="ghost" size="sm" full onClick={() => { setShowAdd(false); setAddError('') }}>取消</Button>
+          </div>
         </div>
       )}
 
@@ -406,7 +444,6 @@ export default function WatchList() {
                 const up = q && q.change >= 0
                 const flash = flashMap[symbol]
                 const tag = symbolTags[symbol]
-                const TAG_COLORS = { red: '#ef5350', yellow: '#f59e0b', green: '#26a69a', blue: '#6366f1' }
                 return (
                   <tr
                     key={symbol}
@@ -441,7 +478,6 @@ export default function WatchList() {
             const abs = Math.min(Math.abs(pct), 10)
             const intensity = abs / 10
             const isUp = pct >= 0
-            // TW convention: RED = up (漲), GREEN = down (跌)
             const bg = isUp
               ? `rgba(239,83,80,${0.12 + intensity * 0.55})`
               : `rgba(38,166,154,${0.12 + intensity * 0.55})`
