@@ -140,29 +140,15 @@
 .wl-search-wrap {
   position: relative; padding: 0 10px 6px; flex-shrink: 0;
 }
-.wl-search-wrap::before {
-  content: '';
-  position: absolute;
-  left: 20px;
-  top: 50%;
-  transform: translateY(-60%);
-  width: 13px;
-  height: 13px;
-  background: var(--text-3);
-  pointer-events: none;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='22' y2='22'/%3E%3C/svg%3E") center/contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='22' y2='22'/%3E%3C/svg%3E") center/contain no-repeat;
-}
 .wl-search {
-  width: 100%; padding: 7px 28px 7px 30px;
-  border: 1px solid var(--border-md); border-radius: 10px;
-  background: var(--surface); color: var(--text); font-size: 11.5px;
+  width: 100%; padding: 6px 24px 6px 12px;
+  border: var(--card-border); border-radius: 20px;
+  background: var(--surface-2); color: var(--text); font-size: 11.5px;
   font-family: inherit; transition: all .18s;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,.06);
 }
 .wl-search:focus {
   border-color: var(--accent); outline: none;
-  box-shadow: 0 0 0 3px var(--accent-soft), inset 0 1px 3px rgba(0,0,0,.04);
+  box-shadow: 0 0 0 3px var(--accent-soft);
   background: var(--surface);
 }
 .wl-search::placeholder { color: var(--text-3); }
@@ -175,11 +161,11 @@
 
 .cat-tabs { display: flex; gap: 3px; padding: 0 10px 6px; flex-wrap: wrap; }
 .cat-tab {
-  padding: 4px 9px; border: 1px solid var(--border-md); border-radius: 20px; font-size: 10.5px; font-weight: 600;
+  padding: 4px 9px; border: 1.5px solid var(--border-md); border-radius: 20px; font-size: 10.5px; font-weight: 600;
   background: var(--surface); color: var(--text-2); cursor: pointer; transition: all .15s;
 }
 .cat-tab:hover { background: var(--surface-2); border-color: var(--border-md); color: var(--text); }
-.cat-tab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px rgba(99,102,241,.15); }
+.cat-tab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 
 .add-form {
   padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px;
@@ -211,20 +197,10 @@
 .wl-list { flex: 1; overflow-y: auto; padding: 0 6px 8px; }
 .wl-item {
   display: flex; align-items: center; padding: 6px 8px; border-radius: 10px; cursor: pointer;
-  transition: all .18s cubic-bezier(.4,0,.2,1); position: relative; gap: 5px; min-height: 50px;
-  border: 1px solid transparent;
+  transition: all .18s cubic-bezier(.4,0,.2,1); position: relative; gap: 5px; min-height: 46px;
 }
-.wl-item:hover {
-  background: var(--surface);
-  border-color: var(--border-md);
-  transform: translateX(2px);
-  box-shadow: var(--sh);
-}
-.wl-item.active {
-  background: var(--accent-soft);
-  border-color: rgba(99,102,241,.25);
-  box-shadow: 0 0 0 0.5px rgba(99,102,241,.2), var(--sh);
-}
+.wl-item:hover { background: var(--surface-2); }
+.wl-item.active { background: var(--accent-soft); }
 .wl-left { flex: 1; min-width: 0; }
 .wl-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
 .wl-symbol { font-size: 10px; color: var(--text-3); }
@@ -1543,6 +1519,22 @@
 .nav-chart-title { font-size: 9px; font-weight: 700; color: var(--text-3); letter-spacing: .3px; }
 .nav-chart-val { font-size: 14px; font-weight: 900; font-family: ui-monospace, monospace; }
 .nav-chart-svg { display: block; width: 100%; }
+
+/* ── SCROLL SOFT FADE ── */
+.scroll-soft {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+/* ── GLASS CARD ── */
+.glass-card {
+  background: var(--card-fill);
+  backdrop-filter: var(--card-blur);
+  -webkit-backdrop-filter: var(--card-blur);
+  border: var(--card-border);
+  border-radius: 20px;
+  box-shadow: var(--card-highlight), var(--card-shadow);
+}
 
 /* ── FEAR/GREED ── */
 .fg-row { display: flex; align-items: center; gap: 6px; margin-top: 5px; }

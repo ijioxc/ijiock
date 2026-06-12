@@ -120,7 +120,7 @@ export default function AdvisorChat() {
         </div>
       )}
 
-      <div className="adv-messages">
+      <div className="adv-messages scroll-soft">
         {messages.length === 0 && (
           <div className="adv-empty">
             點擊下方快速提問，或輸入自訂問題

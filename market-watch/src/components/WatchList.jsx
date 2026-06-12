@@ -498,7 +498,7 @@ export default function WatchList() {
           })}
         </div>
       ) : (
-        <ul className="wl-list">
+        <ul className="wl-list scroll-soft">
           {filtered.length === 0 && (
             <li style={{ padding: '16px 8px', textAlign: 'center', color: 'var(--text-3)', fontSize: 12 }}>
               找不到「{search}」

@@ -83,7 +83,7 @@ export default function NewsPanel() {
       )}
 
       {!loading && news.length > 0 && (
-        <ul className="news-list">
+        <ul className="news-list scroll-soft">
           {news.map((item, i) => {
             const sentiment = scoreSentiment(item.title)
             return (
