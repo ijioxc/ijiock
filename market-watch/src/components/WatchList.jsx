@@ -17,8 +17,8 @@ function HoverTip({ children, tip }) {
   )
 }
 
-const CATS = ['ALL', 'TW', 'US', 'IDX', 'FX']
-const CAT_LABELS = { TW: '台股', US: '美股', IDX: '指數', FX: '外匯' }
+const CATS = ['ALL', 'TW', 'US', 'ETF', 'IDX']
+const CAT_LABELS = { TW: '台股', US: '美股', ETF: 'ETF', IDX: '指數' }
 const TAG_COLORS = { red: '#ef5350', yellow: '#f59e0b', green: '#26a69a', blue: '#6366f1' }
 
 function LoadingDots() {
@@ -411,8 +411,8 @@ export default function WatchList() {
             <select value={addDraft.category} onChange={e => setAddDraft(d => ({ ...d, category: e.target.value }))}>
               <option value="TW">台股</option>
               <option value="US">美股</option>
+              <option value="ETF">ETF</option>
               <option value="IDX">指數</option>
-              <option value="FX">外匯</option>
             </select>
           </div>
           {addError && <div className="add-form-error">{addError}</div>}

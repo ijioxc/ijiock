@@ -5,15 +5,19 @@ const DEFAULT_SYMBOLS = [
   { symbol: '2330.TW', name: '台積電', category: 'TW' },
   { symbol: '2317.TW', name: '鴻海', category: 'TW' },
   { symbol: '2454.TW', name: '聯發科', category: 'TW' },
+  { symbol: '2603.TW', name: '長榮', category: 'TW' },
   { symbol: 'AAPL', name: '蘋果', category: 'US' },
   { symbol: 'NVDA', name: '輝達', category: 'US' },
   { symbol: 'MSFT', name: '微軟', category: 'US' },
-  { symbol: 'BTC-USD', name: '比特幣', category: 'IDX' },
-  { symbol: 'ETH-USD', name: '以太坊', category: 'IDX' },
+  { symbol: 'TSLA', name: '特斯拉', category: 'US' },
+  { symbol: '0050.TW', name: '元大台灣50', category: 'ETF' },
+  { symbol: '0056.TW', name: '元大高股息', category: 'ETF' },
+  { symbol: 'QQQ', name: 'NASDAQ 100 ETF', category: 'ETF' },
+  { symbol: 'SPY', name: 'S&P500 ETF', category: 'ETF' },
+  { symbol: '^TWII', name: '台股加權指數', category: 'IDX' },
   { symbol: '^GSPC', name: 'S&P 500', category: 'IDX' },
   { symbol: '^IXIC', name: 'NASDAQ', category: 'IDX' },
-  { symbol: 'TWDUSD=X', name: '台幣/美元', category: 'FX' },
-  { symbol: 'DX-Y.NYB', name: '美元指數', category: 'FX' },
+  { symbol: '^VIX', name: '恐慌指數', category: 'IDX' },
 ]
 
 export const useWatchlistStore = create(

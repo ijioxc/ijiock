@@ -45,7 +45,7 @@ export default function MarketTicker() {
     })
   }, [])
 
-  const idxFx = symbols.filter(s => s.category === 'IDX' || s.category === 'FX')
+  const idxFx = symbols.filter(s => s.category === 'IDX')
   if (idxFx.length === 0) return null
 
   const allQuotes = { ...quotes, ...extraQuotes }
