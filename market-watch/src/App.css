@@ -181,7 +181,19 @@
 .cat-tab:hover { background: var(--surface-2); border-color: var(--border-md); color: var(--text); }
 .cat-tab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px rgba(99,102,241,.15); }
 
-.add-form { padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; background: var(--surface-2); }
+.add-form {
+  padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px;
+  background: var(--surface-2); border-bottom: 1px solid var(--border);
+}
+.add-form-title {
+  font-size: 11px; font-weight: 700; color: var(--text-3); letter-spacing: .4px; text-transform: uppercase;
+}
+.add-form-field { display: flex; flex-direction: column; gap: 3px; }
+.add-form-label {
+  font-size: 10px; font-weight: 600; color: var(--text-2);
+}
+.add-form-required { color: var(--dn); }
+.add-form-optional { color: var(--text-3); font-weight: 400; }
 .add-form input, .add-form select {
   padding: 6px 8px; border: 1.5px solid var(--border); border-radius: var(--r-xs);
   background: var(--surface); color: var(--text); font-size: 12px; font-family: inherit; transition: all .15s;
@@ -190,11 +202,11 @@
   border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .add-form input::placeholder { color: var(--text-3); }
-.add-form button {
-  padding: 6px; border: none; border-radius: var(--r-xs); background: var(--accent); color: #fff;
-  font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s;
+.add-form-error {
+  font-size: 11px; color: var(--dn); font-weight: 600;
+  padding: 4px 8px; background: var(--dn-soft); border-radius: var(--r-xs);
 }
-.add-form button:hover { background: #4f46e5; }
+.add-form-actions { display: flex; gap: 6px; }
 
 .wl-list { flex: 1; overflow-y: auto; padding: 0 6px 8px; }
 .wl-item {
