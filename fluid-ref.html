@@ -112,6 +112,15 @@ html,body{height:100%;font-family:'Noto Sans TC',sans-serif;background:var(--w);
     <div class="item" data-id="darcy"><span class="item-num">07</span><span class="item-name">Darcy-Weisbach 摩擦損失</span></div>
     <div class="item" data-id="minor"><span class="item-num">08</span><span class="item-name">次要損失</span></div>
     <div class="item" data-id="moody"><span class="item-num">09</span><span class="item-name">莫迪圖／摩擦係數 f</span></div>
+    <div class="cat-label">進階動量應用</div>
+    <div class="item" data-id="multi-outlet"><span class="item-num">13</span><span class="item-name">多出口管路動量（Y形管）</span></div>
+    <div class="item" data-id="compressible-nozzle"><span class="item-num">14</span><span class="item-name">可壓縮流噴嘴動量</span></div>
+    <div class="item" data-id="rotating-cv"><span class="item-num">15</span><span class="item-name">旋轉CV角動量（渦輪）</span></div>
+    <div class="item" data-id="beta"><span class="item-num">16</span><span class="item-name">動量修正係數 β</span></div>
+    <div class="item" data-id="moving-cv"><span class="item-num">17</span><span class="item-name">移動控制體積動量</span></div>
+    <div class="cat-label">能量與效率</div>
+    <div class="item" data-id="turbine-eff"><span class="item-num">18</span><span class="item-name">渦輪／泵有效功率與效率</span></div>
+    <div class="item" data-id="headloss-Q"><span class="item-num">19</span><span class="item-name">已知功率求流量與水頭損失</span></div>
     <div class="cat-label">機械與功率</div>
     <div class="item" data-id="pump"><span class="item-num">10</span><span class="item-name">泵／風扇功率</span></div>
     <div class="cat-label">流況判斷</div>
@@ -477,6 +486,231 @@ html,body{height:100%;font-family:'Noto Sans TC',sans-serif;background:var(--w);
         <div class="step"><div class="step-n">3</div><div class="step-body">壓力中心 <code>y_cp = y̅ + I_G/(y̅·A)</code>，必在形心之下</div></div>
         <div class="step"><div class="step-n">4</div><div class="step-body">浮力 = 排開液體重量，作用在浮心（排開體積的幾何中心）</div></div>
       </div>
+    </div>
+
+    <!-- 16 動量修正係數 β -->
+    <div class="card" id="card-beta">
+      <div class="card-head">
+        <div class="card-title">動量修正係數 β</div>
+        <div class="card-when">例 5.13 型：非均勻剖面動量</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">定義</div>
+        <div class="f-eq">
+          <span class="hl">β</span> = (1/A)∫(u/V̄)² dA = ∫u² dA / (V̄² A)
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">常用值</div>
+        <div class="f-eq">
+          層流（拋物線）：<span class="hl">β = 4/3 ≈ 1.33</span><br>
+          紊流（近均勻）：<span class="hl">β ≈ 1.02</span><br>
+          均勻流：β = 1.00
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">動量方程修正</div>
+        <div class="f-eq">
+          ΣF = β₂ṁV₂ − β₁ṁV₁ <span class="dim">(單入單出)</span>
+        </div>
+      </div>
+      <div class="steps-title">與 α 的區別</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">α</div><div class="step-body">動能修正係數，用在<strong>能量方程式</strong>的 V²/2 項，層流 = 2.00</div></div>
+        <div class="step"><div class="step-n">β</div><div class="step-body">動量修正係數，用在<strong>動量方程式</strong>的 V 項，層流 = 4/3 ≈ 1.33</div></div>
+      </div>
+      <div class="warn"><strong>記憶法：</strong>α &gt; β &gt; 1，且層流偏差遠大於紊流；紊流常省略（令 β = 1）</div>
+    </div>
+
+    <!-- 17 移動CV動量 -->
+    <div class="card" id="card-moving-cv">
+      <div class="card-head">
+        <div class="card-title">移動控制體積<br>動量方程式</div>
+        <div class="card-when">例 5.14 型：CV 以速度 V_CV 移動</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">相對速度</div>
+        <div class="f-eq">
+          <span class="hl">W</span> = V − V<sub>CV</sub> <span class="dim">(流體相對 CV 的速度)</span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">移動CV動量方程（穩態相對流）</div>
+        <div class="f-eq">
+          <span class="hl">ΣF</span> = ṁ<sub>rel</sub>(W₂ − W₁)<br>
+          ṁ<sub>rel</sub> = ρA|W| <span class="dim">(用相對速度計算)</span>
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">定義 CV 速度 <code>V_CV</code>（若等速移動，相對流為穩態）</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">計算入出口相對速度 <code>W = V_流體 − V_CV</code></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">相對流質量流率 <code>ṁ_rel = ρA|W₁|</code>（以入口計）</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">代入 <code>ΣF = ṁ_rel(W₂ − W₁)</code>，求 CV 受力或加速度</div></div>
+      </div>
+      <div class="warn"><strong>關鍵：</strong>移動CV中連續方程與動量方程均使用<strong>相對速度 W</strong>，不是絕對速度 V</div>
+    </div>
+
+    <!-- 18 渦輪效率 -->
+    <div class="card" id="card-turbine-eff">
+      <div class="card-head">
+        <div class="card-title">渦輪／泵<br>有效功率與效率</div>
+        <div class="card-when">例 5.22 型：求 η 或實際功率</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">效率定義</div>
+        <div class="f-eq">
+          <span class="hl">η</span> = Ẇ<sub>shaft,實際</sub> / Ẇ<sub>shaft,理想</sub><br>
+          渦輪：η = Ẇ<sub>out</sub> / (ṁ·Δh<sub>fluid</sub>)<br>
+          泵　：η = ṁ·Δh<sub>fluid</sub> / Ẇ<sub>in</sub>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">能量方程（含 η）</div>
+        <div class="f-eq">
+          Ẇ<sub>shaft,理想</sub> = ṁ[Δp/ρ + α₂V₂²/2 − α₁V₁²/2 + gΔz]<br>
+          Ẇ<sub>shaft,實際</sub> = <span class="hl">η · Ẇ<sub>理想</sub></span> <span class="dim">(渦輪)</span>
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">用能量方程式求<strong>理想</strong>軸功率（不計損失，或損失已含在 h_L 中）</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">渦輪：<code>Ẇ_out = η · ṁ · ẇ_s,理想</code></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">泵：<code>Ẇ_in = ṁ · ẇ_s,理想 / η</code></div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">功率差 = 損失：<code>Ẇ_損失 = (1−η) · Ẇ_理想</code></div></div>
+      </div>
+    </div>
+
+    <!-- 19 已知功率求流量與損失 -->
+    <div class="card" id="card-headloss-Q">
+      <div class="card-head">
+        <div class="card-title">已知功率<br>求流量與水頭損失</div>
+        <div class="card-when">例 5.23 型：給 Ẇ 或 H，求 Q、h_L</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">能量方程 + 連續 聯立</div>
+        <div class="f-eq">
+          p₁/ρg + V₁²/2g + z₁ = p₂/ρg + V₂²/2g + z₂ + <span class="hl">h<sub>L</sub></span><br>
+          <span class="hl">h<sub>L</sub></span> = f(L/D)V²/2g + ΣKV²/2g
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">功率關係</div>
+        <div class="f-eq">
+          <span class="hl">Ẇ</span> = ρgQH = ṁgH<br>
+          H = (p₁−p₂)/ρg + z₁−z₂ + (V₁²−V₂²)/2g
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">由 <code>Q = Ẇ / (ρgH)</code> 或能量方程求 Q（H 為有效水頭）</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">由 Q 求截面速度 <code>V = Q/A</code></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">計算 Re → 求 f → 代入 Darcy 求 h_f</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">將 h_L 代回能量方程驗算，或直接由能量方程差值得 h_L</div></div>
+      </div>
+      <div class="warn"><strong>常見題型：</strong>給泵功率 Ẇ 和管路幾何，解出流量 Q，再回頭求損失 h_L（需疊代若 f 未知）</div>
+    </div>
+
+    <!-- 13 多出口動量 -->
+    <div class="card" id="card-multi-outlet">
+      <div class="card-head">
+        <div class="card-title">多出口管路動量<br>（Y形管、分流接頭）</div>
+        <div class="card-when">例 5.9 型：多出口求接頭力</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">穩態線動量（多出口）</div>
+        <div class="f-eq">
+          <span class="hl">ΣF</span> = Σ<sub>出</sub>ṁᵢVᵢ − Σ<sub>入</sub>ṁⱼVⱼ<br>
+          質量：<span class="hl">ṁ₁ = ṁ₂ + ṁ₃</span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">x / y 方向展開</div>
+        <div class="f-eq">
+          <span class="hl">ΣFₓ</span> = ṁ₂V₂cosθ₂ + ṁ₃V₃cosθ₃ − ṁ₁V₁<br>
+          <span class="hl">ΣFᵧ</span> = ṁ₂V₂sinθ₂ − ṁ₃V₃sinθ₃
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">畫 CV 包住接頭，標入口①、出口②③及角度 θ</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">連續方程式求各 ṁ 或速度：<code>ṁ₁ = ṁ₂ + ṁ₃</code></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">外力包含：各截面<strong>錶壓力</strong> pᵢAᵢ、管壁反力 Rₓ、Rᵧ（未知）、重力</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">x、y 分別列動量方程，解出 Rₓ、Rᵧ，接頭受流體力 = −R</div></div>
+      </div>
+      <div class="warn"><strong>符號規則：</strong>流出 CV 的動量通量取 +，流入取 −；壓力項以<strong>錶壓</strong>計（大氣項相消）</div>
+    </div>
+
+    <!-- 14 可壓縮流噴嘴動量 -->
+    <div class="card" id="card-compressible-nozzle">
+      <div class="card-head">
+        <div class="card-title">可壓縮流<br>噴嘴動量方程式</div>
+        <div class="card-when">例 5.11 型：氣體噴嘴求力</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">動量方程（含壓力邊界）</div>
+        <div class="f-eq">
+          <span class="hl">ΣFₓ</span> = ṁ(V₂ − V₁) + (p₂−pₐₜₘ)A₂ − (p₁−pₐₜₘ)A₁<br>
+          <span class="dim">或直接用絕對壓 + 加入大氣壓在 CV 外壁的貢獻</span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">理想氣體密度</div>
+        <div class="f-eq">
+          ρ = p / (RT) &nbsp;<span class="dim">[kg/m³]</span><br>
+          ṁ = ρAV = pAV/(RT)
+        </div>
+      </div>
+      <table class="params">
+        <tr><th>符號</th><th>說明</th><th>單位</th></tr>
+        <tr><td>R</td><td>氣體常數（空氣 287）</td><td>J/(kg·K)</td></tr>
+        <tr><td>T</td><td>絕對溫度</td><td>K</td></tr>
+        <tr><td>p</td><td>絕對壓力</td><td>Pa</td></tr>
+      </table>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">以理想氣體 <code>ρ = p/RT</code> 求兩截面密度</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">用連續方程式 <code>ρ₁A₁V₁ = ρ₂A₂V₂</code> 確認 ṁ</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">動量方程：<code>R + p₁A₁ − p₂A₂ = ṁ(V₂ − V₁)</code>（同方向）</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">解 R 即為管壁對流體的力；注意<strong>壓力用絕對壓</strong>，CV 外壁大氣壓需納入</div></div>
+      </div>
+      <div class="warn"><strong>與不可壓縮差異：</strong>ρ 隨截面變化，必須用 <code>ρ = p/RT</code>；速度高時需考慮馬赫數是否超音速</div>
+    </div>
+
+    <!-- 15 旋轉CV角動量 -->
+    <div class="card" id="card-rotating-cv">
+      <div class="card-head">
+        <div class="card-title">旋轉控制體積<br>角動量方程式</div>
+        <div class="card-when">例 5.12 型：渦輪 / 泵葉輪</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">Euler 渦輪方程式</div>
+        <div class="f-eq">
+          <span class="hl">T<sub>shaft</sub></span> = ṁ(r₂V<sub>θ2</sub> − r₁V<sub>θ1</sub>)<br>
+          <span class="hl">Ẇ<sub>shaft</sub></span> = ω·T = ṁ·ω(r₂V<sub>θ2</sub> − r₁V<sub>θ1</sub>)
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">角動量方程（積分）</div>
+        <div class="f-eq">
+          ΣT = d/dt∫r×ρV dV + ∯(r×V)ρV·dA<br>
+          穩態：<span class="hl">ΣT = ṁ(r₂V<sub>θ2</sub> − r₁V<sub>θ1</sub>)</span>
+        </div>
+      </div>
+      <table class="params">
+        <tr><th>符號</th><th>說明</th></tr>
+        <tr><td>r₁, r₂</td><td>入、出口半徑</td></tr>
+        <tr><td>V<sub>θ</sub></td><td>切線方向速度分量</td></tr>
+        <tr><td>ω</td><td>旋轉角速度 [rad/s]</td></tr>
+      </table>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">確認旋轉軸，定義 r（半徑）與 V<sub>θ</sub>（切線速度）正方向</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">分解入出口速度：<code>V_θ = V·cosα</code>（α 為速度與半徑夾角）</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">代入 <code>T = ṁ(r₂V_θ2 − r₁V_θ1)</code>，注意旋轉方向正負</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">功率 <code>Ẇ = ωT</code>；渦輪（做功）T 與 ω 同向，泵（輸入功）相反</div></div>
+      </div>
+      <div class="warn"><strong>正負規則：</strong>V<sub>θ2</sub> 與 ω 同方向 → 渦輪輸出正功；若相反 → 為泵（輸入功）</div>
     </div>
 
   </main>
