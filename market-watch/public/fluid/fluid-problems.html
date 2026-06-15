@@ -72,7 +72,7 @@ body{font-family:'Noto Sans TC','Arial',sans-serif;background:#fff;color:#111;ma
     <a href="#p51">例題 5.1 — 連續方程式基本應用</a>
     <a href="#p54">例題 5.4 — 柏努利 / Venturi 流量計</a>
     <a href="#p55">例題 5.5 — 彎管線動量</a>
-    <a href="#p59">例題 5.9 — Y形三通管動量</a>
+    <a href="#p59">例題 5.9 — 錐形噴嘴螺紋支撐力</a>
     <a href="#p511">例題 5.11 — 可壓縮流噴嘴推力</a>
     <a href="#p512">例題 5.12 — 旋轉控制體積</a>
     <a href="#p513">例題 5.13 — 動量修正係數 β</a>
@@ -182,38 +182,46 @@ body{font-family:'Noto Sans TC','Arial',sans-serif;background:#fff;color:#111;ma
 <div class="prob" id="p59">
   <div class="prob-head">
     <span class="prob-num">例題 5.9</span>
-    <span class="prob-title">Y 形三通管動量分析</span>
+    <span class="prob-title">錐形噴嘴螺紋支撐力</span>
   </div>
   <div class="prob-given">
-    <b>已知：</b>水（ρ = 999 kg/m³）流過水平 Y 形三通管。<br>
-    入口①：D₁ = 16 mm，V₁ = 0.6 m/s，p₁（表壓，題目給定）<br>
-    出口②：D₂ = 11.5 mm，與①同軸<br>
-    出口③：D₃ = 9 mm，與②成 60° 夾角<br>
-    三管均在水平面，不計重力
+    <b>已知：</b>錐形噴嘴接在垂直水龍頭出口下方，水垂直向下流。ρ = 999 kg/m³<br>
+    Q = 0.6 L/s = 6×10⁻⁴ m³/s<br>
+    截面①（噴嘴入口，上方大口）：D₁ = 16 mm，p₁ = 464 kPa（表壓）<br>
+    截面②（噴嘴出口，下方小口）：D₂ = 5 mm，p₂ = 0（大氣壓，表壓）<br>
+    噴嘴質量 m = 0.1 kg，錐高 h = 30 mm<br>
+    穩態、不可壓縮，流動方向垂直向下
   </div>
-  <div class="prob-find"><b>求：</b>出口速度 V₂、V₃ 及接頭受力（需題目給定分流比例或其中一出口壓力）</div>
+  <div class="prob-find"><b>求：</b>固定噴嘴不動所需的螺紋支撐力 F_A（大小與方向）</div>
   <button class="sol-btn" onclick="toggle(this)">顯示解答 ▾</button>
   <div class="sol-body">
-    <div class="sol-label">解答架構（通用步驟）</div>
-    <div class="step"><div class="sn">1</div><div class="sb">各截面積：
-      <div class="fb">Aᵢ = π Dᵢ² / 4</div>
-      <span class="f">A₁ = π(0.016)²/4 = 2.011×10⁻⁴ m²</span><br>
-      <span class="f">A₂ = π(0.0115)²/4 = 1.039×10⁻⁴ m²</span><br>
-      <span class="f">A₃ = π(0.009)²/4 = 6.362×10⁻⁵ m²</span>
+    <div class="sol-label">解答　（z 方向，正方向向下）</div>
+    <div class="step"><div class="sn">1</div><div class="sb">截面積與流速：
+      <div class="fb">A₁ = π(0.016)²/4 = 2.011×10⁻⁴ m²　　A₂ = π(0.005)²/4 = 1.963×10⁻⁵ m²</div>
+      <span class="f">V₁ = Q/A₁ = 6×10⁻⁴ / 2.011×10⁻⁴ = 2.98 m/s（向下）</span><br>
+      <span class="f">V₂ = Q/A₂ = 6×10⁻⁴ / 1.963×10⁻⁵ = 30.6 m/s（向下）</span><br>
+      <span class="f">ṁ = ρQ = 999 × 6×10⁻⁴ = 0.599 kg/s</span>
     </div></div>
-    <div class="step"><div class="sn">2</div><div class="sb">質量流率守恆：
-      <div class="fb">ṁ₁ = ṁ₂ + ṁ₃　→　ρA₁V₁ = ρA₂V₂ + ρA₃V₃</div>
-      <span class="f">A₁V₁ = 2.011×10⁻⁴ × 0.6 = 1.207×10⁻⁴ m³/s</span><br>
-      需知 V₂ 或 V₃ 其中之一（由題目額外條件給定）
+    <div class="step"><div class="sn">2</div><div class="sb">噴嘴內水的體積（截錐體）與重量：
+      <div class="fb">V<sub>錐</sub> = πh(R₁² + R₁R₂ + R₂²)/3</div>
+      R₁ = 8 mm，R₂ = 2.5 mm，h = 30 mm<br>
+      <span class="f">V<sub>錐</sub> = π×0.03×(64+20+6.25)×10⁻⁶/3 = 2.836×10⁻⁶ m³</span><br>
+      <span class="f">W<sub>水</sub> = ρgV<sub>錐</sub> = 999×9.81×2.836×10⁻⁶ = 0.0278 N（向下）</span>
     </div></div>
-    <div class="step"><div class="sn">3</div><div class="sb">動量方程（x 方向，出口②沿 x，出口③偏 60°）：
-      <div class="fb">ΣFₓ = ṁ₂V₂ + ṁ₃V₃cos60° − ṁ₁V₁</div>
+    <div class="step"><div class="sn">3</div><div class="sb">對系統（噴嘴＋內部水）列 z 方向動量方程：
+      <div class="fb">W<sub>噴嘴</sub> + W<sub>水</sub> + p₁A₁ − p₂A₂ − F_A = ṁ(V₂ − V₁)</div>
+      各項數值（向下為正）：<br>
+      <span class="f">W<sub>噴嘴</sub> = 0.1×9.81 = 0.981 N</span><br>
+      <span class="f">p₁A₁ = 464000×2.011×10⁻⁴ = 93.3 N（向下）</span><br>
+      <span class="f">p₂A₂ = 0（大氣壓）</span><br>
+      <span class="f">ṁ(V₂−V₁) = 0.599×(30.6−2.98) = 0.599×27.6 = 16.5 N</span>
     </div></div>
-    <div class="step"><div class="sn">4</div><div class="sb">動量方程（y 方向）：
-      <div class="fb">ΣFᵧ = ṁ₃V₃sin60° − 0</div>
-      其中 ΣF 包含各截面錶壓力及管壁反力 R，解出 Rₓ、Rᵧ
+    <div class="step"><div class="sn">4</div><div class="sb">解 F_A（支撐力向上，故取負號）：
+      <div class="fb">F_A = W<sub>噴嘴</sub> + W<sub>水</sub> + p₁A₁ − ṁ(V₂−V₁)</div>
+      <span class="f">F_A = 0.981 + 0.028 + 93.3 − 16.5 = 77.8 N</span>
     </div></div>
-    <div class="note">關鍵：各出口壓力通常設為大氣壓（表壓 = 0），簡化計算</div>
+    <div class="ans">F_A = 77.8 N　（向上，螺紋受拉力，防止噴嘴被水壓吹落）</div>
+    <div class="note">壓力項 p₁A₁ = 93.3 N 是主要貢獻，動量變化項反而<b>減少</b>所需支撐力（水加速向下，協助「推」噴嘴向下）</div>
   </div>
 </div>
 
