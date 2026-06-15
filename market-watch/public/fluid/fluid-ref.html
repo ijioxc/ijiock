@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>流體力學 快查手冊</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--k:#0a0a0a;--r:#d0021b;--w:#f5f0eb;--g1:#1c1c1c;--g3:#666;--g4:#e8e4df;--serif:'Times New Roman',serif}
+html,body{height:100%;font-family:'Noto Sans TC',sans-serif;background:var(--w);color:var(--k);font-size:13px}
+
+/* SHELL */
+.shell{display:grid;grid-template-rows:48px 1fr;grid-template-columns:220px 1fr;height:100vh;overflow:hidden}
+
+/* TOP BAR */
+.topbar{grid-column:1/-1;background:var(--k);display:flex;align-items:center;padding:0 16px;gap:14px;border-bottom:2px solid var(--r)}
+.topbar-title{font-size:13px;font-weight:900;letter-spacing:.08em;color:#fff}
+.topbar-title span{color:var(--r)}
+.search-wrap{flex:1;max-width:300px;position:relative}
+.search-wrap input{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-family:inherit;font-size:12px;padding:5px 10px 5px 28px;outline:none;letter-spacing:.04em}
+.search-wrap input::placeholder{color:rgba(255,255,255,.35)}
+.search-wrap input:focus{border-color:var(--r)}
+.search-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);font-size:12px;pointer-events:none}
+.tag-count{font-size:9px;font-weight:700;letter-spacing:.18em;color:rgba(255,255,255,.35);text-transform:uppercase;margin-left:auto}
+
+/* SIDEBAR */
+.sidebar{background:#111;overflow-y:auto;border-right:1px solid #2a2a2a}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-thumb{background:#333}
+.cat-label{font-size:7.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.3);padding:14px 14px 5px}
+.item{padding:9px 14px;cursor:pointer;border-left:2px solid transparent;transition:background .12s,border-color .12s;display:flex;align-items:baseline;gap:8px}
+.item:hover{background:rgba(255,255,255,.05)}
+.item.active{background:rgba(208,2,27,.12);border-left-color:var(--r)}
+.item-num{font-size:8.5px;font-weight:700;color:rgba(255,255,255,.2);min-width:16px;font-family:monospace}
+.item-name{font-size:11.5px;font-weight:500;color:rgba(255,255,255,.75);line-height:1.3}
+.item.active .item-name{color:#fff;font-weight:700}
+.item.hidden{display:none}
+
+/* MAIN */
+.main{overflow-y:auto;background:var(--w)}
+.main::-webkit-scrollbar{width:4px}
+.main::-webkit-scrollbar-thumb{background:var(--g4)}
+
+/* PLACEHOLDER */
+.placeholder{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--g3)}
+.placeholder-icon{font-size:32px;opacity:.25}
+.placeholder-text{font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.4}
+
+/* CARD */
+.card{padding:24px 28px;display:none}
+.card.visible{display:block}
+
+.card-head{border-bottom:2px solid var(--k);padding-bottom:12px;margin-bottom:18px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.card-title{font-size:22px;font-weight:900;line-height:1.1;letter-spacing:-.01em}
+.card-when{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--r);border:1px solid var(--r);padding:3px 7px;white-space:nowrap;align-self:flex-start}
+
+/* FORMULA BLOCK */
+.f-block{background:var(--k);color:#fff;padding:14px 18px;margin-bottom:14px;position:relative}
+.f-label{position:absolute;top:6px;right:8px;font-size:7px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--r)}
+.f-eq{font-family:var(--serif);font-size:15px;line-height:2;word-break:break-all}
+.f-eq .hl{color:var(--r);font-weight:700}
+.f-eq .dim{color:rgba(255,255,255,.45);font-size:12px}
+
+/* STEPS */
+.steps-title{font-size:8px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--g3);margin-bottom:8px}
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:grid;grid-template-columns:28px 1fr;border-bottom:1px solid var(--g4);padding:8px 0}
+.step:last-child{border-bottom:none}
+.step-n{font-size:11px;font-weight:900;color:var(--r);padding-top:1px}
+.step-body{font-size:12px;line-height:1.6;color:var(--g1)}
+.step-body code{background:rgba(208,2,27,.08);color:var(--r);font-family:monospace;font-size:11px;padding:0 4px;font-weight:700}
+.step-body em{font-style:normal;font-family:var(--serif);font-size:13px}
+
+/* PARAMS TABLE */
+.params{width:100%;border-collapse:collapse;margin-top:14px;font-size:11px}
+.params th{font-size:7.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;background:var(--k);color:#fff;padding:5px 8px;text-align:left}
+.params td{padding:6px 8px;border-bottom:1px solid var(--g4);vertical-align:middle}
+.params tr:nth-child(even) td{background:rgba(0,0,0,.025)}
+.params td:first-child{font-family:var(--serif);font-size:13px;font-style:italic;color:var(--r);font-weight:700;white-space:nowrap}
+.params td:last-child{color:var(--g3);font-size:10.5px}
+
+/* WARN */
+.warn{background:rgba(208,2,27,.07);border-left:3px solid var(--r);padding:9px 12px;margin-top:14px;font-size:11px;line-height:1.6;color:var(--g1)}
+.warn strong{color:var(--r);font-weight:700}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-title">流體力學 <span>快查</span></div>
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input id="search" type="text" placeholder="搜尋題型…" autocomplete="off">
+    </div>
+    <div class="tag-count" id="count"></div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="cat-label">基礎方程式</div>
+    <div class="item" data-id="continuity"><span class="item-num">01</span><span class="item-name">質量守恆／連續方程式</span></div>
+    <div class="item" data-id="bernoulli"><span class="item-num">02</span><span class="item-name">柏努利方程式</span></div>
+    <div class="item" data-id="energy"><span class="item-num">03</span><span class="item-name">能量方程式（含損失）</span></div>
+    <div class="item" data-id="momentum"><span class="item-num">04</span><span class="item-name">線動量方程式</span></div>
+    <div class="cat-label">速度剖面與修正</div>
+    <div class="item" data-id="alpha"><span class="item-num">05</span><span class="item-name">動能修正係數 α</span></div>
+    <div class="item" data-id="laminar"><span class="item-num">06</span><span class="item-name">層流速度剖面</span></div>
+    <div class="cat-label">管道損失</div>
+    <div class="item" data-id="darcy"><span class="item-num">07</span><span class="item-name">Darcy-Weisbach 摩擦損失</span></div>
+    <div class="item" data-id="minor"><span class="item-num">08</span><span class="item-name">次要損失</span></div>
+    <div class="item" data-id="moody"><span class="item-num">09</span><span class="item-name">莫迪圖／摩擦係數 f</span></div>
+    <div class="cat-label">進階動量應用</div>
+    <div class="item" data-id="multi-outlet"><span class="item-num">13</span><span class="item-name">多出口管路動量（Y形管）</span></div>
+    <div class="item" data-id="compressible-nozzle"><span class="item-num">14</span><span class="item-name">可壓縮流噴嘴動量</span></div>
+    <div class="item" data-id="rotating-cv"><span class="item-num">15</span><span class="item-name">旋轉CV角動量（渦輪）</span></div>
+    <div class="item" data-id="beta"><span class="item-num">16</span><span class="item-name">動量修正係數 β</span></div>
+    <div class="item" data-id="moving-cv"><span class="item-num">17</span><span class="item-name">移動控制體積動量</span></div>
+    <div class="cat-label">能量與效率</div>
+    <div class="item" data-id="turbine-eff"><span class="item-num">18</span><span class="item-name">渦輪／泵有效功率與效率</span></div>
+    <div class="item" data-id="headloss-Q"><span class="item-num">19</span><span class="item-name">已知功率求流量與水頭損失</span></div>
+    <div class="cat-label">機械與功率</div>
+    <div class="item" data-id="pump"><span class="item-num">10</span><span class="item-name">泵／風扇功率</span></div>
+    <div class="cat-label">流況判斷</div>
+    <div class="item" data-id="reynolds"><span class="item-num">11</span><span class="item-name">雷諾數與流況</span></div>
+    <div class="cat-label">靜力學</div>
+    <div class="item" data-id="hydrostatic"><span class="item-num">12</span><span class="item-name">靜水壓力與浮力</span></div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main" id="main">
+    <div class="placeholder" id="placeholder">
+      <div class="placeholder-icon">◈</div>
+      <div class="placeholder-text">選擇左側題型</div>
+    </div>
+
+    <!-- 01 連續方程式 -->
+    <div class="card" id="card-continuity">
+      <div class="card-head">
+        <div class="card-title">質量守恆<br>連續方程式</div>
+        <div class="card-when">入出口流量平衡</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">積分形式</div>
+        <div class="f-eq">
+          ∂/∂t ∫∫∫ρ dV + ∯ρ<em>V</em>·d<em>A</em> = 0
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">穩態 / 不可壓縮</div>
+        <div class="f-eq">
+          <span class="hl">ρ₁A₁V₁ = ρ₂A₂V₂</span> <span class="dim">(可壓縮)</span><br>
+          <span class="hl">A₁V₁ = A₂V₂ = Q</span> <span class="dim">(不可壓縮)</span><br>
+          <em>ṁ</em> = ρAV = ρQ
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">確認流況：穩態（∂/∂t = 0）？不可壓縮（ρ = const）？</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">計算各截面積 <code>A = πD²/4</code></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">代入 <code>A₁V₁ = A₂V₂</code> 求未知速度，或用 <code>ṁ = ρAV</code> 求質量流率</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">多出口：<code>Q_in = ΣQ_out</code>，各分支分別列式</div></div>
+      </div>
+    </div>
+
+    <!-- 02 柏努利 -->
+    <div class="card" id="card-bernoulli">
+      <div class="card-head">
+        <div class="card-title">柏努利方程式</div>
+        <div class="card-when">無黏性、穩態、同流線</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">基本形式</div>
+        <div class="f-eq">
+          <span class="hl">p/ρg + V²/2g + z = const</span><br>
+          <span class="dim">─── 壓力頭 + 速度頭 + 位置頭 ───</span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">兩點比較</div>
+        <div class="f-eq">
+          p₁/ρg + V₁²/2g + z₁ = p₂/ρg + V₂²/2g + z₂
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">驗證適用：無黏 + 穩態 + 同流線（或旋流自由）</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">選兩個已知點（通常選已知壓力或速度處），建立方程式</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">搭配連續方程式 <code>A₁V₁ = A₂V₂</code> 消去一個未知數</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">自由液面：<code>p = pₐₜₘ</code>，V ≈ 0（大容器）</div></div>
+      </div>
+      <div class="warn"><strong>限制：</strong>有損失、有機械功、可壓縮流 → 改用能量方程式</div>
+    </div>
+
+    <!-- 03 能量方程式 -->
+    <div class="card" id="card-energy">
+      <div class="card-head">
+        <div class="card-title">能量方程式<br>（含損失與機械功）</div>
+        <div class="card-when">有損失 / 泵 / 風扇</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">完整形式</div>
+        <div class="f-eq">
+          p₁/ρ + <span class="hl">α₁</span>V₁²/2 + gz₁ + <span class="hl">ẇ<sub>s</sub></span><br>
+          &nbsp;&nbsp;= p₂/ρ + <span class="hl">α₂</span>V₂²/2 + gz₂ + <span class="hl">h<sub>L</sub></span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">功率</div>
+        <div class="f-eq">
+          <span class="hl">Ẇ<sub>s</sub></span> = ṁ · ẇ<sub>s</sub> &nbsp;[W]
+        </div>
+      </div>
+      <table class="params">
+        <tr><th>符號</th><th>說明</th><th>備注</th></tr>
+        <tr><td>ẇ<sub>s</sub></td><td>單位質量軸功</td><td>泵為正，渦輪為負</td></tr>
+        <tr><td>α</td><td>動能修正係數</td><td>層流 2.0、紊流 1.05</td></tr>
+        <tr><td>h<sub>L</sub></td><td>損失水頭</td><td>恆 ≥ 0</td></tr>
+      </table>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">定截面①②，選流動方向（①→②）</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">用連續方程式求 V₁、V₂，確認 α 值</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">代入能量方程式，整理求 <code>ẇ_s</code> 或 <code>h_L</code></div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">乘以 ṁ 得功率 <code>Ẇ_s = ṁ · ẇ_s</code></div></div>
+      </div>
+    </div>
+
+    <!-- 04 動量 -->
+    <div class="card" id="card-momentum">
+      <div class="card-head">
+        <div class="card-title">線動量方程式</div>
+        <div class="card-when">求管道受力 / 射流衝擊</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">向量形式（穩態）</div>
+        <div class="f-eq">
+          <span class="hl">ΣF</span> = ∯ρ<em>V</em>(<em>V</em>·d<em>A</em>)<br>
+          &nbsp;&nbsp;&nbsp;= <span class="hl">ṁ(V₂ − V₁)</span> <span class="dim">(單入單出)</span>
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">畫控制體積（CV），標出所有外力：壓力、重力、管壁反力 <em>R</em></div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">確認流出面積正方向：流出取 +，流入取 −</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">x、y 方向分別列 <code>ΣFₓ = ṁ(V₂ₓ − V₁ₓ)</code></div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">管壁對流體的力 = 方程式中的 <em>R</em>；流體對管壁 = −<em>R</em></div></div>
+      </div>
+      <div class="warn"><strong>注意：</strong>錶壓 vs 絕對壓——動量方程用<strong>錶壓</strong>即可（大氣壓項相消）</div>
+    </div>
+
+    <!-- 05 α -->
+    <div class="card" id="card-alpha">
+      <div class="card-head">
+        <div class="card-title">動能修正係數 α</div>
+        <div class="card-when">非均勻速度剖面</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">定義</div>
+        <div class="f-eq">
+          <span class="hl">α</span> = (1/A) ∫(u/V̄)³ dA &nbsp;= ∫u³ dA / (V̄³ A)
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">常用值</div>
+        <div class="f-eq">
+          層流（拋物線）：<span class="hl">α = 2.00</span><br>
+          紊流（近均勻）：<span class="hl">α ≈ 1.05</span><br>
+          均勻流（理想）：α = 1.00
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">判斷入出口流況 → 查對應 α 值</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">能量方程式動能項寫成 <code>αV²/2</code>，不可省略 α</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">層流：V̄ = u_max/2，代入時用<strong>平均速度 V̄</strong>，α = 2 補償</div></div>
+      </div>
+      <div class="warn"><strong>常見錯：</strong>誤用 u_max 代替 V̄ 計算動能，等同重複計入 α 效應</div>
+    </div>
+
+    <!-- 06 層流剖面 -->
+    <div class="card" id="card-laminar">
+      <div class="card-head">
+        <div class="card-title">層流速度剖面<br>（Hagen-Poiseuille）</div>
+        <div class="card-when">Re &lt; 2300，圓管，完全發展</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">速度分布</div>
+        <div class="f-eq">
+          <span class="hl">u(r)</span> = (Δp/4μL)(R² − r²)<br>
+          u_max = ΔpR²/4μL<br>
+          <span class="hl">V̄ = u_max / 2</span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">流率</div>
+        <div class="f-eq">
+          Q = πR⁴Δp / 8μL &nbsp;<span class="dim">(Hagen-Poiseuille)</span>
+        </div>
+      </div>
+      <table class="params">
+        <tr><th>符號</th><th>說明</th></tr>
+        <tr><td>R</td><td>管半徑</td></tr>
+        <tr><td>μ</td><td>動力黏度 [Pa·s]</td></tr>
+        <tr><td>Δp/L</td><td>單位長度壓降</td></tr>
+      </table>
+    </div>
+
+    <!-- 07 Darcy -->
+    <div class="card" id="card-darcy">
+      <div class="card-head">
+        <div class="card-title">Darcy-Weisbach<br>摩擦損失</div>
+        <div class="card-when">管道主要損失</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">主公式</div>
+        <div class="f-eq">
+          <span class="hl">h<sub>f</sub></span> = f · (L/D) · V²/2g
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">層流 f（解析解）</div>
+        <div class="f-eq">
+          <span class="hl">f = 64/Re</span> &nbsp;<span class="dim">(Re &lt; 2300)</span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">紊流 f（Colebrook）</div>
+        <div class="f-eq">
+          1/√f = −2 log(ε/3.7D + 2.51/Re√f)
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">求 <code>Re = ρVD/μ = VD/ν</code>，判斷層流或紊流</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">層流：<code>f = 64/Re</code>；紊流：查莫迪圖或用 Colebrook 疊代</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">代入 <code>h_f = f(L/D)(V²/2g)</code></div></div>
+      </div>
+    </div>
+
+    <!-- 08 次要損失 -->
+    <div class="card" id="card-minor">
+      <div class="card-head">
+        <div class="card-title">次要損失</div>
+        <div class="card-when">彎頭、閥、入口、出口</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">通用公式</div>
+        <div class="f-eq">
+          <span class="hl">h<sub>m</sub></span> = K · V²/2g<br>
+          <span class="dim">K = 損失係數（查表）</span>
+        </div>
+      </div>
+      <table class="params">
+        <tr><th>元件</th><th>K 值</th></tr>
+        <tr><td>尖銳入口</td><td>≈ 0.5</td></tr>
+        <tr><td>圓滑入口</td><td>≈ 0.04</td></tr>
+        <tr><td>突然出口</td><td>= 1.0</td></tr>
+        <tr><td>90° 彎頭</td><td>0.3 ~ 1.5</td></tr>
+        <tr><td>閘閥（全開）</td><td>≈ 0.2</td></tr>
+        <tr><td>突然擴大</td><td>(1 − A₁/A₂)²</td></tr>
+      </table>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">列出管路中所有元件，查對應 K</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">各元件損失 <code>h_m = KV²/2g</code>，注意用各元件處的速度</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">總損失 <code>h_L = h_f + Σh_m</code></div></div>
+      </div>
+    </div>
+
+    <!-- 09 莫迪圖 -->
+    <div class="card" id="card-moody">
+      <div class="card-head">
+        <div class="card-title">莫迪圖<br>摩擦係數 f</div>
+        <div class="card-when">紊流管道，查 f 值</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">Colebrook-White（隱式）</div>
+        <div class="f-eq">
+          1/√f = −2 log[ε/(3.7D) + 2.51/(Re√f)]
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">Swamee-Jain（顯式近似）</div>
+        <div class="f-eq">
+          <span class="hl">f</span> = 0.25 / [log(ε/3.7D + 5.74/Re⁰·⁹)]²
+        </div>
+      </div>
+      <div class="steps-title">查圖步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">計算 <code>Re</code> 和相對粗糙度 <code>ε/D</code>（ε：粗糙高度，鋼管 ≈ 0.046 mm）</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">Re &lt; 2300：<code>f = 64/Re</code>（層流直線）</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">Re > 4000：以 Re、ε/D 定位莫迪圖上的 f，或用 Swamee-Jain 直接算</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">完全粗糙區（Re 很大）：<code>1/√f = −2 log(ε/3.7D)</code>，f 與 Re 無關</div></div>
+      </div>
+    </div>
+
+    <!-- 10 泵功率 -->
+    <div class="card" id="card-pump">
+      <div class="card-head">
+        <div class="card-title">泵／風扇功率</div>
+        <div class="card-when">機械能輸入系統</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">軸功率</div>
+        <div class="f-eq">
+          <span class="hl">Ẇ<sub>s</sub></span> = ṁ · ẇ<sub>s</sub><br>
+          &nbsp;&nbsp;&nbsp;= ṁ[Δp/ρ + α₂V₂²/2 − α₁V₁²/2 + g(z₂−z₁) + h<sub>L</sub>]
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">泵效率</div>
+        <div class="f-eq">
+          η = <span class="hl">Ẇ<sub>流體</sub> / Ẇ<sub>馬達</sub></span><br>
+          Ẇ<sub>馬達</sub> = ṁgH<sub>p</sub> / η
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">用能量方程式求 <code>ẇ_s</code>（每千克軸功）</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">乘以質量流率：<code>Ẇ_s = ṁ · ẇ_s</code></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">若有效率：<code>Ẇ_馬達 = Ẇ_s / η</code></div></div>
+      </div>
+    </div>
+
+    <!-- 11 雷諾數 -->
+    <div class="card" id="card-reynolds">
+      <div class="card-head">
+        <div class="card-title">雷諾數與流況</div>
+        <div class="card-when">判斷層流 / 紊流</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">定義</div>
+        <div class="f-eq">
+          <span class="hl">Re</span> = ρVD/μ = VD/ν<br>
+          <span class="dim">慣性力 / 黏性力</span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">臨界值（圓管）</div>
+        <div class="f-eq">
+          Re &lt; 2300 → <span class="hl">層流</span><br>
+          2300 &lt; Re &lt; 4000 → 過渡區<br>
+          Re &gt; 4000 → <span class="hl">紊流</span>
+        </div>
+      </div>
+      <table class="params">
+        <tr><th>符號</th><th>說明</th><th>單位</th></tr>
+        <tr><td>ν</td><td>運動黏度 = μ/ρ</td><td>m²/s</td></tr>
+        <tr><td>μ</td><td>動力黏度</td><td>Pa·s</td></tr>
+        <tr><td>D</td><td>管徑（特徵長度）</td><td>m</td></tr>
+      </table>
+    </div>
+
+    <!-- 12 靜水壓與浮力 -->
+    <div class="card" id="card-hydrostatic">
+      <div class="card-head">
+        <div class="card-title">靜水壓力與浮力</div>
+        <div class="card-when">靜止流體受力</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">壓力分布</div>
+        <div class="f-eq">
+          dp/dz = −ρg &nbsp;→ <span class="hl">p = p₀ + ρgh</span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">平面受力</div>
+        <div class="f-eq">
+          <span class="hl">F<sub>R</sub></span> = ρg<span style="text-decoration:overline">h</span>A<br>
+          y<sub>cp</sub> = y̅ + I<sub>G</sub>/(y̅A) &nbsp;<span class="dim">(作用點)</span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">浮力（阿基米德）</div>
+        <div class="f-eq">
+          <span class="hl">F<sub>B</sub></span> = ρ<sub>液</sub>g V<sub>排</sub>
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">確認形心深度 <em>h̄</em>（自液面量到形心）</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">合力 <code>F_R = ρg·h̄·A</code></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">壓力中心 <code>y_cp = y̅ + I_G/(y̅·A)</code>，必在形心之下</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">浮力 = 排開液體重量，作用在浮心（排開體積的幾何中心）</div></div>
+      </div>
+    </div>
+
+    <!-- 16 動量修正係數 β -->
+    <div class="card" id="card-beta">
+      <div class="card-head">
+        <div class="card-title">動量修正係數 β</div>
+        <div class="card-when">例 5.13 型：非均勻剖面動量</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">定義</div>
+        <div class="f-eq">
+          <span class="hl">β</span> = (1/A)∫(u/V̄)² dA = ∫u² dA / (V̄² A)
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">常用值</div>
+        <div class="f-eq">
+          層流（拋物線）：<span class="hl">β = 4/3 ≈ 1.33</span><br>
+          紊流（近均勻）：<span class="hl">β ≈ 1.02</span><br>
+          均勻流：β = 1.00
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">動量方程修正</div>
+        <div class="f-eq">
+          ΣF = β₂ṁV₂ − β₁ṁV₁ <span class="dim">(單入單出)</span>
+        </div>
+      </div>
+      <div class="steps-title">與 α 的區別</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">α</div><div class="step-body">動能修正係數，用在<strong>能量方程式</strong>的 V²/2 項，層流 = 2.00</div></div>
+        <div class="step"><div class="step-n">β</div><div class="step-body">動量修正係數，用在<strong>動量方程式</strong>的 V 項，層流 = 4/3 ≈ 1.33</div></div>
+      </div>
+      <div class="warn"><strong>記憶法：</strong>α &gt; β &gt; 1，且層流偏差遠大於紊流；紊流常省略（令 β = 1）</div>
+    </div>
+
+    <!-- 17 移動CV動量 -->
+    <div class="card" id="card-moving-cv">
+      <div class="card-head">
+        <div class="card-title">移動控制體積<br>動量方程式</div>
+        <div class="card-when">例 5.14 型：CV 以速度 V_CV 移動</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">相對速度</div>
+        <div class="f-eq">
+          <span class="hl">W</span> = V − V<sub>CV</sub> <span class="dim">(流體相對 CV 的速度)</span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">移動CV動量方程（穩態相對流）</div>
+        <div class="f-eq">
+          <span class="hl">ΣF</span> = ṁ<sub>rel</sub>(W₂ − W₁)<br>
+          ṁ<sub>rel</sub> = ρA|W| <span class="dim">(用相對速度計算)</span>
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">定義 CV 速度 <code>V_CV</code>（若等速移動，相對流為穩態）</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">計算入出口相對速度 <code>W = V_流體 − V_CV</code></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">相對流質量流率 <code>ṁ_rel = ρA|W₁|</code>（以入口計）</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">代入 <code>ΣF = ṁ_rel(W₂ − W₁)</code>，求 CV 受力或加速度</div></div>
+      </div>
+      <div class="warn"><strong>關鍵：</strong>移動CV中連續方程與動量方程均使用<strong>相對速度 W</strong>，不是絕對速度 V</div>
+    </div>
+
+    <!-- 18 渦輪效率 -->
+    <div class="card" id="card-turbine-eff">
+      <div class="card-head">
+        <div class="card-title">渦輪／泵<br>有效功率與效率</div>
+        <div class="card-when">例 5.22 型：求 η 或實際功率</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">效率定義</div>
+        <div class="f-eq">
+          <span class="hl">η</span> = Ẇ<sub>shaft,實際</sub> / Ẇ<sub>shaft,理想</sub><br>
+          渦輪：η = Ẇ<sub>out</sub> / (ṁ·Δh<sub>fluid</sub>)<br>
+          泵　：η = ṁ·Δh<sub>fluid</sub> / Ẇ<sub>in</sub>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">能量方程（含 η）</div>
+        <div class="f-eq">
+          Ẇ<sub>shaft,理想</sub> = ṁ[Δp/ρ + α₂V₂²/2 − α₁V₁²/2 + gΔz]<br>
+          Ẇ<sub>shaft,實際</sub> = <span class="hl">η · Ẇ<sub>理想</sub></span> <span class="dim">(渦輪)</span>
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">用能量方程式求<strong>理想</strong>軸功率（不計損失，或損失已含在 h_L 中）</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">渦輪：<code>Ẇ_out = η · ṁ · ẇ_s,理想</code></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">泵：<code>Ẇ_in = ṁ · ẇ_s,理想 / η</code></div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">功率差 = 損失：<code>Ẇ_損失 = (1−η) · Ẇ_理想</code></div></div>
+      </div>
+    </div>
+
+    <!-- 19 已知功率求流量與損失 -->
+    <div class="card" id="card-headloss-Q">
+      <div class="card-head">
+        <div class="card-title">已知功率<br>求流量與水頭損失</div>
+        <div class="card-when">例 5.23 型：給 Ẇ 或 H，求 Q、h_L</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">能量方程 + 連續 聯立</div>
+        <div class="f-eq">
+          p₁/ρg + V₁²/2g + z₁ = p₂/ρg + V₂²/2g + z₂ + <span class="hl">h<sub>L</sub></span><br>
+          <span class="hl">h<sub>L</sub></span> = f(L/D)V²/2g + ΣKV²/2g
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">功率關係</div>
+        <div class="f-eq">
+          <span class="hl">Ẇ</span> = ρgQH = ṁgH<br>
+          H = (p₁−p₂)/ρg + z₁−z₂ + (V₁²−V₂²)/2g
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">由 <code>Q = Ẇ / (ρgH)</code> 或能量方程求 Q（H 為有效水頭）</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">由 Q 求截面速度 <code>V = Q/A</code></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">計算 Re → 求 f → 代入 Darcy 求 h_f</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">將 h_L 代回能量方程驗算，或直接由能量方程差值得 h_L</div></div>
+      </div>
+      <div class="warn"><strong>常見題型：</strong>給泵功率 Ẇ 和管路幾何，解出流量 Q，再回頭求損失 h_L（需疊代若 f 未知）</div>
+    </div>
+
+    <!-- 13 多出口動量 -->
+    <div class="card" id="card-multi-outlet">
+      <div class="card-head">
+        <div class="card-title">多出口管路動量<br>（Y形管、分流接頭）</div>
+        <div class="card-when">例 5.9 型：多出口求接頭力</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">穩態線動量（多出口）</div>
+        <div class="f-eq">
+          <span class="hl">ΣF</span> = Σ<sub>出</sub>ṁᵢVᵢ − Σ<sub>入</sub>ṁⱼVⱼ<br>
+          質量：<span class="hl">ṁ₁ = ṁ₂ + ṁ₃</span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">x / y 方向展開</div>
+        <div class="f-eq">
+          <span class="hl">ΣFₓ</span> = ṁ₂V₂cosθ₂ + ṁ₃V₃cosθ₃ − ṁ₁V₁<br>
+          <span class="hl">ΣFᵧ</span> = ṁ₂V₂sinθ₂ − ṁ₃V₃sinθ₃
+        </div>
+      </div>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">畫 CV 包住接頭，標入口①、出口②③及角度 θ</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">連續方程式求各 ṁ 或速度：<code>ṁ₁ = ṁ₂ + ṁ₃</code></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">外力包含：各截面<strong>錶壓力</strong> pᵢAᵢ、管壁反力 Rₓ、Rᵧ（未知）、重力</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">x、y 分別列動量方程，解出 Rₓ、Rᵧ，接頭受流體力 = −R</div></div>
+      </div>
+      <div class="warn"><strong>符號規則：</strong>流出 CV 的動量通量取 +，流入取 −；壓力項以<strong>錶壓</strong>計（大氣項相消）</div>
+    </div>
+
+    <!-- 14 可壓縮流噴嘴動量 -->
+    <div class="card" id="card-compressible-nozzle">
+      <div class="card-head">
+        <div class="card-title">可壓縮流<br>噴嘴動量方程式</div>
+        <div class="card-when">例 5.11 型：氣體噴嘴求力</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">動量方程（含壓力邊界）</div>
+        <div class="f-eq">
+          <span class="hl">ΣFₓ</span> = ṁ(V₂ − V₁) + (p₂−pₐₜₘ)A₂ − (p₁−pₐₜₘ)A₁<br>
+          <span class="dim">或直接用絕對壓 + 加入大氣壓在 CV 外壁的貢獻</span>
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">理想氣體密度</div>
+        <div class="f-eq">
+          ρ = p / (RT) &nbsp;<span class="dim">[kg/m³]</span><br>
+          ṁ = ρAV = pAV/(RT)
+        </div>
+      </div>
+      <table class="params">
+        <tr><th>符號</th><th>說明</th><th>單位</th></tr>
+        <tr><td>R</td><td>氣體常數（空氣 287）</td><td>J/(kg·K)</td></tr>
+        <tr><td>T</td><td>絕對溫度</td><td>K</td></tr>
+        <tr><td>p</td><td>絕對壓力</td><td>Pa</td></tr>
+      </table>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">以理想氣體 <code>ρ = p/RT</code> 求兩截面密度</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">用連續方程式 <code>ρ₁A₁V₁ = ρ₂A₂V₂</code> 確認 ṁ</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">動量方程：<code>R + p₁A₁ − p₂A₂ = ṁ(V₂ − V₁)</code>（同方向）</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">解 R 即為管壁對流體的力；注意<strong>壓力用絕對壓</strong>，CV 外壁大氣壓需納入</div></div>
+      </div>
+      <div class="warn"><strong>與不可壓縮差異：</strong>ρ 隨截面變化，必須用 <code>ρ = p/RT</code>；速度高時需考慮馬赫數是否超音速</div>
+    </div>
+
+    <!-- 15 旋轉CV角動量 -->
+    <div class="card" id="card-rotating-cv">
+      <div class="card-head">
+        <div class="card-title">旋轉控制體積<br>角動量方程式</div>
+        <div class="card-when">例 5.12 型：渦輪 / 泵葉輪</div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">Euler 渦輪方程式</div>
+        <div class="f-eq">
+          <span class="hl">T<sub>shaft</sub></span> = ṁ(r₂V<sub>θ2</sub> − r₁V<sub>θ1</sub>)<br>
+          <span class="hl">Ẇ<sub>shaft</sub></span> = ω·T = ṁ·ω(r₂V<sub>θ2</sub> − r₁V<sub>θ1</sub>)
+        </div>
+      </div>
+      <div class="f-block">
+        <div class="f-label">角動量方程（積分）</div>
+        <div class="f-eq">
+          ΣT = d/dt∫r×ρV dV + ∯(r×V)ρV·dA<br>
+          穩態：<span class="hl">ΣT = ṁ(r₂V<sub>θ2</sub> − r₁V<sub>θ1</sub>)</span>
+        </div>
+      </div>
+      <table class="params">
+        <tr><th>符號</th><th>說明</th></tr>
+        <tr><td>r₁, r₂</td><td>入、出口半徑</td></tr>
+        <tr><td>V<sub>θ</sub></td><td>切線方向速度分量</td></tr>
+        <tr><td>ω</td><td>旋轉角速度 [rad/s]</td></tr>
+      </table>
+      <div class="steps-title">解題步驟</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-body">確認旋轉軸，定義 r（半徑）與 V<sub>θ</sub>（切線速度）正方向</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-body">分解入出口速度：<code>V_θ = V·cosα</code>（α 為速度與半徑夾角）</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-body">代入 <code>T = ṁ(r₂V_θ2 − r₁V_θ1)</code>，注意旋轉方向正負</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-body">功率 <code>Ẇ = ωT</code>；渦輪（做功）T 與 ω 同向，泵（輸入功）相反</div></div>
+      </div>
+      <div class="warn"><strong>正負規則：</strong>V<sub>θ2</sub> 與 ω 同方向 → 渦輪輸出正功；若相反 → 為泵（輸入功）</div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const items = document.querySelectorAll('.item');
+const cards = document.querySelectorAll('.card');
+const placeholder = document.getElementById('placeholder');
+const search = document.getElementById('search');
+const countEl = document.getElementById('count');
+
+function showCard(id) {
+  placeholder.style.display = 'none';
+  cards.forEach(c => c.classList.remove('visible'));
+  const target = document.getElementById('card-' + id);
+  if (target) target.classList.add('visible');
+  items.forEach(i => i.classList.remove('active'));
+  const activeItem = document.querySelector(`.item[data-id="${id}"]`);
+  if (activeItem) activeItem.classList.add('active');
+}
+
+items.forEach(item => {
+  item.addEventListener('click', () => showCard(item.dataset.id));
+});
+
+function updateCount() {
+  const visible = document.querySelectorAll('.item:not(.hidden)').length;
+  const total = items.length;
+  countEl.textContent = visible < total ? `${visible} / ${total} 題型` : `${total} 題型`;
+}
+
+search.addEventListener('input', () => {
+  const q = search.value.trim().toLowerCase();
+  items.forEach(item => {
+    const text = item.textContent.toLowerCase();
+    const matched = !q || text.includes(q);
+    item.classList.toggle('hidden', !matched);
+  });
+  updateCount();
+});
+
+updateCount();
+
+// keyboard shortcut: / to focus search
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement !== search) {
+    e.preventDefault();
+    search.focus();
+  }
+  if (e.key === 'Escape') search.blur();
+});
+</script>
+</body>
+</html>
