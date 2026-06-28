@@ -1,0 +1,241 @@
+/* 沿用現有 CSS 變數，只保留佈局控制 */
+
+/* 佈局容器 */
+.workspace-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: var(--bg);
+}
+
+/* 左側邊欄 */
+.nav-sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  background: var(--bg);
+  z-index: 10;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 12px;
+  color: var(--text);
+  transition: background 0.2s;
+}
+
+.icon-btn:hover {
+  background: var(--glass);
+}
+
+/* 三欄共同樣式與動畫 */
+.column {
+  flex: 1;
+  transition: flex 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
+              filter 0.4s ease, 
+              opacity 0.4s ease;
+  border-right: 1px solid var(--border-md);
+  background: var(--glass);
+  box-shadow: var(--sh-lg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer; /* 點擊聚焦 */
+}
+
+.column:last-child {
+  border-right: none;
+}
+
+/* 焦點縮放邏輯 */
+.workspace-container.has-focus .column {
+  flex: 0.5;
+  opacity: 0.4;
+  filter: blur(4px);
+  pointer-events: none; /* 非焦點欄位禁止操作 */
+}
+
+.workspace-container.has-focus .column.is-focused {
+  flex: 3;
+  opacity: 1;
+  filter: blur(0);
+  pointer-events: auto;
+  cursor: default;
+}
+
+/* Bento Card */
+.bento-card {
+  position: relative;
+  padding: 16px 20px;
+  background: var(--glass);
+  box-shadow: var(--sh-lg);
+  border-radius: 12px;
+  border: 1px solid var(--border-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.bento-card-title {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.bento-card-value {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+}
+.bento-strip {
+  position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+}
+.bento-strip.up { background-color: var(--up); }
+.bento-strip.dn { background-color: var(--dn); }
+.bento-strip.neutral { background-color: var(--text-3); }
+
+/* Settings Modal */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.settings-modal {
+  background: var(--bg);
+  border: 1px solid var(--border-md);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  border-radius: 16px;
+  padding: 32px;
+  width: 400px;
+  max-width: 90vw;
+  color: var(--text);
+}
+
+.settings-modal h2 {
+  margin: 0 0 24px 0;
+  font-size: 20px;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.setting-item input[type="checkbox"] {
+  margin-right: 12px;
+  width: 18px;
+  height: 18px;
+}
+
+/* Screener & Intelligence Styles */
+.col-header {
+  padding: 20px 24px;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-md);
+  flex-shrink: 0;
+}
+
+.screener-list, .intel-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.screener-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  margin-bottom: 8px;
+  background: var(--glass);
+  box-shadow: var(--sh-lg);
+  border-radius: 12px;
+  border: 1px solid var(--border-md);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+.screener-item:hover {
+  background: var(--border-md);
+}
+.screener-item.active {
+  border-color: var(--text-3);
+}
+.screener-strip {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+}
+
+.sparkline {
+  width: 60px;
+  height: 24px;
+  opacity: 0.6;
+}
+
+.intel-bubble {
+  background: var(--glass);
+  box-shadow: var(--sh-lg);
+  border: 1px solid var(--border-md);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.intel-timeline-item {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 24px;
+}
+.intel-timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 4px; top: 6px; bottom: -24px;
+  width: 2px;
+  background: var(--border-md);
+}
+.intel-timeline-item::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 6px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--text-3);
+  border: 2px solid var(--bg);
+}
+.intel-timeline-content {
+  background: var(--glass);
+  border: 1px solid var(--border-md);
+  border-radius: 12px;
+  padding: 16px;
+}
+.intel-tag {
+  display: inline-block;
+  background: rgba(128,128,128,0.2);
+  color: var(--text-3);
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-top: 12px;
+  margin-right: 8px;
+}

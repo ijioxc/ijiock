@@ -13,12 +13,16 @@ const STOOQ_DIRECT = 'https://stooq.com'
 const TWSE_DIRECT  = 'https://openapi.twse.com.tw'
 const TWSE_HIST_DIRECT = 'https://www.twse.com.tw'
 const MKTDATA_DIRECT = 'https://api.marketdata.app'
+const YAHOO_DIRECT = 'https://query1.finance.yahoo.com'
+const FINMIND_DIRECT = 'https://api.finmindtrade.com'
 
 // Dev mode paths (Vite proxy)
 const STOOQ_DEV  = '/api/stooq'
 const TWSE_DEV   = '/api/twse'
 const TWSE_HIST_DEV = '/api/twse-hist'
 const MKTDATA_DEV = '/api/mktdata'
+const YAHOO_DEV = '/api/yahoo'
+const FINMIND_DEV = '/api/finmind'
 
 function stooqUrl(path) {
   return IS_PROD ? px(`${STOOQ_DIRECT}${path}`) : `${STOOQ_DEV}${path}`
@@ -29,8 +33,15 @@ function twseUrl(path) {
 function twseHistUrl(path) {
   return IS_PROD ? px(`${TWSE_HIST_DIRECT}${path}`) : `${TWSE_HIST_DEV}${path}`
 }
+// MarketData and FinMind natively support CORS, no proxy needed!
 function mktdataUrl(path) {
-  return IS_PROD ? px(`${MKTDATA_DIRECT}${path}`) : `${MKTDATA_DEV}${path}`
+  return `${MKTDATA_DIRECT}${path}`
+}
+function yahooUrl(path) {
+  return IS_PROD ? px(`${YAHOO_DIRECT}${path}`) : `${YAHOO_DEV}${path}`
+}
+function finmindUrl(path) {
+  return `${FINMIND_DIRECT}${path}`
 }
 
 // Map Yahoo Finance index symbols → Stooq
@@ -56,7 +67,8 @@ const FX_MAP = {
 }
 
 function detectType(symbol) {
-  if (/^\d{4,5}\.TW$/i.test(symbol)) return 'twse'
+  if (symbol.startsWith('CG:')) return 'crypto'
+  if (/\.TW$/i.test(symbol) || /\.TWO$/i.test(symbol)) return 'twse'
   if (INDEX_MAP[symbol]) return 'index'
   if (FX_MAP[symbol]) return 'fx'
   return 'us'
@@ -105,36 +117,40 @@ export async function fetchOHLC(symbol, range = '3mo') {
 
   const type = detectType(symbol)
 
+  if (type === 'crypto') {
+    const id = symbol.slice(3).toLowerCase() // Remove CG:
+    const cgDays = { '1mo': 30, '3mo': 90, '6mo': 180, '1y': 365, '2y': 730, '5y': 1825 }[range] || 90
+    // CoinGecko allows CORS natively
+    const r = await fetchWithRetry(`https://api.coingecko.com/api/v3/coins/${id}/ohlc?vs_currency=usd&days=${cgDays}`)
+    const json = await r.json()
+    if (!Array.isArray(json)) throw new Error('無法取得 CoinGecko 歷史資料')
+    
+    const data = json.map(c => ({
+      time: c[0] / 1000,
+      open: c[1], high: c[2], low: c[3], close: c[4], volume: 0
+    })).sort((a, b) => a.time - b.time)
+    
+    ohlcCache.set(cacheKey, { data, ts: Date.now() })
+    return data
+  }
+
   if (type === 'twse') {
-    const code = symbol.split('.')[0]
-    const months = rangeToMonths(range)
-    const rows = []
-    const now = new Date()
-    for (let i = months - 1; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const yyyymmdd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}01`
-      try {
-        const path = `/rwd/zh/afterTrading/STOCK_DAY?stockNo=${code}&date=${yyyymmdd}&response=json`
-        const r = await fetch(twseHistUrl(path))
-        if (!r.ok) continue
-        const json = await r.json()
-        if (json.stat !== 'OK' || !Array.isArray(json.data)) continue
-        for (const row of json.data) {
-          const time = mingouSlashToUnix(row[0])
-          if (!time) continue
-          rows.push({
-            time,
-            open:   parseTwseNum(row[3]),
-            high:   parseTwseNum(row[4]),
-            low:    parseTwseNum(row[5]),
-            close:  parseTwseNum(row[6]),
-            volume: parseTwseNum(row[1]),
-          })
-        }
-      } catch (_) {}
-    }
-    if (!rows.length) throw new Error('無法取得台股歷史資料（休市或資料尚未更新）')
-    const data = rows.sort((a, b) => a.time - b.time)
+    // Use FinMind API for Taiwan Stocks/ETFs Historical Data (No 429 issues, covers TWSE & TPEx)
+    const cleanSym = symbol.replace(/\.TW$|\.TWO$/i, '')
+    const from = rangeToFromDate(range)
+    const url = finmindUrl(`/api/v4/data?dataset=TaiwanStockPrice&data_id=${cleanSym}&start_date=${from}`)
+    const r = await fetchWithRetry(url)
+    const json = await r.json()
+    if (json.msg !== 'success' || !json.data || !json.data.length) throw new Error('無法取得台股歷史資料')
+    
+    const data = json.data.map(c => {
+      const [y, m, d] = c.date.split('-').map(Number)
+      return {
+        time: Math.floor(new Date(y, m - 1, d).getTime() / 1000),
+        open: c.open, high: c.max, low: c.min, close: c.close, volume: c.Trading_Volume || 0
+      }
+    })
+    
     ohlcCache.set(cacheKey, { data, ts: Date.now() })
     return data
   }
@@ -182,21 +198,46 @@ export async function fetchOHLC(symbol, range = '3mo') {
 export async function fetchQuote(symbol) {
   const type = detectType(symbol)
 
+  if (type === 'crypto') {
+    const id = symbol.slice(3).toLowerCase()
+    const r = await fetchWithRetry(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true`)
+    const json = await r.json()
+    const data = json[id]
+    if (!data) throw new Error(`CoinGecko 找不到 ${id}`)
+    
+    const price = data.usd
+    const changePct = data.usd_24h_change || 0
+    const prev = price / (1 + (changePct / 100))
+    const change = price - prev
+    
+    return {
+      price, change, changePct,
+      open: prev, high: price, low: price, prev,
+      volume: data.usd_24h_vol || 0,
+      currency: 'USD', ts: Date.now(),
+    }
+  }
+
   if (type === 'twse') {
-    const code = symbol.split('.')[0]
-    const all = await fetchTwseAll()
-    const row = all.find(x => x.Code === code)
-    if (!row) throw new Error(`TWSE: ${code} not found`)
-    const price = parseTwseNum(row.ClosingPrice)
-    const change = parseTwseNum(row.Change)
-    const prev = price - change
+    // Use FinMind for quotes to completely avoid Yahoo 429 IP bans.
+    // FinMind provides EOD data which perfectly fits the "long term" strategy.
+    const cleanSym = symbol.replace(/\.TW$|\.TWO$/i, '')
+    const url = finmindUrl(`/api/v4/data?dataset=TaiwanStockPrice&data_id=${cleanSym}&start_date=${rangeToFromDate('1mo')}`)
+    const r = await fetchWithRetry(url)
+    const json = await r.json()
+    if (json.msg !== 'success' || !json.data || !json.data.length) throw new Error(`找不到 ${symbol} 的報價資料`)
+    
+    const c = json.data[json.data.length - 1] // latest day
+    const prevDay = json.data[json.data.length - 2]
+    const prev = prevDay ? prevDay.close : c.open
+    const price = c.close
+    const change = price - prev
+    
     return {
       price, change,
       changePct: prev ? (change / prev) * 100 : 0,
-      open:   parseTwseNum(row.OpeningPrice),
-      high:   parseTwseNum(row.HighestPrice),
-      low:    parseTwseNum(row.LowestPrice),
-      prev, volume: parseTwseNum(row.TradeVolume),
+      open: c.open, high: c.max, low: c.min,
+      prev, volume: c.Trading_Volume || 0,
       currency: 'TWD', ts: Date.now(),
     }
   }
@@ -215,6 +256,16 @@ export async function fetchQuote(symbol) {
 }
 
 // ── Helpers ──
+async function fetchWithRetry(url, retries = 3) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, 1500 * attempt));
+    const r = await fetch(url);
+    if (r.status === 429 && attempt < retries - 1) continue;
+    if (!r.ok) throw new Error(`Yahoo Finance error ${r.status}`);
+    return r;
+  }
+}
+
 function parseTwseNum(s) {
   return parseFloat(String(s).replace(/,/g, '')) || 0
 }
@@ -250,14 +301,23 @@ const INTRADAY_TTL = 5 * 60 * 1000
 
 export async function fetchIntraday(symbol, interval = '15m', days = 5) {
   const key = `${symbol}|${interval}|${days}`
-  const cached = intradayCache.get(key)
-  if (cached && Date.now() - cached.ts < INTRADAY_TTL) return cached.data
+  if (detectType(symbol) === 'crypto') {
+    // Intraday for crypto using 1 day OHLC from coingecko (which returns 30min intervals)
+    const id = symbol.slice(3).toLowerCase()
+    const r = await fetchWithRetry(`https://api.coingecko.com/api/v3/coins/${id}/ohlc?vs_currency=usd&days=1`)
+    const json = await r.json()
+    if (!Array.isArray(json)) throw new Error('無法取得 CoinGecko 盤中資料')
+    const data = json.map(c => ({
+      time: c[0] / 1000, open: c[1], high: c[2], low: c[3], close: c[4], volume: 0
+    })).sort((a, b) => a.time - b.time)
+    intradayCache.set(key, { data, ts: Date.now() })
+    return data
+  }
 
   // Yahoo Finance v8 chart endpoint — works for TW, US, indices, FX
   const yhSym = encodeURIComponent(symbol)
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yhSym}?interval=${interval}&range=${days}d&includePrePost=false`
-  const r = await fetch(px(url))
-  if (!r.ok) throw new Error(`盤中資料錯誤 ${r.status}`)
+  const url = yahooUrl(`/v8/finance/chart/${yhSym}?interval=${interval}&range=${days}d&includePrePost=false`)
+  const r = await fetchWithRetry(url)
   const json = await r.json()
   const result = json.chart?.result?.[0]
   if (!result?.timestamp?.length) throw new Error('無盤中資料（可能非交易時間）')

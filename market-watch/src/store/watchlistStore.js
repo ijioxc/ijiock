@@ -1,43 +1,107 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-const DEFAULT_SYMBOLS = [
-  { symbol: '2330.TW', name: '台積電', category: 'TW' },
-  { symbol: '2317.TW', name: '鴻海', category: 'TW' },
-  { symbol: '2454.TW', name: '聯發科', category: 'TW' },
-  { symbol: 'AAPL', name: '蘋果', category: 'US' },
-  { symbol: 'NVDA', name: '輝達', category: 'US' },
-  { symbol: 'MSFT', name: '微軟', category: 'US' },
-  { symbol: 'BTC-USD', name: '比特幣', category: 'IDX' },
-  { symbol: 'ETH-USD', name: '以太坊', category: 'IDX' },
-  { symbol: '^GSPC', name: 'S&P 500', category: 'IDX' },
-  { symbol: '^IXIC', name: 'NASDAQ', category: 'IDX' },
-  { symbol: 'TWDUSD=X', name: '台幣/美元', category: 'FX' },
-  { symbol: 'DX-Y.NYB', name: '美元指數', category: 'FX' },
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5005'
+
+// 依符號格式自動分類（無需寫死對照表）
+export function classifySymbol(symbol) {
+  if (!symbol) return 'OTHER'
+  const s = symbol.toUpperCase()
+  if (s.startsWith('^')) return 'IDX'
+  if (s.endsWith('-USD') || s.startsWith('CG:')) return 'CRYPTO'
+  if (s.includes('=X') || s.endsWith('.NYB')) return 'FX'
+  if (/\.TW[O]?$/.test(s)) {
+    const code = s.replace(/\.TW[O]?$/, '')
+    if (/^00/.test(code)) return 'ETF'
+    return 'TW'
+  }
+  return 'US'
+}
+
+// 預設清單只是「符號池」，名稱與分類都由後端/規則動態決定
+const DEFAULT_TICKERS = [
+  '2330.TW', '2317.TW', '2454.TW', '2382.TW', '2308.TW', '2303.TW',
+  '2881.TW', '2882.TW', '2891.TW', '2886.TW', '2412.TW', '2002.TW', '1301.TW',
+  '0050.TW', '0056.TW', '00878.TW', '00631L.TW', '00981A.TW',
+  '00919.TW', '00929.TW', '00679B.TW',
+  'AAPL', 'NVDA', 'MSFT',
+  'BTC-USD', 'ETH-USD', '^GSPC', '^IXIC',
+  'TWDUSD=X', 'DX-Y.NYB',
 ]
+
+export const DEFAULT_SYMBOLS = DEFAULT_TICKERS.map(t => ({
+  symbol: t,
+  name: t,                       // 暫用 ticker；首次 doRefresh 會由後端填入真實名稱
+  category: classifySymbol(t),
+}))
 
 export const useWatchlistStore = create(
   persist(
     (set, get) => ({
       symbols: DEFAULT_SYMBOLS,
       selected: '2330.TW',
-      quotes: {},         // { symbol: { price, change, changePct, open, high, low, prev, ts } }
-      priceHistory: {},   // { symbol: number[] } — last 30 prices for sparkline
-      alerts: {},         // { symbol: { target: null, stop: null } }
+      quotes: {},
+      priceHistory: {},
+      alerts: {},
       triggeredAlerts: [],
       apiKey: '',
       geminiKey: '',
       aiProvider: 'gemini',
       forceRefresh: 0,
-      pinnedSymbols: [],  // symbols pinned to top of watchlist
-      symbolTags: {},     // { symbol: 'red'|'yellow'|'green'|null }
-      symbolNotes: {},    // { symbol: string }
+      pinnedSymbols: [],
+      symbolTags: {},
+      symbolNotes: {},
 
       setSelected: (symbol) => set({ selected: symbol }),
       setApiKey: (key) => set({ apiKey: key }),
       setGeminiKey: (key) => set({ geminiKey: key }),
       setAiProvider: (p) => set({ aiProvider: p }),
-      doRefresh: () => set(s => ({ forceRefresh: s.forceRefresh + 1 })),
+
+      doRefresh: async () => {
+        const { symbols } = get()
+        if (!symbols || symbols.length === 0) return
+        try {
+          const res = await fetch(`${API_BASE}/api/market/quotes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tickers: symbols.map(s => s.symbol) })
+          })
+          if (!res.ok) return
+          const data = await res.json()
+
+          const byTicker = Object.fromEntries(data.map(d => [d.symbol, d]))
+          const newQuotes = { ...get().quotes }
+          const newHistory = { ...get().priceHistory }
+
+          data.forEach(item => {
+            newQuotes[item.symbol] = {
+              price: item.price,
+              changePct: item.change,
+              name: item.name,
+              ts: Date.now(),
+            }
+            if (item.priceHistory && item.priceHistory.length > 0) {
+              newHistory[item.symbol] = item.priceHistory
+            }
+          })
+
+          // 動態更新 symbol 的 name 與 category（若 backend 回傳）
+          const newSymbols = symbols.map(s => {
+            const fetched = byTicker[s.symbol]
+            const fetchedName = fetched?.name && fetched.name !== s.symbol ? fetched.name : null
+            return {
+              ...s,
+              name: fetchedName || s.name,
+              category: classifySymbol(s.symbol),
+            }
+          })
+
+          set({ quotes: newQuotes, priceHistory: newHistory, symbols: newSymbols })
+        } catch (err) {
+          console.error('doRefresh failed:', err)
+        }
+      },
+
       togglePin: (symbol) => set(s => ({
         pinnedSymbols: s.pinnedSymbols.includes(symbol)
           ? s.pinnedSymbols.filter(x => x !== symbol)
@@ -50,12 +114,18 @@ export const useWatchlistStore = create(
         symbolNotes: { ...s.symbolNotes, [symbol]: note },
       })),
 
-      addSymbol: (symbol, name, category) =>
-        set(s => ({
-          symbols: s.symbols.find(x => x.symbol === symbol)
+      addSymbol: (symbol, name, category) => {
+        let finalSymbol = symbol
+        if (category === 'CRYPTO' && !finalSymbol.startsWith('CG:')) {
+          finalSymbol = 'CG:' + finalSymbol
+        }
+        const finalCategory = category || classifySymbol(finalSymbol)
+        return set(s => ({
+          symbols: s.symbols.find(x => x.symbol === finalSymbol)
             ? s.symbols
-            : [...s.symbols, { symbol, name, category }],
-        })),
+            : [...s.symbols, { symbol: finalSymbol, name: name || finalSymbol, category: finalCategory }],
+        }))
+      },
 
       removeSymbol: (symbol) =>
         set(s => ({
@@ -86,6 +156,18 @@ export const useWatchlistStore = create(
 
       clearTriggered: () => set({ triggeredAlerts: [] }),
     }),
-    { name: 'market-watch-store', partialize: s => ({ symbols: s.symbols, alerts: s.alerts, apiKey: s.apiKey, geminiKey: s.geminiKey, aiProvider: s.aiProvider, pinnedSymbols: s.pinnedSymbols, symbolTags: s.symbolTags, symbolNotes: s.symbolNotes }) }
+    {
+      name: 'market-watch-store',
+      partialize: s => ({
+        symbols: s.symbols,
+        alerts: s.alerts,
+        apiKey: s.apiKey,
+        geminiKey: s.geminiKey,
+        aiProvider: s.aiProvider,
+        pinnedSymbols: s.pinnedSymbols,
+        symbolTags: s.symbolTags,
+        symbolNotes: s.symbolNotes,
+      }),
+    }
   )
 )

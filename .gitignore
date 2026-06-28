@@ -5,3 +5,8 @@ dist/
 .env
 .dev.vars
 .claude/
+market-watch/obsidian_vault/
+market-watch/*.orig
+market-watch/*.rej
+market-watch/design_raw.html
+market-watch/index1.html

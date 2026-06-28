@@ -1,23 +1,11 @@
-import { useState, useEffect } from 'react'
-import NavBar from './components/NavBar'
-import WatchList from './components/WatchList'
-import ChartPanel from './components/ChartPanel'
-import AdvisorChat from './components/AdvisorChat'
-import AlertPanel from './components/AlertPanel'
-import PortfolioPanel from './components/PortfolioPanel'
-import NewsPanel from './components/NewsPanel'
-import MarketTicker from './components/MarketTicker'
-import KeyboardHelp from './components/KeyboardHelp'
-import SectorPanel from './components/SectorPanel'
+import { useEffect } from 'react'
+import MainWorkspace from './components/MainWorkspace'
 import ToastSystem from './components/ToastSystem'
 import CommandPalette from './components/CommandPalette'
-import EventCalendar from './components/EventCalendar'
-import ScreenerPanel from './components/ScreenerPanel'
+import SettingsModal from './components/SettingsModal'
 import { useQuotes } from './hooks/useQuotes'
-import { useWatchlistStore } from './store/watchlistStore'
+import { useWatchlistStore, DEFAULT_SYMBOLS, classifySymbol } from './store/watchlistStore'
 import './App.css'
-
-const TABS = ['advisor', 'portfolio', 'alert', 'news', 'sector', 'calendar', 'screener']
 
 function QuotesRunner() {
   useQuotes()
@@ -25,62 +13,41 @@ function QuotesRunner() {
 }
 
 export default function App() {
-  const [darkMode, setDarkMode] = useState(false)
-  const [rightTab, setRightTab] = useState('advisor')
   const triggeredAlerts = useWatchlistStore(s => s.triggeredAlerts)
-  const forceRefresh = useWatchlistStore(s => s.forceRefresh)
 
-  // Number keys 1-4 switch right tabs
+  // Migration:
+  // 1) 若清單過短，補齊預設標的
+  // 2) 重新分類所有現有符號（移除舊版寫死的 MOAT / CASHFLOW / INSIDER 等 hard-coded 分類）
   useEffect(() => {
-    const handler = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
-      const n = parseInt(e.key)
-      if (n >= 1 && n <= 7) setRightTab(TABS[n - 1])
+    const store = useWatchlistStore.getState()
+    const twSymbols = store.symbols.filter(s => s.category === 'TW' || s.category === 'ETF')
+    if (twSymbols.length <= 3) {
+      DEFAULT_SYMBOLS.forEach(def => store.addSymbol(def.symbol, def.name, def.category))
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    // 動態重分類
+    const reclassified = store.symbols.map(s => ({ ...s, category: classifySymbol(s.symbol) }))
+    useWatchlistStore.setState({ symbols: reclassified })
+    // 立即抓一次行情，讓名稱由 backend 填入
+    store.doRefresh?.()
   }, [])
 
   return (
-    <div className={`app ${darkMode ? 'dark' : ''}`}>
+    <>
       <QuotesRunner />
-      <KeyboardHelp onToggleDark={() => setDarkMode(v => !v)} />
       <ToastSystem />
       <CommandPalette />
+      
       {triggeredAlerts.length > 0 && (
-        <div className="alert-banner">
+        <div className="alert-banner" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, background: 'var(--color-up)', color: 'white', padding: '8px', textAlign: 'center' }}>
           {triggeredAlerts[0].type === 'target' ? '📈' : '📉'}&nbsp;
           {triggeredAlerts[0].symbol}&nbsp;
           {triggeredAlerts[0].type === 'target' ? '突破目標價' : '跌破停損價'}&nbsp;
           {triggeredAlerts[0].price?.toFixed(2)}
         </div>
       )}
-      <NavBar darkMode={darkMode} onToggleDark={() => setDarkMode(v => !v)} />
-      <MarketTicker />
-      <div className="main-layout">
-        <WatchList />
-        <div className="center-col">
-          <ChartPanel darkMode={darkMode} />
-        </div>
-        <div className="right-col">
-          <div className="right-tabs">
-            <button className={`r-tab ${rightTab === 'advisor' ? 'active' : ''}`} onClick={() => setRightTab('advisor')}>AI</button>
-            <button className={`r-tab ${rightTab === 'portfolio' ? 'active' : ''}`} onClick={() => setRightTab('portfolio')}>持倉</button>
-            <button className={`r-tab ${rightTab === 'alert' ? 'active' : ''}`} onClick={() => setRightTab('alert')}>警示</button>
-            <button className={`r-tab ${rightTab === 'news' ? 'active' : ''}`} onClick={() => setRightTab('news')}>新聞</button>
-            <button className={`r-tab ${rightTab === 'sector' ? 'active' : ''}`} onClick={() => setRightTab('sector')}>板塊</button>
-            <button className={`r-tab ${rightTab === 'calendar' ? 'active' : ''}`} onClick={() => setRightTab('calendar')}>日曆</button>
-            <button className={`r-tab ${rightTab === 'screener' ? 'active' : ''}`} onClick={() => setRightTab('screener')}>選股</button>
-          </div>
-          {rightTab === 'advisor' && <AdvisorChat />}
-          {rightTab === 'portfolio' && <PortfolioPanel />}
-          {rightTab === 'alert' && <AlertPanel />}
-          {rightTab === 'news' && <NewsPanel />}
-          {rightTab === 'sector' && <SectorPanel />}
-          {rightTab === 'calendar' && <EventCalendar />}
-          {rightTab === 'screener' && <ScreenerPanel />}
-        </div>
-      </div>
-    </div>
+
+      <MainWorkspace />
+      <SettingsModal />
+    </>
   )
 }

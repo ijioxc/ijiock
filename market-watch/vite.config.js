@@ -62,6 +62,34 @@ function marketProxyPlugin() {
         }
       })
 
+      // Yahoo Finance proxy
+      server.middlewares.use('/api/yahoo', async (req, res) => {
+        const url = `https://query1.finance.yahoo.com${req.url.replace(/^\/api\/yahoo/, '')}`
+        try {
+          const r = await fetch(url, { headers: { 'User-Agent': UA } })
+          res.statusCode = r.status
+          res.setHeader('Content-Type', 'application/json')
+          res.setHeader('Access-Control-Allow-Origin', '*')
+          res.end(await r.text())
+        } catch (e) {
+          res.statusCode = 502; res.end(e.message)
+        }
+      })
+
+      // FinMind API proxy
+      server.middlewares.use('/api/finmind', async (req, res) => {
+        const url = `https://api.finmindtrade.com${req.url.replace(/^\/api\/finmind/, '')}`
+        try {
+          const r = await fetch(url, { headers: { 'User-Agent': UA } })
+          res.statusCode = r.status
+          res.setHeader('Content-Type', 'application/json')
+          res.setHeader('Access-Control-Allow-Origin', '*')
+          res.end(await r.text())
+        } catch (e) {
+          res.statusCode = 502; res.end(e.message)
+        }
+      })
+
       // News RSS proxy — Google News RSS → JSON (no auth needed)
       server.middlewares.use('/api/news', async (req, res) => {
         const tail = req.url
@@ -70,7 +98,7 @@ function marketProxyPlugin() {
         const params = new URLSearchParams(qs)
         const sym  = params.get('s') || ''
         const name = params.get('n') || sym
-        const isTW = /^\d{4,5}\.TW$/i.test(sym)
+        const isTW = /\.(TW|TWO)$/i.test(sym)
         const query   = isTW ? encodeURIComponent(name + ' 股票') : encodeURIComponent(sym + ' stock')
         const lang    = isTW ? 'zh-TW' : 'en-US'
         const gl      = isTW ? 'TW' : 'US'
@@ -102,6 +130,31 @@ function marketProxyPlugin() {
           res.statusCode = 502
           res.setHeader('Content-Type', 'application/json')
           res.end(JSON.stringify({ error: e.message }))
+        }
+      })
+
+      // Obsidian Mock API: Read from local obsidian_vault
+      server.middlewares.use('/api/obsidian', async (req, res) => {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const sym = url.searchParams.get('s');
+        if (!sym) {
+          res.statusCode = 400;
+          res.end('Missing symbol parameter');
+          return;
+        }
+
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const targetPath = path.resolve(process.cwd(), 'obsidian_vault', `${sym}.md`);
+        
+        try {
+          const content = await fs.readFile(targetPath, 'utf-8');
+          res.setHeader('Content-Type', 'text/markdown');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.end(content);
+        } catch (e) {
+          res.statusCode = 404;
+          res.end('No local notes found for this ticker.');
         }
       })
     },

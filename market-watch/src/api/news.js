@@ -15,7 +15,7 @@ export async function fetchNews(symbol = '', name = '') {
   }
 
   // Production: fetch Google News RSS via CORS proxy, parse client-side
-  const isTW = /^\d{4,5}\.TW$/i.test(symbol)
+  const isTW = /\.(TW|TWO)$/i.test(symbol)
   const q    = isTW ? encodeURIComponent((name || symbol) + ' 股票') : encodeURIComponent((symbol || name) + ' stock')
   const lang = isTW ? 'zh-TW' : 'en-US'
   const gl   = isTW ? 'TW'    : 'US'

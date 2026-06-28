@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
 import { useWatchlistStore } from '../store/watchlistStore'
+import { useSettingsStore } from '../store/uiStore'
 
 function SessionClock() {
   const [now, setNow] = useState(new Date())
@@ -68,22 +68,16 @@ function SessionClock() {
 }
 
 export default function NavBar({ darkMode, onToggleDark }) {
-  const apiKey = useWatchlistStore(s => s.apiKey)
-  const setApiKey = useWatchlistStore(s => s.setApiKey)
-  const geminiKey = useWatchlistStore(s => s.geminiKey)
-  const setGeminiKey = useWatchlistStore(s => s.setGeminiKey)
-  const aiProvider = useWatchlistStore(s => s.aiProvider)
-  const setAiProvider = useWatchlistStore(s => s.setAiProvider)
-  const [showKey, setShowKey] = useState(false)
-  const [draftClaude, setDraftClaude] = useState(apiKey)
-  const [draftGemini, setDraftGemini] = useState(geminiKey)
-  const [tab, setTab] = useState(aiProvider)
+  const toggleSettingsModal = useSettingsStore(s => s.toggleSettingsModal)
   const triggeredAlerts = useWatchlistStore(s => s.triggeredAlerts)
   const clearTriggered = useWatchlistStore(s => s.clearTriggered)
+  
+  const [hidden, setHidden] = useState(false)
 
   return (
     <>
-    <nav className="navbar">
+    <div className={`navbar-wrapper ${hidden ? 'header--hidden' : ''}`}>
+      <nav className="navbar">
       <div className="logo">
         <div className="logo-mark">
           <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
@@ -116,14 +110,11 @@ export default function NavBar({ darkMode, onToggleDark }) {
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </button>
-        <button className="ibtn" onClick={() => setShowKey(v => !v)} title="設定 API Key">
+        <button className="ibtn" onClick={toggleSettingsModal} title="全域設定">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
-        </button>
-        <button className="ibtn" onClick={onToggleDark} title={darkMode ? '切換亮色 (d)' : '切換暗色 (d)'}>
-          {darkMode ? '☀' : '🌙'}
         </button>
         <button
           className="ibtn"
@@ -131,69 +122,26 @@ export default function NavBar({ darkMode, onToggleDark }) {
           style={{ fontSize: 13, fontWeight: 800 }}
           onMouseDown={e => { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' })) }}
         >?</button>
+        <button
+          className="ibtn"
+          onClick={() => setHidden(true)}
+          title="向上收起導航欄"
+        >
+          ▲
+        </button>
       </div>
 
     </nav>
-
-      {showKey && createPortal(
-        <div className="key-modal" onClick={() => setShowKey(false)}>
-          <div className="key-panel" onClick={e => e.stopPropagation()}>
-            <h3>AI 投資顧問設定</h3>
-            <p className="key-hint">Key 僅存於本機 localStorage，不會上傳</p>
-
-            <div className="key-provider-tabs">
-              <button
-                className={`key-tab ${tab === 'gemini' ? 'active' : ''}`}
-                onClick={() => setTab('gemini')}
-              >🆓 Gemini（免費）</button>
-              <button
-                className={`key-tab ${tab === 'claude' ? 'active' : ''}`}
-                onClick={() => setTab('claude')}
-              >Claude</button>
-            </div>
-
-            {tab === 'gemini' ? (
-              <>
-                <p className="key-hint" style={{ color: 'var(--dn)', fontWeight: 700 }}>
-                  Gemini 2.0 Flash Lite 免費，每天 1500 次請求
-                </p>
-                <p className="key-hint">
-                  ⚠️ 必須至 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>aistudio.google.com/apikey</a> 取得 Key（非 Google Cloud Console）
-                </p>
-                <input
-                  type="password"
-                  placeholder="AIza..."
-                  value={draftGemini}
-                  onChange={e => setDraftGemini(e.target.value)}
-                />
-              </>
-            ) : (
-              <>
-                <p className="key-hint">
-                  至 <a href="https://console.anthropic.com/" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>console.anthropic.com</a> 取得 API Key
-                </p>
-                <input
-                  type="password"
-                  placeholder="sk-ant-..."
-                  value={draftClaude}
-                  onChange={e => setDraftClaude(e.target.value)}
-                />
-              </>
-            )}
-
-            <div className="key-actions">
-              <button onClick={() => {
-                if (tab === 'gemini') setGeminiKey(draftGemini)
-                else setApiKey(draftClaude)
-                setAiProvider(tab)
-                setShowKey(false)
-              }}>儲存並使用</button>
-              <button className="ghost" onClick={() => setShowKey(false)}>取消</button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+    </div>
+    {hidden && (
+      <button
+        className="navbar-trigger-btn"
+        onClick={() => setHidden(false)}
+        title="展開導航欄"
+      >
+        ▾
+      </button>
+    )}
     </>
   )
 }

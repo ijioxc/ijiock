@@ -1,0 +1,63 @@
+@@ -22,30 +22,40 @@
+ }
+ @keyframes slide-down { from { transform: translateY(-100%) } to { transform: translateY(0) } }
+ 
+-/* ── NAVBAR ── */
++/* ── NAVBAR (Floating Pill) ── */
++.navbar-wrapper {
++  padding: 16px 24px;
++  flex-shrink: 0;
++  z-index: 200;
++  position: relative;
++  display: flex;
++  justify-content: center;
++}
+ .navbar {
+-  display: flex; align-items: center; gap: 10px; padding: 0 14px; height: 50px;
+-  background: var(--glass);
+-  backdrop-filter: var(--blur-nav);
+-  -webkit-backdrop-filter: var(--blur-nav);
+-  border-bottom: 1px solid rgba(255,255,255,.35);
+-  box-shadow: 0 1px 0 var(--border), 0 2px 12px rgba(0,0,0,.06);
+-  flex-shrink: 0; z-index: 200; position: relative;
+-}
+-.app.dark .navbar {
+-  background: var(--glass);
+-  border-bottom-color: rgba(255,255,255,.06);
+-}
+-
+-.logo { display: flex; align-items: center; gap: 8px; user-select: none; flex-shrink: 0; }
++  display: flex; align-items: center; justify-content: space-between;
++  padding: 10px 24px;
++  background: var(--bg-secondary);
++  backdrop-filter: blur(20px);
++  -webkit-backdrop-filter: blur(20px);
++  border: 1px solid var(--border-md);
++  box-shadow: 0 8px 32px rgba(0,0,0,0.04);
++  border-radius: 99px;
++  width: 100%;
++  max-width: 1400px;
++  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
++}
++.navbar.header--hidden {
++  transform: translateY(calc(-100% - 32px));
++}
++
++.logo { display: flex; align-items: center; gap: 12px; user-select: none; flex-shrink: 0; }
+ .logo-mark {
+-  width: 30px; height: 30px; border-radius: 9px;
+-  background: linear-gradient(135deg, #6366f1 0%, #818cf8 60%, #a5b4fc 100%);
+-  display: flex; align-items: center; justify-content: center;
+-  box-shadow: var(--sh-accent);
+-}
+-.logo-mark svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+-.logo-txt { font-size: 15px; font-weight: 800; letter-spacing: -.4px; }
++  width: 32px; height: 32px; border-radius: 10px;
++  background: linear-gradient(135deg, var(--text) 0%, var(--text-2) 100%);
++  display: flex; align-items: center; justify-content: center;
++}
++.logo-mark svg { width: 18px; height: 18px; stroke: var(--bg); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
++.logo-txt { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; }
+ .logo-sub { font-size: 9px; font-weight: 600; color: var(--text-3); letter-spacing: .3px; margin-top: -2px; }
+ 
+ .live-badge {
