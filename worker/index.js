@@ -67,6 +67,43 @@ export default {
       }
     }
 
+    // ── 自動化焦點與盯盤 (Automated Focus & Monitoring) ──
+    if (path === '/focus-news') {
+      const sources = [
+        { name: "Stratechery", url: "https://stratechery.com/" },
+        { name: "Fed Press Releases", url: "https://www.federalreserve.gov/newsevents/pressreleases.htm" },
+        // 未來可加入更多來源
+      ];
+
+      try {
+        const results = await Promise.all(sources.map(async (src) => {
+          const r = await fetch(src.url, { headers: { 'User-Agent': 'nkust-racing-bot' }});
+          const html = await r.text();
+          
+          let summary = "無摘要";
+          let title = src.name;
+          
+          const metaMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i) 
+                         || html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i);
+          if (metaMatch) summary = metaMatch[1];
+          
+          const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+          if (titleMatch) title = titleMatch[1];
+
+          // 簡單清理文字
+          summary = summary.replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+
+          return { source: src.name, title, summary, url: src.url };
+        }));
+        return new Response(JSON.stringify({ data: results }), {
+          status: 200,
+          headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
+        });
+      } catch (e) {
+        return json({ error: e.message }, 502);
+      }
+    }
+
     // ── Health check ──
     if (path === '/') {
       return json({ status: 'ok', service: 'BandLab Proxy' });
